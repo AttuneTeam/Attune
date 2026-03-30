@@ -21,7 +21,7 @@ interface ActionItemRow {
   status: string
   due_date: string | null
   created_at: string
-  meetings: {
+  interactions: {
     id: string
     scheduled_at: string
     team_members: { id: string; name: string } | null
@@ -95,7 +95,7 @@ export function ActionItemsTable({ items }: { items: ActionItemRow[] }) {
                   {item.description}
                 </td>
                 <td className="px-4 py-3 text-muted-foreground">
-                  {item.meetings?.team_members?.name ?? '—'}
+                  {item.interactions?.team_members?.name ?? '—'}
                 </td>
                 <td className={`px-4 py-3 ${overdue ? 'text-destructive font-medium' : 'text-muted-foreground'}`}>
                   {item.due_date ? format(parseISO(item.due_date), 'MMM d, yyyy') : '—'}
@@ -113,11 +113,11 @@ export function ActionItemsTable({ items }: { items: ActionItemRow[] }) {
                   </Badge>
                 </td>
                 <td className="px-4 py-3">
-                  {item.meetings?.id && (
+                  {item.interactions?.id && (
                     <Link
-                      href={`/meetings/${item.meetings.id}`}
+                      href={`/interactions/${item.interactions.id}`}
                       className="text-muted-foreground hover:text-foreground"
-                      title="View meeting"
+                      title="View interaction"
                     >
                       <ExternalLink className="h-3.5 w-3.5" />
                     </Link>

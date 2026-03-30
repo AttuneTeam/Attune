@@ -11,7 +11,7 @@ interface Props {
   memberName: string
 }
 
-export function NewMeetingButton({ memberId, memberName }: Props) {
+export function NewInteractionButton({ memberId, memberName }: Props) {
   const [loading, setLoading] = useState(false)
   const router = useRouter()
 
@@ -22,17 +22,18 @@ export function NewMeetingButton({ memberId, memberName }: Props) {
     if (!user) return
 
     const { data, error } = await supabase
-      .from('meetings')
+      .from('interactions')
       .insert({
         participant_id: memberId,
         manager_id: user.id,
         scheduled_at: new Date().toISOString(),
+        type: 'scheduled',
       })
       .select('id')
       .single()
 
     if (!error && data) {
-      router.push(`/meetings/${data.id}`)
+      router.push(`/interactions/${data.id}`)
     }
     setLoading(false)
   }
@@ -43,10 +44,10 @@ export function NewMeetingButton({ memberId, memberName }: Props) {
       className="flex-1 text-xs"
       onClick={handleCreate}
       disabled={loading}
-      title={`New meeting with ${memberName}`}
+      title={`New interaction with ${memberName}`}
     >
       <Plus className="h-3 w-3 mr-1" />
-      {loading ? 'Creating...' : 'New meeting'}
+      {loading ? 'Creating...' : 'New interaction'}
     </Button>
   )
 }

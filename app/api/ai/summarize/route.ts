@@ -4,28 +4,28 @@ import { openai } from '@ai-sdk/openai'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
 import { extractPlainText, SUMMARIZE_SYSTEM } from '@/lib/ai/prompts'
-import { embedMeeting } from '@/lib/ai/embeddings'
+import { embedInteraction } from '@/lib/ai/embeddings'
 
 export async function POST(request: NextRequest) {
   try {
-    const { meetingId } = await request.json()
-    if (!meetingId) return NextResponse.json({ error: 'meetingId required' }, { status: 400 })
+    const { interactionId } = await request.json()
+    if (!interactionId) return NextResponse.json({ error: 'interactionId required' }, { status: 400 })
 
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const { data: meeting } = await supabase
-      .from('meetings')
+    const { data: interaction } = await supabase
+      .from('interactions')
       .select('id, raw_json_notes, manager_id')
-      .eq('id', meetingId)
+      .eq('id', interactionId)
       .single()
 
-    if (!meeting || meeting.manager_id !== user.id) {
-      return NextResponse.json({ error: 'Meeting not found' }, { status: 404 })
+    if (!interaction || interaction.manager_id !== user.id) {
+      return NextResponse.json({ error: 'Interaction not found' }, { status: 404 })
     }
 
-    const notesText = extractPlainText(meeting.raw_json_notes)
+    const notesText = extractPlainText(interaction.raw_json_notes)
     if (!notesText || notesText.length < 20) {
       return NextResponse.json({ error: 'Notes too short to summarize' }, { status: 400 })
     }
@@ -41,18 +41,18 @@ export async function POST(request: NextRequest) {
       }),
     })
 
-    // Update meeting row
+    // Update interaction row
     await supabase
-      .from('meetings')
+      .from('interactions')
       .update({
         ai_summary: object.summary,
         sentiment_score: object.sentiment,
         key_themes: object.keyThemes,
       })
-      .eq('id', meetingId)
+      .eq('id', interactionId)
 
     // Trigger embedding pipeline asynchronously (don't await — fire & forget)
-    embedMeeting(meetingId, meeting.raw_json_notes).catch(console.error)
+    embedInteraction(interactionId, interaction.raw_json_notes).catch(console.error)
 
     return NextResponse.json({
       summary: object.summary,

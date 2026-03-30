@@ -8,12 +8,12 @@ import { toast } from 'sonner'
 
 interface Props {
   editor: Editor | null
-  meetingId: string
+  interactionId: string
   onSummaryUpdate?: (summary: string, sentiment: number, themes: string[]) => void
   onActionItemsUpdate?: () => void
 }
 
-export function FloatingAIMenu({ meetingId, onSummaryUpdate, onActionItemsUpdate }: Props) {
+export function FloatingAIMenu({ interactionId, onSummaryUpdate, onActionItemsUpdate }: Props) {
   const [loading, setLoading] = useState<'summarize' | 'action-items' | 'coaching' | null>(null)
   const [coachingQuestions, setCoachingQuestions] = useState<string[]>([])
   const [showCoaching, setShowCoaching] = useState(false)
@@ -24,7 +24,7 @@ export function FloatingAIMenu({ meetingId, onSummaryUpdate, onActionItemsUpdate
       const res = await fetch('/api/ai/summarize', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ meetingId }),
+        body: JSON.stringify({ interactionId }),
       })
       if (!res.ok) throw new Error(await res.text())
       const data = await res.json()
@@ -43,7 +43,7 @@ export function FloatingAIMenu({ meetingId, onSummaryUpdate, onActionItemsUpdate
       const res = await fetch('/api/ai/action-items', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ meetingId }),
+        body: JSON.stringify({ interactionId }),
       })
       if (!res.ok) throw new Error(await res.text())
       const data = await res.json()
@@ -62,7 +62,7 @@ export function FloatingAIMenu({ meetingId, onSummaryUpdate, onActionItemsUpdate
       const res = await fetch('/api/ai/coaching-questions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ meetingId }),
+        body: JSON.stringify({ interactionId }),
       })
       if (!res.ok) throw new Error(await res.text())
       const data = await res.json()

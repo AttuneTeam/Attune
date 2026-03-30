@@ -33,13 +33,13 @@ const StatusIcon = ({ status }: { status: string }) => {
 
 interface Member { id: string; name: string }
 interface Props {
-  meetingId: string
+  interactionId: string
   items: ActionItem[]
   allMembers: Member[]
   onUpdate: () => void
 }
 
-export function ActionItemsSidebar({ meetingId, items, allMembers, onUpdate }: Props) {
+export function ActionItemsSidebar({ interactionId, items, allMembers, onUpdate }: Props) {
   const [newDesc, setNewDesc] = useState('')
   const [adding, setAdding] = useState(false)
   const [editingItem, setEditingItem] = useState<ActionItem | null>(null)
@@ -52,7 +52,7 @@ export function ActionItemsSidebar({ meetingId, items, allMembers, onUpdate }: P
     setAdding(true)
     const supabase = createClient()
     const { error } = await supabase.from('action_items').insert({
-      meeting_id: meetingId,
+      interaction_id: interactionId,
       description: newDesc.trim(),
     })
     if (error) {

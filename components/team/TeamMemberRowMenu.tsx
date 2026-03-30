@@ -60,21 +60,22 @@ export function TeamMemberRowMenu({ member, teams }: Props) {
     if (!user) { setCreating(false); return }
 
     const { data, error } = await supabase
-      .from('meetings')
+      .from('interactions')
       .insert({
         participant_id: member.id,
         manager_id: user.id,
         scheduled_at: new Date().toISOString(),
+        type: 'scheduled',
       })
       .select('id')
       .single()
 
     if (error || !data) {
-      toast.error('Failed to create meeting')
+      toast.error('Failed to create interaction')
       setCreating(false)
       return
     }
-    router.push(`/meetings/${data.id}`)
+    router.push(`/interactions/${data.id}`)
   }
 
   const handleEditSubmit = async (e: React.FormEvent) => {
@@ -103,7 +104,7 @@ export function TeamMemberRowMenu({ member, teams }: Props) {
   }
 
   const handleDelete = async () => {
-    if (!confirm(`Delete ${member.name}? This will also delete all their meetings.`)) return
+    if (!confirm(`Delete ${member.name}? This will also delete all their interactions.`)) return
     const supabase = createClient()
     const { error } = await supabase.from('team_members').delete().eq('id', member.id)
     if (error) { toast.error(error.message); return }
@@ -125,7 +126,7 @@ export function TeamMemberRowMenu({ member, teams }: Props) {
         <DropdownMenuContent align="end">
           <DropdownMenuItem onClick={handleNewMeeting} disabled={creating}>
             <Plus className="h-4 w-4" />
-            {creating ? 'Creating…' : 'New meeting'}
+            {creating ? 'Creating…' : 'New interaction'}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => setEditOpen(true)}>

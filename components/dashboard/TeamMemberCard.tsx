@@ -5,17 +5,17 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { SentimentSparkline } from './SentimentSparkline'
-import { NewMeetingButton } from './NewMeetingButton'
+import { NewInteractionButton } from './NewMeetingButton'
 import type { TeamMember } from '@/lib/supabase/types'
 
 interface Props {
   member: TeamMember
-  lastMeetingId: string | null
+  lastInteractionId: string | null
   daysSince: number | null
   sentimentHistory: number[]
 }
 
-export function TeamMemberCard({ member, lastMeetingId, daysSince, sentimentHistory }: Props) {
+export function TeamMemberCard({ member, lastInteractionId, daysSince, sentimentHistory }: Props) {
   const overdue = daysSince === null || daysSince > 14
 
   return (
@@ -71,15 +71,15 @@ export function TeamMemberCard({ member, lastMeetingId, daysSince, sentimentHist
 
         {/* Actions */}
         <div className="flex gap-2 pt-1">
-          {lastMeetingId && (
+          {lastInteractionId && (
             <Link
-              href={`/meetings/${lastMeetingId}`}
+              href={`/interactions/${lastInteractionId}`}
               className="flex-1 text-xs inline-flex items-center justify-center rounded-lg border border-border bg-background px-2.5 h-7 text-[0.8rem] font-medium hover:bg-muted transition-colors"
             >
               Last notes
             </Link>
           )}
-          <NewMeetingButton memberId={member.id} memberName={member.name} />
+          <NewInteractionButton memberId={member.id} memberName={member.name} />
         </div>
       </CardContent>
     </Card>

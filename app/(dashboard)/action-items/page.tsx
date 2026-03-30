@@ -18,12 +18,12 @@ export default async function ActionItemsPage({
     .from('action_items')
     .select(`
       id, description, status, due_date, created_at, assignee_id,
-      meetings!inner (
+      interactions!inner (
         id, scheduled_at, manager_id,
         team_members (id, name)
       )
     `)
-    .eq('meetings.manager_id', user.id)
+    .eq('interactions.manager_id', user.id)
     .order('due_date', { ascending: true, nullsFirst: false })
 
   if (statusFilter && ['open', 'in_progress', 'done'].includes(statusFilter)) {

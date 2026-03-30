@@ -7,45 +7,45 @@ import { extractPlainText, COACHING_SYSTEM } from '@/lib/ai/prompts'
 
 export async function POST(request: NextRequest) {
   try {
-    const { meetingId } = await request.json()
-    if (!meetingId) return NextResponse.json({ error: 'meetingId required' }, { status: 400 })
+    const { interactionId } = await request.json()
+    if (!interactionId) return NextResponse.json({ error: 'interactionId required' }, { status: 400 })
 
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const { data: meeting } = await supabase
-      .from('meetings')
+    const { data: interaction } = await supabase
+      .from('interactions')
       .select(`
         id, raw_json_notes, ai_summary, manager_id,
         team_members (name, level, role_description)
       `)
-      .eq('id', meetingId)
+      .eq('id', interactionId)
       .single()
 
-    if (!meeting || meeting.manager_id !== user.id) {
-      return NextResponse.json({ error: 'Meeting not found' }, { status: 404 })
+    if (!interaction || interaction.manager_id !== user.id) {
+      return NextResponse.json({ error: 'Interaction not found' }, { status: 404 })
     }
 
-    // Get last 3 meetings with this person for context
-    const { data: pastMeetings } = await supabase
-      .from('meetings')
+    // Get last 3 interactions with this person for context
+    const { data: pastInteractions } = await supabase
+      .from('interactions')
       .select('ai_summary, scheduled_at')
-      .eq('participant_id', (meeting as any).team_members?.id ?? '')
-      .neq('id', meetingId)
+      .eq('participant_id', (interaction as any).team_members?.id ?? '')
+      .neq('id', interactionId)
       .order('scheduled_at', { ascending: false })
       .limit(3)
 
-    const notesText = extractPlainText(meeting.raw_json_notes)
-    const member = (meeting as any).team_members
+    const notesText = extractPlainText(interaction.raw_json_notes)
+    const member = (interaction as any).team_members
 
     const contextParts = [
       `Team member: ${member?.name ?? 'Unknown'} (${member?.level ?? 'unknown level'})`,
       member?.role_description ? `Role: ${member.role_description}` : null,
-      `\nCurrent meeting notes:\n${notesText}`,
-      meeting.ai_summary ? `\nMeeting summary: ${meeting.ai_summary}` : null,
-      pastMeetings && pastMeetings.length > 0
-        ? `\nRecent meeting context:\n${pastMeetings.map((m, i) => `${i + 1}. ${m.ai_summary ?? '(no summary)'}`).join('\n')}`
+      `\nCurrent interaction notes:\n${notesText}`,
+      interaction.ai_summary ? `\nInteraction summary: ${interaction.ai_summary}` : null,
+      pastInteractions && pastInteractions.length > 0
+        ? `\nRecent interaction context:\n${pastInteractions.map((m, i) => `${i + 1}. ${m.ai_summary ?? '(no summary)'}`).join('\n')}`
         : null,
     ].filter(Boolean).join('\n')
 

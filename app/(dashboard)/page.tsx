@@ -34,24 +34,24 @@ export default async function DashboardPage() {
   // For each member, fetch their most recent meeting + last 6 sentiment scores
   const memberData = await Promise.all(
     members.map(async (member) => {
-      const { data: recentMeetings } = await supabase
-        .from('meetings')
+      const { data: recentInteractions } = await supabase
+        .from('interactions')
         .select('id, scheduled_at, sentiment_score')
         .eq('participant_id', member.id)
         .order('scheduled_at', { ascending: false })
         .limit(6)
 
-      const lastMeeting = recentMeetings?.[0] ?? null
-      const daysSince = lastMeeting
-        ? differenceInDays(new Date(), parseISO(lastMeeting.scheduled_at))
+      const lastInteraction = recentInteractions?.[0] ?? null
+      const daysSince = lastInteraction
+        ? differenceInDays(new Date(), parseISO(lastInteraction.scheduled_at))
         : null
 
-      const sentimentHistory = (recentMeetings ?? [])
+      const sentimentHistory = (recentInteractions ?? [])
         .filter((m) => m.sentiment_score !== null)
         .reverse()
         .map((m) => m.sentiment_score as number)
 
-      return { member, lastMeeting, daysSince, sentimentHistory }
+      return { member, lastInteraction, daysSince, sentimentHistory }
     })
   )
 
@@ -65,7 +65,7 @@ export default async function DashboardPage() {
   thisMonthStart.setDate(1)
   thisMonthStart.setHours(0, 0, 0, 0)
   const { count: meetingsThisMonth } = await supabase
-    .from('meetings')
+    .from('interactions')
     .select('*', { count: 'exact', head: true })
     .gte('scheduled_at', thisMonthStart.toISOString())
 
@@ -78,7 +78,7 @@ export default async function DashboardPage() {
       {/* Quick stats */}
       <div className="grid grid-cols-2 gap-4 mb-8 max-w-sm">
         <div className="rounded-lg border bg-card p-4">
-          <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Meetings this month</p>
+          <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Interactions this month</p>
           <p className="text-3xl font-bold">{meetingsThisMonth ?? 0}</p>
         </div>
         <div className="rounded-lg border bg-card p-4">
@@ -92,11 +92,11 @@ export default async function DashboardPage() {
         Direct Reports ({members.length})
       </h2>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {memberData.map(({ member, lastMeeting, daysSince, sentimentHistory }) => (
+        {memberData.map(({ member, lastInteraction, daysSince, sentimentHistory }) => (
           <TeamMemberCard
             key={member.id}
             member={member}
-            lastMeetingId={lastMeeting?.id ?? null}
+            lastInteractionId={lastInteraction?.id ?? null}
             daysSince={daysSince}
             sentimentHistory={sentimentHistory}
           />

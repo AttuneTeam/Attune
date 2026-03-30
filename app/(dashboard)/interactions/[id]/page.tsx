@@ -1,8 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect, notFound } from "next/navigation";
-import { MeetingEditorClient } from "@/components/meetings/MeetingEditorClient";
+import { InteractionEditorClient } from "@/components/meetings/InteractionEditorClient";
 
-export default async function MeetingEditorPage({
+export default async function InteractionEditorPage({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -14,23 +14,23 @@ export default async function MeetingEditorPage({
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: meeting } = await supabase
-    .from("meetings")
+  const { data: interaction } = await supabase
+    .from("interactions")
     .select(
       `
-      id, scheduled_at, raw_json_notes, ai_summary, sentiment_score, key_themes, title,
+      id, scheduled_at, raw_json_notes, ai_summary, sentiment_score, key_themes, title, type,
       team_members (id, name, level, role_description)
     `,
     )
     .eq("id", id)
     .single();
 
-  if (!meeting) notFound();
+  if (!interaction) notFound();
 
   const { data: actionItems } = await supabase
     .from("action_items")
     .select("*")
-    .eq("meeting_id", id)
+    .eq("interaction_id", id)
     .order("created_at");
 
   const { data: allMembers } = await supabase
@@ -39,8 +39,8 @@ export default async function MeetingEditorPage({
     .order("name");
 
   return (
-    <MeetingEditorClient
-      meeting={meeting as never}
+    <InteractionEditorClient
+      interaction={interaction as never}
       initialActionItems={actionItems ?? []}
       allMembers={allMembers ?? []}
     />

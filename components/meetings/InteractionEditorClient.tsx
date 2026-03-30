@@ -5,6 +5,13 @@ import { TiptapEditor } from "@/components/editor/TiptapEditor";
 import { ActionItemsSidebar } from "./ActionItemsSidebar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import Link from "next/link";
 import { ChevronLeft, PanelRight } from "lucide-react";
 import { format, parseISO } from "date-fns";
@@ -13,7 +20,14 @@ import type { Json } from "@/lib/supabase/types";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 
-interface MeetingWithMember {
+const INTERACTION_TYPES = [
+  { value: "scheduled", label: "Scheduled meeting" },
+  { value: "incidental", label: "Incidental chat" },
+  { value: "note", label: "Quick note" },
+  { value: "slack", label: "Slack interaction" },
+] as const;
+
+interface InteractionWithMember {
   id: string;
   scheduled_at: string;
   raw_json_notes: Json | null;
@@ -21,6 +35,7 @@ interface MeetingWithMember {
   sentiment_score: number | null;
   key_themes: string[];
   title: string | null;
+  type: string;
   team_members: {
     id: string;
     name: string;
@@ -35,7 +50,7 @@ interface Member {
 }
 
 interface Props {
-  meeting: MeetingWithMember;
+  interaction: InteractionWithMember;
   initialActionItems: ActionItem[];
   allMembers: Member[];
 }
@@ -47,19 +62,20 @@ function sentimentColor(score: number | null) {
   return "destructive";
 }
 
-export function MeetingEditorClient({
-  meeting,
+export function InteractionEditorClient({
+  interaction,
   initialActionItems,
   allMembers,
 }: Props) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [summary, setSummary] = useState(meeting.ai_summary);
-  const [sentiment, setSentiment] = useState(meeting.sentiment_score);
-  const [themes, setThemes] = useState<string[]>(meeting.key_themes ?? []);
+  const [summary, setSummary] = useState(interaction.ai_summary);
+  const [sentiment, setSentiment] = useState(interaction.sentiment_score);
+  const [themes, setThemes] = useState<string[]>(interaction.key_themes ?? []);
   const [actionItems, setActionItems] = useState<ActionItem[]>(initialActionItems);
-  const [scheduledAt, setScheduledAt] = useState(meeting.scheduled_at);
+  const [scheduledAt, setScheduledAt] = useState(interaction.scheduled_at);
   const [isEditingDate, setIsEditingDate] = useState(false);
-  const [title, setTitle] = useState(meeting.title ?? '');
+  const [title, setTitle] = useState(interaction.title ?? "");
+  const [type, setType] = useState(interaction.type ?? "scheduled");
   const dateInputRef = useRef<HTMLInputElement>(null);
 
   const handleSummaryUpdate = useCallback(
@@ -75,38 +91,48 @@ export function MeetingEditorClient({
     const newTitle = e.target.value.trim();
     const supabase = createClient();
     const { error } = await supabase
-      .from("meetings")
+      .from("interactions")
       .update({ title: newTitle || null })
-      .eq("id", meeting.id);
+      .eq("id", interaction.id);
     if (error) toast.error("Failed to update title");
-  }, [meeting.id]);
+  }, [interaction.id]);
 
   const handleDateBlur = useCallback(async (e: React.FocusEvent<HTMLInputElement>) => {
-    const newDate = e.target.value; // "YYYY-MM-DD"
+    const newDate = e.target.value;
     setIsEditingDate(false);
     if (!newDate || newDate === scheduledAt.slice(0, 10)) return;
     const iso = new Date(newDate + "T12:00:00").toISOString();
     setScheduledAt(iso);
     const supabase = createClient();
     const { error } = await supabase
-      .from("meetings")
+      .from("interactions")
       .update({ scheduled_at: iso })
-      .eq("id", meeting.id);
+      .eq("id", interaction.id);
     if (error) toast.error("Failed to update date");
     else toast.success("Date updated");
-  }, [meeting.id, scheduledAt]);
+  }, [interaction.id, scheduledAt]);
+
+  const handleTypeChange = useCallback(async (newType: string) => {
+    setType(newType);
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("interactions")
+      .update({ type: newType })
+      .eq("id", interaction.id);
+    if (error) toast.error("Failed to update type");
+  }, [interaction.id]);
 
   const refreshActionItems = useCallback(async () => {
     const supabase = createClient();
     const { data } = await supabase
       .from("action_items")
       .select("*")
-      .eq("meeting_id", meeting.id)
+      .eq("interaction_id", interaction.id)
       .order("created_at");
     setActionItems(data ?? []);
-  }, [meeting.id]);
+  }, [interaction.id]);
 
-  const member = meeting.team_members;
+  const member = interaction.team_members;
 
   return (
     <div className="flex h-full">
@@ -115,7 +141,7 @@ export function MeetingEditorClient({
         {/* Header */}
         <header className="h-14 border-b flex items-center px-4 gap-3 shrink-0">
           <Link
-            href="/meetings"
+            href="/interactions"
             className="inline-flex items-center justify-center size-8 rounded-lg hover:bg-muted transition-colors"
           >
             <ChevronLeft className="h-4 w-4" />
@@ -123,7 +149,7 @@ export function MeetingEditorClient({
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
               <span className="font-medium truncate">
-                {member?.name ?? "Meeting"}
+                {member?.name ?? "Interaction"}
               </span>
               {member?.level && (
                 <Badge
@@ -133,6 +159,18 @@ export function MeetingEditorClient({
                   {member.level}
                 </Badge>
               )}
+              <Select value={type} onValueChange={handleTypeChange}>
+                <SelectTrigger className="h-6 text-xs border-0 bg-transparent px-1.5 gap-1 hover:bg-muted w-auto focus:ring-0 focus:ring-offset-0">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {INTERACTION_TYPES.map((t) => (
+                    <SelectItem key={t.value} value={t.value} className="text-xs">
+                      {t.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               {isEditingDate ? (
                 <input
                   ref={dateInputRef}
@@ -181,7 +219,7 @@ export function MeetingEditorClient({
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             onBlur={handleTitleBlur}
-            placeholder="Untitled meeting"
+            placeholder="Untitled interaction"
             className="w-full text-xl font-semibold bg-transparent border-none outline-none placeholder:text-muted-foreground/40 text-foreground"
           />
         </div>
@@ -208,8 +246,8 @@ export function MeetingEditorClient({
         {/* Editor */}
         <div className="flex-1 overflow-y-auto">
           <TiptapEditor
-            meetingId={meeting.id}
-            initialContent={meeting.raw_json_notes}
+            interactionId={interaction.id}
+            initialContent={interaction.raw_json_notes}
             onSummaryUpdate={handleSummaryUpdate}
             onActionItemsUpdate={refreshActionItems}
           />
@@ -220,7 +258,7 @@ export function MeetingEditorClient({
       {sidebarOpen && (
         <div className="w-72 border-l flex flex-col shrink-0 overflow-hidden">
           <ActionItemsSidebar
-            meetingId={meeting.id}
+            interactionId={interaction.id}
             items={actionItems}
             allMembers={allMembers}
             onUpdate={refreshActionItems}

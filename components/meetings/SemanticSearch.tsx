@@ -10,7 +10,7 @@ import { format } from 'date-fns'
 
 interface SearchResult {
   id: string
-  meeting_id: string
+  interaction_id: string
   content: string
   similarity: number
   participant_name: string
@@ -54,7 +54,7 @@ export function SemanticSearch() {
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search meeting history…"
+            placeholder="Search interaction history…"
             className="pl-9"
           />
         </div>
@@ -77,7 +77,7 @@ export function SemanticSearch() {
               {results.map((r) => (
                 <li key={r.id}>
                   <Link
-                    href={`/meetings/${r.meeting_id}`}
+                    href={`/interactions/${r.interaction_id}`}
                     className="flex gap-3 p-4 hover:bg-accent/30 transition-colors"
                   >
                     <div className="flex-1 min-w-0">

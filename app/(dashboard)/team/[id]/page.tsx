@@ -6,15 +6,16 @@ import { Badge } from '@/components/ui/badge'
 import { ArrowLeft, Calendar, Mail, Briefcase, Check, Clock, Circle, ExternalLink, Zap } from 'lucide-react'
 import { SentimentInsightsCard } from '@/components/team/SentimentInsightsCard'
 import { MemberEditButton } from '@/components/team/MemberEditButton'
-import { NewMeetingButton } from '@/components/dashboard/NewMeetingButton'
+import { NewInteractionButton } from '@/components/dashboard/NewMeetingButton'
 
-type MeetingRow = {
+type InteractionRow = {
   id: string
   title: string | null
   scheduled_at: string
   sentiment_score: number | null
   ai_summary: string | null
   key_themes: string[]
+  type: string
 }
 
 function sentimentBadge(score: number): { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' } {
@@ -23,9 +24,9 @@ function sentimentBadge(score: number): { label: string; variant: 'default' | 's
   return { label: 'Concerning', variant: 'destructive' }
 }
 
-function topThemes(meetings: MeetingRow[]): string[] {
+function topThemes(interactions: InteractionRow[]): string[] {
   const counts: Record<string, number> = {}
-  for (const m of meetings) {
+  for (const m of interactions) {
     for (const theme of (m.key_themes ?? [])) {
       counts[theme] = (counts[theme] ?? 0) + 1
     }
@@ -37,12 +38,12 @@ function topThemes(meetings: MeetingRow[]): string[] {
 }
 
 function generateNudges(
-  meetings: MeetingRow[],
+  interactions: InteractionRow[],
   openCount: number,
   daysSince: number | null,
 ): string[] {
   const nudges: string[] = []
-  const withScore = meetings.filter((m) => m.sentiment_score !== null)
+  const withScore = interactions.filter((m) => m.sentiment_score !== null)
 
   if (daysSince !== null && daysSince > 21) {
     nudges.push(`It's been ${daysSince} days since the last 1-on-1 — consider scheduling one soon.`)
@@ -63,7 +64,7 @@ function generateNudges(
     }
 
     if (recentAvg < -0.2) {
-      nudges.push('Recent meetings suggest lower engagement — consider discussing workload, blockers, or wellbeing.')
+      nudges.push('Recent interactions suggest lower engagement — consider discussing workload, blockers, or wellbeing.')
     } else if (recentAvg > 0.5) {
       nudges.push('Strong positive energy — consider exploring stretch goals or leadership opportunities.')
     }
@@ -100,46 +101,46 @@ export default async function MemberProfilePage({
 
   const { data: teams } = await supabase.from('teams').select('*').order('name')
 
-  const { data: meetingsRaw } = await supabase
-    .from('meetings')
-    .select('id, title, scheduled_at, sentiment_score, ai_summary, key_themes')
+  const { data: interactionsRaw } = await supabase
+    .from('interactions')
+    .select('id, title, scheduled_at, sentiment_score, ai_summary, key_themes, type')
     .eq('participant_id', id)
     .order('scheduled_at', { ascending: false })
 
-  const meetings = (meetingsRaw ?? []) as MeetingRow[]
-  const meetingIds = meetings.map((m) => m.id)
+  const interactions = (interactionsRaw ?? []) as InteractionRow[]
+  const interactionIds = interactions.map((m) => m.id)
 
-  const { data: actionItems } = meetingIds.length > 0
+  const { data: actionItems } = interactionIds.length > 0
     ? await supabase
         .from('action_items')
         .select('*')
-        .in('meeting_id', meetingIds)
+        .in('interaction_id', interactionIds)
         .order('created_at', { ascending: false })
     : { data: [] as Awaited<ReturnType<typeof supabase.from>>['data'] }
 
   const items = (actionItems ?? []) as Array<{
-    id: string; description: string; status: string; due_date: string | null; meeting_id: string
+    id: string; description: string; status: string; due_date: string | null; interaction_id: string
   }>
 
   // Derived
-  const lastMeeting = meetings[0] ?? null
-  const daysSince = lastMeeting
-    ? differenceInDays(new Date(), parseISO(lastMeeting.scheduled_at))
+  const lastInteraction = interactions[0] ?? null
+  const daysSince = lastInteraction
+    ? differenceInDays(new Date(), parseISO(lastInteraction.scheduled_at))
     : null
 
-  const withScore = meetings.filter((m) => m.sentiment_score !== null)
+  const withScore = interactions.filter((m) => m.sentiment_score !== null)
   const avgSentiment = withScore.length > 0
     ? withScore.reduce((sum, m) => sum + (m.sentiment_score as number), 0) / withScore.length
     : null
 
-  const sentimentHistory = [...meetings]
+  const sentimentHistory = [...interactions]
     .filter((m) => m.sentiment_score !== null)
     .reverse()
     .map((m) => ({ date: m.scheduled_at, score: m.sentiment_score as number }))
 
-  const themes = topThemes(meetings)
+  const themes = topThemes(interactions)
   const openCount = items.filter((i) => i.status === 'open').length
-  const nudges = generateNudges(meetings, openCount, daysSince)
+  const nudges = generateNudges(interactions, openCount, daysSince)
 
   const openItems = items.filter((i) => i.status === 'open')
   const inProgressItems = items.filter((i) => i.status === 'in_progress')
@@ -170,7 +171,7 @@ export default async function MemberProfilePage({
         <div className="flex items-center gap-2 shrink-0">
           {/* wrap to prevent flex-1 inside NewMeetingButton from growing */}
           <div className="w-fit">
-            <NewMeetingButton memberId={member.id} memberName={member.name} />
+            <NewInteractionButton memberId={member.id} memberName={member.name} />
           </div>
           <MemberEditButton member={member} teams={teams ?? []} />
         </div>
@@ -200,7 +201,7 @@ export default async function MemberProfilePage({
               )}
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Briefcase className="h-3.5 w-3.5 shrink-0" />
-                <span>{meetings.length} {meetings.length === 1 ? 'meeting' : 'meetings'} total</span>
+                <span>{interactions.length} {interactions.length === 1 ? 'interaction' : 'interactions'} total</span>
               </div>
               {daysSince !== null && (
                 <div className="flex items-center justify-between">
@@ -265,41 +266,41 @@ export default async function MemberProfilePage({
 
         {/* ── Right column ── */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Meeting history */}
+          {/* Interaction history */}
           <div className="rounded-lg border bg-card">
             <div className="px-5 py-4 border-b flex items-center justify-between">
-              <h2 className="text-sm font-semibold">Meeting history</h2>
-              <span className="text-xs text-muted-foreground">{meetings.length} total</span>
+              <h2 className="text-sm font-semibold">Interaction history</h2>
+              <span className="text-xs text-muted-foreground">{interactions.length} total</span>
             </div>
-            {meetings.length === 0 ? (
+            {interactions.length === 0 ? (
               <div className="px-5 py-12 text-center">
-                <p className="text-sm text-muted-foreground">No meetings yet.</p>
-                <p className="text-xs text-muted-foreground mt-1">Use "New meeting" above to get started.</p>
+                <p className="text-sm text-muted-foreground">No interactions yet.</p>
+                <p className="text-xs text-muted-foreground mt-1">Use "New interaction" above to get started.</p>
               </div>
             ) : (
               <div className="divide-y">
-                {meetings.map((meeting) => {
-                  const badge = meeting.sentiment_score !== null
-                    ? sentimentBadge(meeting.sentiment_score)
+                {interactions.map((interaction) => {
+                  const badge = interaction.sentiment_score !== null
+                    ? sentimentBadge(interaction.sentiment_score)
                     : null
                   return (
                     <Link
-                      key={meeting.id}
-                      href={`/meetings/${meeting.id}`}
+                      key={interaction.id}
+                      href={`/interactions/${interaction.id}`}
                       className="flex items-start gap-4 px-5 py-4 hover:bg-muted/30 transition-colors group"
                     >
                       <div className="shrink-0 text-right min-w-[44px]">
                         <p className="text-sm font-medium tabular-nums">
-                          {format(parseISO(meeting.scheduled_at), 'MMM d')}
+                          {format(parseISO(interaction.scheduled_at), 'MMM d')}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {format(parseISO(meeting.scheduled_at), 'yyyy')}
+                          {format(parseISO(interaction.scheduled_at), 'yyyy')}
                         </p>
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <p className="text-sm font-medium truncate">
-                            {meeting.title ?? 'Untitled meeting'}
+                            {interaction.title ?? 'Untitled interaction'}
                           </p>
                           {badge && (
                             <Badge variant={badge.variant} className="text-xs shrink-0">
@@ -307,14 +308,14 @@ export default async function MemberProfilePage({
                             </Badge>
                           )}
                         </div>
-                        {meeting.ai_summary && (
+                        {interaction.ai_summary && (
                           <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
-                            {meeting.ai_summary}
+                            {interaction.ai_summary}
                           </p>
                         )}
-                        {meeting.key_themes && meeting.key_themes.length > 0 && (
+                        {interaction.key_themes && interaction.key_themes.length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-1.5">
-                            {meeting.key_themes.slice(0, 4).map((theme) => (
+                            {interaction.key_themes.slice(0, 4).map((theme) => (
                               <Badge key={theme} variant="outline" className="text-xs px-1.5 py-0">
                                 {theme}
                               </Badge>
@@ -343,7 +344,7 @@ export default async function MemberProfilePage({
               <div className="px-5 py-12 text-center">
                 <p className="text-sm text-muted-foreground">No action items yet.</p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Use "Extract items" in a meeting to generate them automatically.
+                  Use "Extract items" in an interaction to generate them automatically.
                 </p>
               </div>
             ) : (

@@ -7,19 +7,19 @@ import CharacterCount from '@tiptap/extension-character-count'
 import { Markdown } from 'tiptap-markdown'
 import { FloatingAIMenu } from './FloatingAIMenu'
 import { FormattingBubbleMenu } from './FormattingBubbleMenu'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import type { Json } from '@/lib/supabase/types'
 
 interface Props {
-  meetingId: string
+  interactionId: string
   initialContent: Json | null
   onSummaryUpdate?: (summary: string, sentiment: number, themes: string[]) => void
   onActionItemsUpdate?: () => void
 }
 
-export function TiptapEditor({ meetingId, initialContent, onSummaryUpdate, onActionItemsUpdate }: Props) {
+export function TiptapEditor({ interactionId, initialContent, onSummaryUpdate, onActionItemsUpdate }: Props) {
   const saveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isSaving = useRef(false)
 
@@ -28,14 +28,14 @@ export function TiptapEditor({ meetingId, initialContent, onSummaryUpdate, onAct
     isSaving.current = true
     const supabase = createClient()
     const { error } = await supabase
-      .from('meetings')
+      .from('interactions')
       .update({ raw_json_notes: json as Json })
-      .eq('id', meetingId)
+      .eq('id', interactionId)
     isSaving.current = false
     if (error) {
       toast.error('Failed to save notes')
     }
-  }, [meetingId])
+  }, [interactionId])
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -80,7 +80,7 @@ export function TiptapEditor({ meetingId, initialContent, onSummaryUpdate, onAct
       <FormattingBubbleMenu editor={editor} />
       <FloatingAIMenu
         editor={editor}
-        meetingId={meetingId}
+        interactionId={interactionId}
         onSummaryUpdate={onSummaryUpdate}
         onActionItemsUpdate={onActionItemsUpdate}
       />

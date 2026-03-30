@@ -57,7 +57,7 @@ export function SentimentInsightsCard({
 
       {meetingCount === 0 ? (
         <p className="text-xs text-muted-foreground leading-relaxed">
-          Run <span className="font-medium">Summarize</span> on meeting notes to
+          Run <span className="font-medium">Summarize</span> on interaction notes to
           start building sentiment data.
         </p>
       ) : (
@@ -89,7 +89,7 @@ export function SentimentInsightsCard({
           {sentimentHistory.length >= 2 && (
             <div>
               <p className="text-xs text-muted-foreground mb-2">
-                Sentiment trend ({sentimentHistory.length} meetings)
+                Sentiment trend ({sentimentHistory.length} interactions)
               </p>
               <div className="h-36">
                 <ResponsiveContainer width="100%" height="100%">

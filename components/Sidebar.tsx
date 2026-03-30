@@ -12,7 +12,7 @@ import type { Profile } from '@/lib/supabase/types'
 const navItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/team', label: 'Team', icon: Users },
-  { href: '/meetings', label: 'Meetings', icon: Calendar },
+  { href: '/interactions', label: 'Interactions', icon: Calendar },
   { href: '/action-items', label: 'Action Items', icon: CheckSquare },
 ]
 

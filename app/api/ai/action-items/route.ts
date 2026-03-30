@@ -7,24 +7,24 @@ import { extractPlainText, ACTION_ITEMS_SYSTEM } from '@/lib/ai/prompts'
 
 export async function POST(request: NextRequest) {
   try {
-    const { meetingId } = await request.json()
-    if (!meetingId) return NextResponse.json({ error: 'meetingId required' }, { status: 400 })
+    const { interactionId } = await request.json()
+    if (!interactionId) return NextResponse.json({ error: 'interactionId required' }, { status: 400 })
 
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const { data: meeting } = await supabase
-      .from('meetings')
+    const { data: interaction } = await supabase
+      .from('interactions')
       .select('id, raw_json_notes, manager_id')
-      .eq('id', meetingId)
+      .eq('id', interactionId)
       .single()
 
-    if (!meeting || meeting.manager_id !== user.id) {
-      return NextResponse.json({ error: 'Meeting not found' }, { status: 404 })
+    if (!interaction || interaction.manager_id !== user.id) {
+      return NextResponse.json({ error: 'Interaction not found' }, { status: 404 })
     }
 
-    const notesText = extractPlainText(meeting.raw_json_notes)
+    const notesText = extractPlainText(interaction.raw_json_notes)
     if (!notesText || notesText.length < 20) {
       return NextResponse.json({ error: 'Notes too short', count: 0 }, { status: 400 })
     }
@@ -45,9 +45,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ count: 0, message: 'No action items found' })
     }
 
-    // Insert action items (don't duplicate — delete existing AI-generated ones first)
     const rows = object.items.map((item) => ({
-      meeting_id: meetingId,
+      interaction_id: interactionId,
       description: item.description,
       status: 'open' as const,
       due_date: item.due_date ?? null,

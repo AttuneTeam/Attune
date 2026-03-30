@@ -23,7 +23,7 @@ function chunkText(text: string): string[] {
   return chunks.filter((c) => c.length > 20)  // skip tiny fragments
 }
 
-export async function embedMeeting(meetingId: string, jsonNotes: Json): Promise<void> {
+export async function embedInteraction(interactionId: string, jsonNotes: Json): Promise<void> {
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
   const text = extractPlainText(jsonNotes)
   if (!text || text.length < 20) return
@@ -33,8 +33,8 @@ export async function embedMeeting(meetingId: string, jsonNotes: Json): Promise<
 
   const supabase = await createClient()
 
-  // Delete old embeddings for this meeting
-  await supabase.from('embeddings').delete().eq('meeting_id', meetingId)
+  // Delete old embeddings for this interaction
+  await supabase.from('embeddings').delete().eq('interaction_id', interactionId)
 
   // Embed all chunks in parallel (respecting rate limits — OpenAI batch)
   const embeddingResponse = await openai.embeddings.create({
@@ -43,7 +43,7 @@ export async function embedMeeting(meetingId: string, jsonNotes: Json): Promise<
   })
 
   const rows = chunks.map((content, i) => ({
-    meeting_id: meetingId,
+    interaction_id: interactionId,
     content,
     content_vector: embeddingResponse.data[i].embedding,
   }))

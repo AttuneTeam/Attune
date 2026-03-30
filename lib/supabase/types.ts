@@ -82,16 +82,18 @@ export type Database = {
           skills?: string[]
         }
       }
-      meetings: {
+      interactions: {
         Row: {
           id: string
           participant_id: string
           manager_id: string
           scheduled_at: string
+          type: string
           raw_json_notes: Json | null
           ai_summary: string | null
           sentiment_score: number | null
           key_themes: string[]
+          title: string | null
           created_at: string
           updated_at: string
         }
@@ -100,23 +102,27 @@ export type Database = {
           participant_id: string
           manager_id: string
           scheduled_at?: string
+          type?: string
           raw_json_notes?: Json | null
           ai_summary?: string | null
           sentiment_score?: number | null
           key_themes?: string[]
+          title?: string | null
         }
         Update: {
           scheduled_at?: string
+          type?: string
           raw_json_notes?: Json | null
           ai_summary?: string | null
           sentiment_score?: number | null
           key_themes?: string[]
+          title?: string | null
         }
       }
       action_items: {
         Row: {
           id: string
-          meeting_id: string
+          interaction_id: string
           description: string
           status: string
           due_date: string | null
@@ -125,7 +131,7 @@ export type Database = {
         }
         Insert: {
           id?: string
-          meeting_id: string
+          interaction_id: string
           description: string
           status?: string
           due_date?: string | null
@@ -141,14 +147,14 @@ export type Database = {
       embeddings: {
         Row: {
           id: string
-          meeting_id: string
+          interaction_id: string
           content: string
           content_vector: number[] | null
           created_at: string
         }
         Insert: {
           id?: string
-          meeting_id: string
+          interaction_id: string
           content: string
           content_vector?: number[] | null
         }
@@ -167,7 +173,7 @@ export type Database = {
         }
         Returns: {
           id: string
-          meeting_id: string
+          interaction_id: string
           content: string
           similarity: number
           participant_name: string
@@ -181,6 +187,6 @@ export type Database = {
 export type Profile = Database['public']['Tables']['profiles']['Row']
 export type Team = Database['public']['Tables']['teams']['Row']
 export type TeamMember = Database['public']['Tables']['team_members']['Row']
-export type Meeting = Database['public']['Tables']['meetings']['Row']
+export type Interaction = Database['public']['Tables']['interactions']['Row']
 export type ActionItem = Database['public']['Tables']['action_items']['Row']
 export type Embedding = Database['public']['Tables']['embeddings']['Row']
