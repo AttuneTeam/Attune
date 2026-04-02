@@ -12,6 +12,17 @@ Given the meeting notes and context, suggest thoughtful follow-up coaching quest
 that would help the manager support their team member's growth, address concerns, or deepen understanding.
 Focus on open-ended, empowering questions. Be specific to the content discussed.`
 
+export type TeamValueInput = { name: string; description: string | null; keywords: string[] }
+
+export function formatTeamValues(values: TeamValueInput[]): string | null {
+  if (!values.length) return null
+  const lines = values.map(v => {
+    const kw = v.keywords?.length ? `\n  Keywords: ${v.keywords.join('; ')}` : ''
+    return `- ${v.name}${v.description ? `\n  ${v.description}` : ''}${kw}`
+  })
+  return `Team values (use these to calibrate your analysis):\n${lines.join('\n\n')}`
+}
+
 export function extractPlainText(jsonNotes: unknown): string {
   if (!jsonNotes || typeof jsonNotes !== 'object') return ''
 

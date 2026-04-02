@@ -150,6 +150,53 @@ export type Database = {
           assignee_id?: string | null
         }
       }
+      team_values: {
+        Row: {
+          id: string
+          team_id: string
+          manager_id: string
+          name: string
+          description: string | null
+          keywords: string[]
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          team_id: string
+          manager_id: string
+          name: string
+          description?: string | null
+          keywords?: string[]
+        }
+        Update: {
+          name?: string
+          description?: string | null
+          keywords?: string[]
+        }
+      }
+      team_member_integrations: {
+        Row: {
+          id: string
+          member_id: string
+          manager_id: string
+          provider: string
+          handle: string
+          config: Record<string, string>
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          member_id: string
+          manager_id: string
+          provider: string
+          handle: string
+          config?: Record<string, string>
+        }
+        Update: {
+          handle?: string
+          config?: Record<string, string>
+        }
+      }
       embeddings: {
         Row: {
           id: string
@@ -196,3 +243,5 @@ export type TeamMember = Database['public']['Tables']['team_members']['Row']
 export type Interaction = Database['public']['Tables']['interactions']['Row']
 export type ActionItem = Database['public']['Tables']['action_items']['Row']
 export type Embedding = Database['public']['Tables']['embeddings']['Row']
+export type TeamValue = Database['public']['Tables']['team_values']['Row']
+export type MemberIntegration = Database['public']['Tables']['team_member_integrations']['Row']
