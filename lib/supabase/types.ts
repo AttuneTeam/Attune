@@ -89,6 +89,8 @@ export type Database = {
           manager_id: string
           scheduled_at: string
           type: string
+          status: string
+          agenda: string | null
           raw_json_notes: Json | null
           ai_summary: string | null
           sentiment_score: number | null
@@ -103,6 +105,8 @@ export type Database = {
           manager_id: string
           scheduled_at?: string
           type?: string
+          status?: string
+          agenda?: string | null
           raw_json_notes?: Json | null
           ai_summary?: string | null
           sentiment_score?: number | null
@@ -112,6 +116,8 @@ export type Database = {
         Update: {
           scheduled_at?: string
           type?: string
+          status?: string
+          agenda?: string | null
           raw_json_notes?: Json | null
           ai_summary?: string | null
           sentiment_score?: number | null

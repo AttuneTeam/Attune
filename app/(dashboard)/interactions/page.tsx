@@ -30,6 +30,7 @@ export default async function InteractionsPage({
       id, scheduled_at, ai_summary, sentiment_score, key_themes, title, type,
       team_members (id, name, level)
     `)
+    .eq('status', 'completed')
     .order('scheduled_at', { ascending: false })
 
   if (memberFilter) {

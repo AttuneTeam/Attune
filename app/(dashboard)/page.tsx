@@ -1,5 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { TeamMemberCard } from '@/components/dashboard/TeamMemberCard'
+import { NewBookingButton } from '@/components/dashboard/NewBookingButton'
+import { UpcomingList } from '@/components/dashboard/UpcomingList'
 import { redirect } from 'next/navigation'
 import { differenceInDays, parseISO } from 'date-fns'
 
@@ -38,6 +40,7 @@ export default async function DashboardPage() {
         .from('interactions')
         .select('id, scheduled_at, sentiment_score')
         .eq('participant_id', member.id)
+        .eq('status', 'completed')
         .order('scheduled_at', { ascending: false })
         .limit(6)
 
@@ -67,12 +70,22 @@ export default async function DashboardPage() {
   const { count: meetingsThisMonth } = await supabase
     .from('interactions')
     .select('*', { count: 'exact', head: true })
+    .eq('status', 'completed')
     .gte('scheduled_at', thisMonthStart.toISOString())
+
+  const { data: upcomingBookings } = await supabase
+    .from('interactions')
+    .select('id, title, scheduled_at, agenda, team_members(name)')
+    .eq('status', 'upcoming')
+    .gt('scheduled_at', new Date().toISOString())
+    .order('scheduled_at', { ascending: true })
+    .limit(10)
 
   return (
     <div className="p-8">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Dashboard</h1>
+        <NewBookingButton members={members} />
       </div>
 
       {/* Quick stats */}
@@ -86,6 +99,16 @@ export default async function DashboardPage() {
           <p className="text-3xl font-bold">{openItemsCount ?? 0}</p>
         </div>
       </div>
+
+      {/* Upcoming bookings */}
+      {upcomingBookings && upcomingBookings.length > 0 && (
+        <>
+          <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-3">
+            Upcoming ({upcomingBookings.length})
+          </h2>
+          <UpcomingList bookings={upcomingBookings as never} />
+        </>
+      )}
 
       {/* Team member cards */}
       <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-4">

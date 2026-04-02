@@ -3,10 +3,17 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { createClient } from '@/lib/supabase/client'
 import { format, isPast, parseISO } from 'date-fns'
 import { toast } from 'sonner'
-import { Check, Clock, Circle, ExternalLink } from 'lucide-react'
+import { Check, Clock, Circle, ExternalLink, Trash2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
 const STATUS_CYCLE: Record<string, string> = {
@@ -36,7 +43,26 @@ const StatusIcon = ({ status }: { status: string }) => {
 
 export function ActionItemsTable({ items }: { items: ActionItemRow[] }) {
   const [localItems, setLocalItems] = useState(items)
+  const [pendingDelete, setPendingDelete] = useState<ActionItemRow | null>(null)
   const router = useRouter()
+
+  const confirmDelete = async () => {
+    if (!pendingDelete) return
+    const item = pendingDelete
+    setPendingDelete(null)
+    setLocalItems((prev) => prev.filter((i) => i.id !== item.id))
+    const supabase = createClient()
+    const { error } = await supabase
+      .from('action_items')
+      .delete()
+      .eq('id', item.id)
+    if (error) {
+      toast.error(error.message)
+      setLocalItems(items) // revert
+    } else {
+      router.refresh()
+    }
+  }
 
   const cycleStatus = async (item: ActionItemRow) => {
     const newStatus = STATUS_CYCLE[item.status] ?? 'open'
@@ -66,6 +92,7 @@ export function ActionItemsTable({ items }: { items: ActionItemRow[] }) {
   }
 
   return (
+    <>
     <div className="rounded-lg border overflow-hidden">
       <table className="w-full text-sm">
         <thead className="bg-muted/50">
@@ -113,15 +140,24 @@ export function ActionItemsTable({ items }: { items: ActionItemRow[] }) {
                   </Badge>
                 </td>
                 <td className="px-4 py-3">
-                  {item.interactions?.id && (
-                    <Link
-                      href={`/interactions/${item.interactions.id}`}
-                      className="text-muted-foreground hover:text-foreground"
-                      title="View interaction"
+                  <div className="flex items-center gap-2">
+                    {item.interactions?.id && (
+                      <Link
+                        href={`/interactions/${item.interactions.id}`}
+                        className="text-muted-foreground hover:text-foreground"
+                        title="View interaction"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" />
+                      </Link>
+                    )}
+                    <button
+                      onClick={() => setPendingDelete(item)}
+                      className="text-muted-foreground hover:text-destructive"
+                      title="Delete action item"
                     >
-                      <ExternalLink className="h-3.5 w-3.5" />
-                    </Link>
-                  )}
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
                 </td>
               </tr>
             )
@@ -129,5 +165,25 @@ export function ActionItemsTable({ items }: { items: ActionItemRow[] }) {
         </tbody>
       </table>
     </div>
+
+      <Dialog open={!!pendingDelete} onOpenChange={(open) => { if (!open) setPendingDelete(null) }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Delete action item?</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground mt-1">
+            {pendingDelete?.description}
+          </p>
+          <div className="flex justify-end gap-2 pt-4">
+            <Button variant="outline" onClick={() => setPendingDelete(null)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={confirmDelete}>
+              Delete
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }
