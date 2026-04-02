@@ -1,15 +1,17 @@
-import type { Team, TeamMember } from '@/lib/supabase/types'
+import type { Team, TeamMember, TeamValue } from '@/lib/supabase/types'
 import { TeamForm } from './TeamForm'
+import { TeamValuesForm } from './TeamValuesForm'
 
 interface Props {
   teams: Team[]
   members: TeamMember[]
   managerId: string
+  teamValues: TeamValue[]
   parentId?: string | null
   depth?: number
 }
 
-export function OrgTree({ teams, members, managerId, parentId = null, depth = 0 }: Props) {
+export function OrgTree({ teams, members, managerId, teamValues, parentId = null, depth = 0 }: Props) {
   const children = teams.filter((t) => t.parent_id === parentId)
 
   if (children.length === 0) return null
@@ -18,6 +20,7 @@ export function OrgTree({ teams, members, managerId, parentId = null, depth = 0 
     <ul className={depth === 0 ? 'space-y-2' : 'ml-6 mt-2 space-y-2 border-l pl-4'}>
       {children.map((team) => {
         const teamMembers = members.filter((m) => m.team_id === team.id)
+        const values = teamValues.filter((v) => v.team_id === team.id)
         return (
           <li key={team.id}>
             <div className="flex items-center gap-2">
@@ -28,6 +31,7 @@ export function OrgTree({ teams, members, managerId, parentId = null, depth = 0 
                 </span>
               )}
               <TeamForm teams={teams} managerId={managerId} existing={team} />
+              <TeamValuesForm teamId={team.id} teamName={team.name} managerId={managerId} values={values} />
             </div>
             {teamMembers.length > 0 && (
               <div className="ml-4 mt-1 flex flex-wrap gap-1">
@@ -38,7 +42,7 @@ export function OrgTree({ teams, members, managerId, parentId = null, depth = 0 
                 ))}
               </div>
             )}
-            <OrgTree teams={teams} members={members} managerId={managerId} parentId={team.id} depth={depth + 1} />
+            <OrgTree teams={teams} members={members} managerId={managerId} teamValues={teamValues} parentId={team.id} depth={depth + 1} />
           </li>
         )
       })}

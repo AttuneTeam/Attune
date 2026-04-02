@@ -23,6 +23,11 @@ export default async function TeamPage() {
     .select('*')
     .order('name')
 
+  const { data: teamValues } = await supabase
+    .from('team_values')
+    .select('*')
+    .order('created_at')
+
   return (
     <div className="p-8">
       <div className="flex items-center justify-between mb-6">
@@ -39,7 +44,7 @@ export default async function TeamPage() {
           <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-3">
             Org Structure
           </h2>
-          <OrgTree teams={teams} members={members ?? []} managerId={user.id} />
+          <OrgTree teams={teams} members={members ?? []} managerId={user.id} teamValues={teamValues ?? []} />
         </div>
       )}
 

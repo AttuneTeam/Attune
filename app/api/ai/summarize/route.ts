@@ -3,7 +3,7 @@ import { generateObject } from 'ai'
 import { openai } from '@ai-sdk/openai'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
-import { extractPlainText, SUMMARIZE_SYSTEM } from '@/lib/ai/prompts'
+import { extractPlainText, formatTeamValues, SUMMARIZE_SYSTEM } from '@/lib/ai/prompts'
 import { embedInteraction } from '@/lib/ai/embeddings'
 
 export async function POST(request: NextRequest) {
@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
 
     const { data: interaction } = await supabase
       .from('interactions')
-      .select('id, raw_json_notes, manager_id')
+      .select('id, raw_json_notes, manager_id, participant_id')
       .eq('id', interactionId)
       .single()
 
@@ -30,10 +30,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Notes too short to summarize' }, { status: 400 })
     }
 
+    // Fetch team values for grounding context
+    const { data: member } = await supabase
+      .from('team_members')
+      .select('team_id')
+      .eq('id', interaction.participant_id)
+      .single()
+    const { data: teamValues } = member?.team_id
+      ? await supabase.from('team_values').select('name, description, keywords').eq('team_id', member.team_id)
+      : { data: [] }
+    const valuesBlock = formatTeamValues(teamValues ?? [])
+
     const { object } = await generateObject({
       model: openai('gpt-4o'),
       system: SUMMARIZE_SYSTEM,
-      prompt: `Meeting notes:\n\n${notesText}`,
+      prompt: [valuesBlock, `Meeting notes:\n\n${notesText}`].filter(Boolean).join('\n\n'),
       schema: z.object({
         summary: z.string().describe('A concise 2-4 sentence summary of the meeting'),
         sentiment: z.number().min(-1).max(1).describe('Overall sentiment score from -1 to 1'),
