@@ -28,9 +28,14 @@ export default async function DashboardLayout({
     .eq('id', user.id)
     .single()
 
+  const { data: members } = await supabase
+    .from('team_members')
+    .select('id, name')
+    .order('name')
+
   return (
     <div className="flex h-screen overflow-hidden bg-background">
-      <Sidebar profile={profile} />
+      <Sidebar profile={profile} members={members ?? []} />
       <main className="flex-1 overflow-y-auto">
         {children}
       </main>

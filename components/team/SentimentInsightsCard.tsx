@@ -23,9 +23,9 @@ interface Props {
 }
 
 function scoreColor(score: number) {
-  if (score >= 0.3) return "#22c55e";
-  if (score >= -0.3) return "#f59e0b";
-  return "#ef4444";
+  if (score >= 0.3) return "#6D998F";
+  if (score >= -0.3) return "#F06539";
+  return "#b43a10";
 }
 
 function scoreLabel(score: number) {
@@ -51,14 +51,14 @@ export function SentimentInsightsCard({
   return (
     <div className="rounded-lg border bg-card p-5 space-y-4">
       <div className="flex items-center gap-1.5">
-        <Sparkles className="h-3.5 w-3.5 text-purple-500" />
+        <Sparkles className="h-3.5 w-3.5" />
         <h2 className="text-sm font-semibold">AI Insights</h2>
       </div>
 
       {meetingCount === 0 ? (
         <p className="text-xs text-muted-foreground leading-relaxed">
-          Run <span className="font-medium">Summarize</span> on interaction notes to
-          start building sentiment data.
+          Run <span className="font-medium">Summarize</span> on interaction
+          notes to start building sentiment data.
         </p>
       ) : (
         <>

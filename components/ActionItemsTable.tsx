@@ -93,42 +93,42 @@ export function ActionItemsTable({ items }: { items: ActionItemRow[] }) {
 
   return (
     <>
-    <div className="rounded-lg border overflow-hidden">
+    <div className="rounded-lg bg-card overflow-hidden">
       <table className="w-full text-sm">
-        <thead className="bg-muted/50">
+        <thead className="bg-muted">
           <tr>
-            <th className="text-left px-4 py-3 font-medium text-muted-foreground w-8"></th>
-            <th className="text-left px-4 py-3 font-medium text-muted-foreground">Description</th>
-            <th className="text-left px-4 py-3 font-medium text-muted-foreground">Person</th>
-            <th className="text-left px-4 py-3 font-medium text-muted-foreground">Due date</th>
-            <th className="text-left px-4 py-3 font-medium text-muted-foreground">Status</th>
-            <th className="px-4 py-3 w-8"></th>
+            <th className="text-left px-4 py-2 w-8"></th>
+            <th className="text-left px-4 py-2 font-medium text-muted-foreground text-xs uppercase tracking-wide">Description</th>
+            <th className="text-left px-4 py-2 font-medium text-muted-foreground text-xs uppercase tracking-wide">Person</th>
+            <th className="text-left px-4 py-2 font-medium text-muted-foreground text-xs uppercase tracking-wide">Due date</th>
+            <th className="text-left px-4 py-2 font-medium text-muted-foreground text-xs uppercase tracking-wide">Status</th>
+            <th className="px-4 py-2 w-8"></th>
           </tr>
         </thead>
-        <tbody className="divide-y">
+        <tbody className="divide-y divide-border/50">
           {localItems.map((item) => {
             const overdue = item.status !== 'done' && item.due_date && isPast(parseISO(item.due_date))
             return (
               <tr
                 key={item.id}
-                className={`hover:bg-muted/30 ${item.status === 'done' ? 'opacity-50' : ''}`}
+                className={`hover:bg-muted/50 transition-colors ${item.status === 'done' ? 'opacity-50' : ''}`}
               >
-                <td className="px-4 py-3">
+                <td className="px-4 py-2">
                   <button onClick={() => cycleStatus(item)} className="hover:opacity-70">
                     <StatusIcon status={item.status} />
                   </button>
                 </td>
-                <td className={`px-4 py-3 ${item.status === 'done' ? 'line-through text-muted-foreground' : ''}`}>
+                <td className={`px-4 py-2 ${item.status === 'done' ? 'line-through text-muted-foreground' : ''}`}>
                   {item.description}
                 </td>
-                <td className="px-4 py-3 text-muted-foreground">
+                <td className="px-4 py-2 text-muted-foreground">
                   {item.interactions?.team_members?.name ?? '—'}
                 </td>
-                <td className={`px-4 py-3 ${overdue ? 'text-destructive font-medium' : 'text-muted-foreground'}`}>
+                <td className={`px-4 py-2 ${overdue ? 'text-destructive font-medium' : 'text-muted-foreground'}`}>
                   {item.due_date ? format(parseISO(item.due_date), 'MMM d, yyyy') : '—'}
                   {overdue ? ' ⚠' : ''}
                 </td>
-                <td className="px-4 py-3">
+                <td className="px-4 py-2">
                   <Badge
                     variant={
                       item.status === 'done' ? 'secondary' :
@@ -139,7 +139,7 @@ export function ActionItemsTable({ items }: { items: ActionItemRow[] }) {
                     {item.status.replace('_', ' ')}
                   </Badge>
                 </td>
-                <td className="px-4 py-3">
+                <td className="px-4 py-2">
                   <div className="flex items-center gap-2">
                     {item.interactions?.id && (
                       <Link

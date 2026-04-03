@@ -44,7 +44,11 @@ export default async function TeamPage() {
         <h1 className="text-2xl font-bold">Team</h1>
         <div className="flex gap-2">
           <TeamForm teams={teams ?? []} managerId={user.id} />
-          <TeamMemberForm teams={teams ?? []} roles={roles ?? []} managerId={user.id} />
+          <TeamMemberForm
+            teams={teams ?? []}
+            roles={roles ?? []}
+            managerId={user.id}
+          />
         </div>
       </div>
 
@@ -60,29 +64,32 @@ export default async function TeamPage() {
               No team members yet. Add your first direct report above.
             </p>
           ) : (
-            <div className="rounded-lg border overflow-hidden">
+            <div className="rounded-lg bg-card overflow-hidden">
               <table className="w-full text-sm">
-                <thead className="bg-muted/50">
+                <thead className="bg-muted">
                   <tr>
-                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">
+                    <th className="text-left px-4 py-2 font-medium text-muted-foreground text-xs uppercase tracking-wide">
                       Name
                     </th>
-                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">
+                    <th className="text-left px-4 py-2 font-medium text-muted-foreground text-xs uppercase tracking-wide">
                       Level
                     </th>
-                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">
+                    <th className="text-left px-4 py-2 font-medium text-muted-foreground text-xs uppercase tracking-wide">
                       Role
                     </th>
-                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">
+                    <th className="text-left px-4 py-2 font-medium text-muted-foreground text-xs uppercase tracking-wide">
                       Tenure
                     </th>
-                    <th className="px-4 py-3" />
+                    <th className="px-4 py-2" />
                   </tr>
                 </thead>
-                <tbody className="divide-y">
+                <tbody className="divide-y divide-border/50">
                   {members.map((member) => (
-                    <tr key={member.id} className="hover:bg-muted/30">
-                      <td className="px-4 py-3 font-medium">
+                    <tr
+                      key={member.id}
+                      className="hover:bg-muted/50 transition-colors"
+                    >
+                      <td className="px-4 py-1 font-medium">
                         <Link
                           href={`/team/${member.id}`}
                           className="hover:underline underline-offset-2"
@@ -90,20 +97,20 @@ export default async function TeamPage() {
                           {member.name}
                         </Link>
                       </td>
-                      <td className="px-4 py-3 text-muted-foreground capitalize">
+                      <td className="px-4 py-1 text-muted-foreground capitalize">
                         {member.level ?? "—"}
                       </td>
-                      <td className="px-4 py-3 text-muted-foreground max-w-xs truncate">
+                      <td className="px-4 py-1 text-muted-foreground max-w-xs truncate">
                         {member.role_id && roleMap[member.role_id]
                           ? roleMap[member.role_id].title
                           : (member.role_description ?? "—")}
                       </td>
-                      <td className="px-4 py-3 text-muted-foreground tabular-nums">
+                      <td className="px-4 py-1 text-muted-foreground tabular-nums">
                         {member.start_date
                           ? formatTenure(member.start_date)
                           : "—"}
                       </td>
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-4 py-1 text-right">
                         <TeamMemberRowMenu
                           member={member}
                           teams={teams ?? []}
@@ -136,7 +143,7 @@ export default async function TeamPage() {
           {members && members.length > 0 && (
             <div>
               <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide mb-3">
-                AI Insights
+                Insights
               </h2>
               <TeamCoverageCard />
             </div>

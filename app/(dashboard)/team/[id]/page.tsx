@@ -23,7 +23,12 @@ import { fetchAllIntegrations } from "@/lib/integrations";
 import type { IntegrationResult } from "@/lib/integrations";
 import { GoalsCard } from "@/components/team/GoalsCard";
 import { DeleteInteractionButton } from "@/components/team/DeleteInteractionButton";
-import type { MemberGoal, GoalTemplate, Role, RoleArea } from "@/lib/supabase/types";
+import type {
+  MemberGoal,
+  GoalTemplate,
+  Role,
+  RoleArea,
+} from "@/lib/supabase/types";
 
 type InteractionRow = {
   id: string;
@@ -244,15 +249,15 @@ export default async function MemberProfilePage({
         .then(({ data }) => data as Pick<Role, "id" | "title"> | null)
     : null;
 
-  const roleAreasList = member.role_id
-    ? await supabase
-        .from("role_areas")
-        .select("id, title")
-        .eq("role_id", member.role_id)
-        .order("display_order", { ascending: true })
-        .order("created_at", { ascending: true })
-        .then(({ data }) => (data ?? []) as Pick<RoleArea, "id" | "title">[])
-    : ([] as Pick<RoleArea, "id" | "title">[]);
+  // const roleAreasList = member.role_id
+  //   ? await supabase
+  //       .from("role_areas")
+  //       .select("id, title")
+  //       .eq("role_id", member.role_id)
+  //       .order("display_order", { ascending: true })
+  //       .order("created_at", { ascending: true })
+  //       .then(({ data }) => (data ?? []) as Pick<RoleArea, "id" | "title">[])
+  //   : ([] as Pick<RoleArea, "id" | "title">[]);
 
   const { data: allRoles } = await supabase
     .from("roles")
@@ -264,26 +269,7 @@ export default async function MemberProfilePage({
     <div className="p-8 max-w-6xl mx-auto">
       {/* Header */}
       <div className="flex items-center gap-4 mb-8">
-        <Link
-          href="/team"
-          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors shrink-0"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Team
-        </Link>
-        <div className="flex-1 flex items-center gap-3 min-w-0">
-          <h1 className="text-2xl font-bold truncate">{member.name}</h1>
-          {member.level && (
-            <Badge variant="secondary" className="capitalize shrink-0">
-              {member.level}
-            </Badge>
-          )}
-          {teamName && (
-            <Badge variant="outline" className="text-xs shrink-0">
-              {teamName}
-            </Badge>
-          )}
-        </div>
+        <div className="flex-1" />
         <div className="flex items-center gap-2 shrink-0">
           <MemberIntegrationsForm
             memberId={member.id}
@@ -297,7 +283,11 @@ export default async function MemberProfilePage({
               memberName={member.name}
             />
           </div>
-          <MemberEditButton member={member} teams={teams ?? []} roles={allRoles ?? []} />
+          <MemberEditButton
+            member={member}
+            teams={teams ?? []}
+            roles={allRoles ?? []}
+          />
         </div>
       </div>
 
@@ -305,32 +295,41 @@ export default async function MemberProfilePage({
         {/* ── Left column ── */}
         <div className="space-y-6">
           {/* Details */}
-          <div className="rounded-lg border bg-card p-5 space-y-4">
-            <h2 className="text-sm font-semibold">Details</h2>
-            {assignedRole && (
-              <div className="space-y-2">
-                <Link
-                  href={`/roles/${assignedRole.id}`}
-                  className="inline-flex items-center gap-1.5 text-sm font-medium hover:underline underline-offset-2"
-                >
-                  {assignedRole.title}
-                </Link>
-                {roleAreasList.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5">
-                    {roleAreasList.map((area) => (
-                      <Badge key={area.id} variant="outline" className="text-xs font-normal">
-                        {area.title || "Untitled area"}
-                      </Badge>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-            {!assignedRole && member.role_description && (
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                {member.role_description}
-              </p>
-            )}
+          <div className="rounded-lg bg-card p-5 space-y-4">
+            {/* Name as card title */}
+            <div>
+              <h2 className="text-xl font-bold tracking-tight leading-tight">
+                {member.name}
+              </h2>
+
+              {/* Role — just above Skills */}
+              {assignedRole && (
+                <div className="space-y-2">
+                  <Link
+                    href={`/roles/${assignedRole.id}`}
+                    className="inline-flex items-center gap-1.5 text-sm font-medium hover:underline underline-offset-2"
+                  >
+                    {assignedRole.title}
+                  </Link>
+                </div>
+              )}
+              {(member.level || teamName) && (
+                <div className="flex items-center gap-2 mt-1.5">
+                  {member.level && (
+                    <Badge variant="outline" className="capitalize text-xs">
+                      {member.level}
+                    </Badge>
+                  )}
+                  {teamName && (
+                    <Badge variant="outline" className="text-xs">
+                      {teamName}
+                    </Badge>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Meta info */}
             <div className="space-y-2.5 text-sm">
               {member.email && (
                 <div className="flex items-center gap-2 text-muted-foreground">
@@ -358,7 +357,7 @@ export default async function MemberProfilePage({
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground flex items-center gap-2">
                     <Clock className="h-3.5 w-3.5 shrink-0" />
-                    Last 1-on-1
+                    Last interaction
                   </span>
                   <Badge
                     variant={daysSince > 14 ? "destructive" : "outline"}
@@ -369,7 +368,17 @@ export default async function MemberProfilePage({
                 </div>
               )}
             </div>
-            {member.skills && member.skills.length > 0 && (
+
+            {!assignedRole && member.role_description && (
+              <div className="space-y-1">
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {member.role_description}
+                </p>
+              </div>
+            )}
+
+            {/* Skills */}
+            {/* {member.skills && member.skills.length > 0 && (
               <div>
                 <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2">
                   Skills
@@ -382,7 +391,7 @@ export default async function MemberProfilePage({
                   ))}
                 </div>
               </div>
-            )}
+            )} */}
           </div>
 
           {/* AI Insights */}
@@ -406,7 +415,7 @@ export default async function MemberProfilePage({
             integrationResults.map((result) => (
               <div
                 key={result.provider}
-                className="rounded-lg border bg-card p-5 space-y-3"
+                className="rounded-lg bg-card p-5 space-y-3"
               >
                 <div className="flex items-center gap-2">
                   <Zap className="h-4 w-4 text-muted-foreground" />
@@ -513,9 +522,9 @@ export default async function MemberProfilePage({
         {/* ── Right column ── */}
         <div className="lg:col-span-2 space-y-6">
           {/* Interaction history */}
-          <div className="rounded-lg border bg-card">
-            <div className="px-5 py-4 border-b flex items-center justify-between">
-              <h2 className="text-sm font-semibold">Interaction history</h2>
+          <div className="rounded-lg bg-card">
+            <div className="px-5 py-4 flex items-center justify-between">
+              <h2 className="text-sm font-semibold">Interactions</h2>
               <span className="text-xs text-muted-foreground">
                 {interactions.length} total
               </span>
@@ -607,7 +616,7 @@ export default async function MemberProfilePage({
 
           {/* Action items */}
           <div className="rounded-lg border bg-card">
-            <div className="px-5 py-4 border-b flex items-center justify-between">
+            <div className="px-5 py-4 flex items-center justify-between">
               <h2 className="text-sm font-semibold">Action items</h2>
               <span className="text-xs text-muted-foreground">
                 {openItems.length + inProgressItems.length} open

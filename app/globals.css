@@ -36,10 +36,14 @@
   --color-secondary: var(--secondary);
   --color-primary-foreground: var(--primary-foreground);
   --color-primary: var(--primary);
+  --color-primary-dim: var(--primary-dim);
   --color-popover-foreground: var(--popover-foreground);
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --color-tertiary: var(--tertiary);
+  --color-surface-dim: var(--surface-dim);
+  /* Radius scale per design system */
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -50,38 +54,67 @@
 }
 
 :root {
-  --background: #e5e2dc;
-  --foreground: oklch(0.145 0 0);
-  --card: #f3f0ea;
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: #608c82;
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: #8fa7a1;
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: #bdece0;
-  --accent-foreground: #f06539;
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: #e5e2dc;
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: #e5e2dc;
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  /* ── Surface hierarchy ─────────────────────────────────────────────── */
+  /* Level 0 – canvas                            */
+  --background: #fcf9f2;
+  /* Level 1 – sidebar / section regions         */
+  --muted: #fcf9f2;
+  /* Level 2 – cards / primary interaction areas */
+  --card: #fcf9f2; /*#eae8de;*/
+  /* Level 3 – floating / popovers / focus       */
+  --popover: #ffffff;
+  /* Ambient dim surface                         */
+  --surface-dim: #e5e3d9;
+
+  /* ── Type ─────────────────────────────────────────────────────────── */
+  --foreground: #383831;
+  --card-foreground: #383831;
+  --popover-foreground: #383831;
+  --muted-foreground: #7a7870;
+
+  /* ── Brand palette ────────────────────────────────────────────────── */
+  --primary: #416c63;
+  --primary-foreground: #ffffff;
+  --primary-dim: #346057;
+
+  /* ── Secondary (pills / chips) ────────────────────────────────────── */
+  --secondary: #c8ddd9;
+  --secondary-foreground: #2a4f47;
+
+  /* ── Accent (hover backgrounds) ───────────────────────────────────── */
+  --accent: #eae8de;
+  --accent-foreground: #383831;
+
+  /* ── Tertiary / high-priority CTA highlight ───────────────────────── */
+  --tertiary: #b43a10;
+
+  /* ── Semantic ─────────────────────────────────────────────────────── */
+  --destructive: #af3d3b;
+
+  /* ── Ghost border (outline_variant at ~15% opacity) ──────────────── */
+  --border: #d6d4cb;
+  --input: #eae8de;
+  --ring: #416c63;
+
+  /* ── Charts ───────────────────────────────────────────────────────── */
+  --chart-1: #416c63;
+  --chart-2: #8fa7a1;
+  --chart-3: #c8ddd9;
+  --chart-4: #b43a10;
+  --chart-5: #eae8de;
+
+  /* ── Radius ───────────────────────────────────────────────────────── */
+  --radius: 1rem;
+
+  /* ── Sidebar (surface_container_low) ──────────────────────────────── */
+  --sidebar: #fcf9f2;
+  --sidebar-foreground: #383831;
+  --sidebar-primary: #416c63;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #eae8de;
+  --sidebar-accent-foreground: #383831;
+  --sidebar-border: transparent;
+  --sidebar-ring: #416c63;
 }
 
 .dark {
