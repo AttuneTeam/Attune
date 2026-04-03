@@ -22,16 +22,18 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { Pencil } from "lucide-react";
 import { toast } from "sonner";
-import type { Team, TeamMember } from "@/lib/supabase/types";
+import type { Team, TeamMember, Role } from "@/lib/supabase/types";
 
 const LEVELS = ["junior", "mid", "senior", "staff", "principal", "director"];
 
 export function MemberEditButton({
   member,
   teams,
+  roles,
 }: {
   member: TeamMember;
   teams: Team[];
+  roles: Role[];
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -48,6 +50,7 @@ export function MemberEditButton({
     (member.skills ?? []).join(", "),
   );
   const [teamId, setTeamId] = useState(member.team_id ?? "");
+  const [roleId, setRoleId] = useState(member.role_id ?? "");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,6 +68,7 @@ export function MemberEditButton({
           email: email || null,
           level: level || null,
           role_description: roleDescription || null,
+          role_id: roleId || null,
           start_date: startDate || null,
           skills,
           team_id: teamId || null,
@@ -122,6 +126,22 @@ export function MemberEditButton({
                     {LEVELS.map((l) => (
                       <SelectItem key={l} value={l} className="capitalize">
                         {l}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="col-span-2 space-y-1.5">
+                <Label htmlFor="meb-role-id">Role</Label>
+                <Select value={roleId} onValueChange={(v) => setRoleId(v ?? "")}>
+                  <SelectTrigger id="meb-role-id">
+                    <SelectValue placeholder="No role assigned" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">No role assigned</SelectItem>
+                    {roles.map((r) => (
+                      <SelectItem key={r.id} value={r.id}>
+                        {r.title}
                       </SelectItem>
                     ))}
                   </SelectContent>

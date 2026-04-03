@@ -1,117 +1,146 @@
-'use client'
+"use client";
 
-import { useState, useTransition } from 'react'
-import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/button'
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+} from "@/components/ui/dropdown-menu";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { createClient } from '@/lib/supabase/client'
-import { MoreHorizontal, Plus, Pencil, Trash2 } from 'lucide-react'
-import { toast } from 'sonner'
-import type { Team, TeamMember } from '@/lib/supabase/types'
+} from "@/components/ui/select";
+import { createClient } from "@/lib/supabase/client";
+import { MoreHorizontal, Plus, Pencil, Trash2 } from "lucide-react";
+import { toast } from "sonner";
+import type { Team, TeamMember, Role } from "@/lib/supabase/types";
 
 interface Props {
-  member: TeamMember
-  teams: Team[]
+  member: TeamMember;
+  teams: Team[];
+  roles: Role[];
 }
 
-const LEVELS = ['junior', 'mid', 'senior', 'staff', 'principal', 'director']
+const LEVELS = ["junior", "mid", "senior", "staff", "principal", "director"];
 
-export function TeamMemberRowMenu({ member, teams }: Props) {
-  const router = useRouter()
-  const [editOpen, setEditOpen] = useState(false)
-  const [creating, setCreating] = useState(false)
-  const [isPending, startTransition] = useTransition()
+export function TeamMemberRowMenu({ member, teams, roles }: Props) {
+  const router = useRouter();
+  const [editOpen, setEditOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
   // Edit form state
-  const [name, setName] = useState(member.name)
-  const [email, setEmail] = useState(member.email ?? '')
-  const [level, setLevel] = useState(member.level ?? '')
-  const [roleDescription, setRoleDescription] = useState(member.role_description ?? '')
-  const [startDate, setStartDate] = useState(member.start_date ?? '')
-  const [skillsInput, setSkillsInput] = useState((member.skills ?? []).join(', '))
-  const [teamId, setTeamId] = useState(member.team_id ?? '')
+  const [name, setName] = useState(member.name);
+  const [email, setEmail] = useState(member.email ?? "");
+  const [level, setLevel] = useState(member.level ?? "");
+  const [roleDescription, setRoleDescription] = useState(
+    member.role_description ?? "",
+  );
+  const [startDate, setStartDate] = useState(member.start_date ?? "");
+  const [skillsInput, setSkillsInput] = useState(
+    (member.skills ?? []).join(", "),
+  );
+  const [teamId, setTeamId] = useState(member.team_id ?? "");
+  const [roleId, setRoleId] = useState(member.role_id ?? "");
 
   const handleNewMeeting = async () => {
-    setCreating(true)
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) { setCreating(false); return }
+    setCreating(true);
+    const supabase = createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      setCreating(false);
+      return;
+    }
 
     const { data, error } = await supabase
-      .from('interactions')
+      .from("interactions")
       .insert({
         participant_id: member.id,
         manager_id: user.id,
         scheduled_at: new Date().toISOString(),
-        type: 'scheduled',
+        type: "scheduled",
       })
-      .select('id')
-      .single()
+      .select("id")
+      .single();
 
     if (error || !data) {
-      toast.error('Failed to create interaction')
-      setCreating(false)
-      return
+      toast.error("Failed to create interaction");
+      setCreating(false);
+      return;
     }
-    router.push(`/interactions/${data.id}`)
-  }
+    router.push(`/interactions/${data.id}`);
+  };
 
   const handleEditSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    const supabase = createClient()
-    const skills = skillsInput.split(',').map((s) => s.trim()).filter(Boolean)
+    e.preventDefault();
+    const supabase = createClient();
+    const skills = skillsInput
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
 
     startTransition(async () => {
       const { error } = await supabase
-        .from('team_members')
+        .from("team_members")
         .update({
           name,
           email: email || null,
           level: level || null,
           role_description: roleDescription || null,
+          role_id: roleId || null,
           start_date: startDate || null,
           skills,
           team_id: teamId || null,
         })
-        .eq('id', member.id)
-      if (error) { toast.error(error.message); return }
-      toast.success('Team member updated')
-      setEditOpen(false)
-      router.refresh()
-    })
-  }
+        .eq("id", member.id);
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+      toast.success("Team member updated");
+      setEditOpen(false);
+      router.refresh();
+    });
+  };
 
   const handleDelete = async () => {
-    if (!confirm(`Delete ${member.name}? This will also delete all their interactions.`)) return
-    const supabase = createClient()
-    const { error } = await supabase.from('team_members').delete().eq('id', member.id)
-    if (error) { toast.error(error.message); return }
-    toast.success('Team member deleted')
-    setEditOpen(false)
-    router.refresh()
-  }
+    if (
+      !confirm(
+        `Delete ${member.name}? This will also delete all their interactions.`,
+      )
+    )
+      return;
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("team_members")
+      .delete()
+      .eq("id", member.id);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Team member deleted");
+    setEditOpen(false);
+    router.refresh();
+  };
 
   return (
     <>
@@ -126,7 +155,7 @@ export function TeamMemberRowMenu({ member, teams }: Props) {
         <DropdownMenuContent align="end">
           <DropdownMenuItem onClick={handleNewMeeting} disabled={creating}>
             <Plus className="h-4 w-4" />
-            {creating ? 'Creating…' : 'New interaction'}
+            {creating ? "Creating…" : "New interaction"}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => setEditOpen(true)}>
@@ -145,61 +174,120 @@ export function TeamMemberRowMenu({ member, teams }: Props) {
             <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2 space-y-1.5">
                 <Label htmlFor="rm-name">Name *</Label>
-                <Input id="rm-name" value={name} onChange={(e) => setName(e.target.value)} required />
+                <Input
+                  id="rm-name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="rm-email">Email</Label>
-                <Input id="rm-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+                <Input
+                  id="rm-email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="rm-level">Level</Label>
-                <Select value={level} onValueChange={(v) => setLevel(v ?? '')}>
+                <Select value={level} onValueChange={(v) => setLevel(v ?? "")}>
                   <SelectTrigger id="rm-level">
                     <SelectValue placeholder="Select level" />
                   </SelectTrigger>
                   <SelectContent>
                     {LEVELS.map((l) => (
-                      <SelectItem key={l} value={l} className="capitalize">{l}</SelectItem>
+                      <SelectItem key={l} value={l} className="capitalize">
+                        {l}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="col-span-2 space-y-1.5">
+                <Label htmlFor="rm-role-id">Role</Label>
+                <Select value={roleId} onValueChange={(v) => setRoleId(v ?? "")}>
+                  <SelectTrigger id="rm-role-id">
+                    <SelectValue placeholder="No role assigned" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">No role assigned</SelectItem>
+                    {roles.map((r) => (
+                      <SelectItem key={r.id} value={r.id}>
+                        {r.title}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="rm-start">Start date</Label>
-                <Input id="rm-start" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+                <Input
+                  id="rm-start"
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="rm-team">Team</Label>
-                <Select value={teamId} onValueChange={(v) => setTeamId(v ?? '')}>
+                <Select
+                  value={teams.find((t) => t.id === teamId)?.name || ""}
+                  onValueChange={(v) => setTeamId(v ?? "")}
+                >
                   <SelectTrigger id="rm-team">
                     <SelectValue placeholder="Select team" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="">No team</SelectItem>
                     {teams.map((t) => (
-                      <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                      <SelectItem key={t.id} value={t.id}>
+                        {t.name}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="col-span-2 space-y-1.5">
                 <Label htmlFor="rm-role">Role description</Label>
-                <Textarea id="rm-role" value={roleDescription} onChange={(e) => setRoleDescription(e.target.value)} rows={2} />
+                <Textarea
+                  id="rm-role"
+                  value={roleDescription}
+                  onChange={(e) => setRoleDescription(e.target.value)}
+                  rows={2}
+                />
               </div>
               <div className="col-span-2 space-y-1.5">
                 <Label htmlFor="rm-skills">Skills (comma-separated)</Label>
-                <Input id="rm-skills" value={skillsInput} onChange={(e) => setSkillsInput(e.target.value)} placeholder="TypeScript, React, Go" />
+                <Input
+                  id="rm-skills"
+                  value={skillsInput}
+                  onChange={(e) => setSkillsInput(e.target.value)}
+                  placeholder="TypeScript, React, Go"
+                />
               </div>
             </div>
             <div className="flex justify-between pt-2">
-              <Button type="button" variant="destructive" size="sm" onClick={handleDelete}>
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                onClick={handleDelete}
+              >
                 <Trash2 className="h-3.5 w-3.5 mr-1" />
                 Delete
               </Button>
               <div className="ml-auto flex gap-2">
-                <Button type="button" variant="outline" onClick={() => setEditOpen(false)}>Cancel</Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setEditOpen(false)}
+                >
+                  Cancel
+                </Button>
                 <Button type="submit" disabled={isPending}>
-                  {isPending ? 'Saving…' : 'Save changes'}
+                  {isPending ? "Saving…" : "Save changes"}
                 </Button>
               </div>
             </div>
@@ -207,5 +295,5 @@ export function TeamMemberRowMenu({ member, teams }: Props) {
         </DialogContent>
       </Dialog>
     </>
-  )
+  );
 }

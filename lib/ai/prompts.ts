@@ -23,6 +23,15 @@ export function formatTeamValues(values: TeamValueInput[]): string | null {
   return `Team values (use these to calibrate your analysis):\n${lines.join('\n\n')}`
 }
 
+export const COVERAGE_SYSTEM = `You are an expert engineering manager advisor analyzing a team's role composition.
+Given a list of team members and their role areas, identify:
+1. Coverage strengths — areas well-covered by multiple people
+2. Coverage gaps — important engineering areas with thin or no coverage
+3. Single points of failure — capabilities owned by only one person
+4. Overlap risks — areas where multiple people have nearly identical scope (potential redundancy or unclear ownership)
+
+Be specific, reference actual role area titles, and prioritize actionability. Keep each finding concise (1-2 sentences).`
+
 export function extractPlainText(jsonNotes: unknown): string {
   if (!jsonNotes || typeof jsonNotes !== 'object') return ''
 

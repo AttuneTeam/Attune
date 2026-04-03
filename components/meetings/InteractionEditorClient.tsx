@@ -141,7 +141,7 @@ export function InteractionEditorClient({
         {/* Header */}
         <header className="h-14 border-b flex items-center px-4 gap-3 shrink-0">
           <Link
-            href="/interactions"
+            href={member ? `/team/${member.id}` : '/interactions'}
             className="inline-flex items-center justify-center size-8 rounded-lg hover:bg-muted transition-colors"
           >
             <ChevronLeft className="h-4 w-4" />

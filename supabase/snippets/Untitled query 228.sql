@@ -1,0 +1,2 @@
+INSERT INTO role_areas (id, role_id, title, description, display_order, created_at, updated_at) VALUES
+     ('<original-area-id>', '002005b9-3df6-4437-b0b8-1c6c2572618a', 'Area title', '{"type":"doc",...}', 0, now(), now());

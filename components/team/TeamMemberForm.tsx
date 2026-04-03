@@ -23,17 +23,18 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import type { Team, TeamMember } from "@/lib/supabase/types";
+import type { Team, TeamMember, Role } from "@/lib/supabase/types";
 
 interface Props {
   teams: Team[];
+  roles: Role[];
   managerId: string;
   existing?: TeamMember;
 }
 
 const LEVELS = ["junior", "mid", "senior", "staff", "principal", "director"];
 
-export function TeamMemberForm({ teams, managerId, existing }: Props) {
+export function TeamMemberForm({ teams, roles, managerId, existing }: Props) {
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
@@ -49,6 +50,7 @@ export function TeamMemberForm({ teams, managerId, existing }: Props) {
     (existing?.skills ?? []).join(", "),
   );
   const [teamId, setTeamId] = useState(existing?.team_id ?? "");
+  const [roleId, setRoleId] = useState(existing?.role_id ?? "");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,6 +69,7 @@ export function TeamMemberForm({ teams, managerId, existing }: Props) {
             email: email || null,
             level: level || null,
             role_description: roleDescription || null,
+            role_id: roleId || null,
             start_date: startDate || null,
             skills,
             team_id: teamId || null,
@@ -84,6 +87,7 @@ export function TeamMemberForm({ teams, managerId, existing }: Props) {
           email: email || null,
           level: level || null,
           role_description: roleDescription || null,
+          role_id: roleId || null,
           start_date: startDate || null,
           skills,
           team_id: teamId || null,
@@ -177,6 +181,22 @@ export function TeamMemberForm({ teams, managerId, existing }: Props) {
                   {LEVELS.map((l) => (
                     <SelectItem key={l} value={l} className="capitalize">
                       {l}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="col-span-2 space-y-1.5">
+              <Label htmlFor="role_id">Role</Label>
+              <Select value={roleId} onValueChange={(v) => setRoleId(v ?? "")}>
+                <SelectTrigger id="role_id">
+                  <SelectValue placeholder="No role assigned" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">No role assigned</SelectItem>
+                  {roles.map((r) => (
+                    <SelectItem key={r.id} value={r.id}>
+                      {r.title}
                     </SelectItem>
                   ))}
                 </SelectContent>
