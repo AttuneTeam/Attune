@@ -44,8 +44,8 @@
   --color-tertiary: var(--tertiary);
   --color-surface-dim: var(--surface-dim);
   /* Radius scale per design system */
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
+  --radius-sm: calc(var(--radius) * 0.3);
+  --radius-md: calc(var(--radius) * 0.5);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) * 1.4);
   --radius-2xl: calc(var(--radius) * 1.8);

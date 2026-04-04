@@ -3,7 +3,7 @@ import { generateObject } from 'ai'
 import { openai } from '@ai-sdk/openai'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
-import { extractPlainText, formatTeamValues, COACHING_SYSTEM } from '@/lib/ai/prompts'
+import { extractPlainText, formatTeamValues, formatOrgContext, COACHING_SYSTEM } from '@/lib/ai/prompts'
 
 export async function POST(request: NextRequest) {
   try {
@@ -39,13 +39,18 @@ export async function POST(request: NextRequest) {
     const notesText = extractPlainText(interaction.raw_json_notes)
     const member = (interaction as any).team_members
 
-    // Fetch team values for grounding context
-    const { data: teamValues } = member?.team_id
-      ? await supabase.from('team_values').select('name, description, keywords').eq('team_id', member.team_id)
-      : { data: [] }
+    // Fetch team values and org context for grounding
+    const [{ data: teamValues }, { data: orgContext }] = await Promise.all([
+      member?.team_id
+        ? supabase.from('team_values').select('name, description, keywords').eq('team_id', member.team_id)
+        : Promise.resolve({ data: [] }),
+      supabase.from('org_context').select('*').eq('manager_id', user.id).single(),
+    ])
     const valuesBlock = formatTeamValues(teamValues ?? [])
+    const orgContextBlock = formatOrgContext(orgContext ?? null)
 
     const contextParts = [
+      orgContextBlock,
       valuesBlock,
       `Team member: ${member?.name ?? 'Unknown'} (${member?.level ?? 'unknown level'})`,
       member?.role_description ? `Role: ${member.role_description}` : null,

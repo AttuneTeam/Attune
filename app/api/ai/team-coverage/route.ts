@@ -3,7 +3,7 @@ import { generateObject } from 'ai'
 import { openai } from '@ai-sdk/openai'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/server'
-import { extractPlainText, COVERAGE_SYSTEM } from '@/lib/ai/prompts'
+import { extractPlainText, formatOrgContext, COVERAGE_SYSTEM } from '@/lib/ai/prompts'
 
 export async function POST(request: NextRequest) {
   try {
@@ -44,6 +44,13 @@ export async function POST(request: NextRequest) {
       areasByRole[area.role_id]!.push(area)
     }
 
+    // Load org context for AI grounding
+    const { data: orgContext } = await supabase
+      .from('org_context')
+      .select('*')
+      .eq('manager_id', user.id)
+      .single()
+
     // Build prompt context
     const teamSnapshot = members
       .map((m) => {
@@ -68,10 +75,16 @@ export async function POST(request: NextRequest) {
       })
       .join('\n\n')
 
+    const orgContextBlock = formatOrgContext(orgContext ?? null)
+    const prompt = [
+      orgContextBlock,
+      `Team of ${members.length} members:\n\n${teamSnapshot}`,
+    ].filter(Boolean).join('\n\n')
+
     const { object } = await generateObject({
       model: openai('gpt-4o'),
       system: COVERAGE_SYSTEM,
-      prompt: `Team of ${members.length} engineers:\n\n${teamSnapshot}`,
+      prompt,
       schema: z.object({
         strengths: z.array(z.object({
           area: z.string().describe('The capability or role area'),
@@ -95,9 +108,50 @@ export async function POST(request: NextRequest) {
       }),
     })
 
-    return NextResponse.json(object)
+    // Persist snapshot (upsert: one row per manager, replace on re-analyse)
+    await supabase
+      .from('team_coverage_snapshots')
+      .delete()
+      .eq('manager_id', user.id)
+
+    const { error: insertError } = await supabase
+      .from('team_coverage_snapshots')
+      .insert({ manager_id: user.id, result: object })
+
+    if (insertError) {
+      console.error('Failed to save coverage snapshot:', insertError)
+    }
+
+    const { data: saved } = await supabase
+      .from('team_coverage_snapshots')
+      .select('generated_at')
+      .eq('manager_id', user.id)
+      .single()
+
+    return NextResponse.json({ ...object, generated_at: saved?.generated_at ?? null })
   } catch (error) {
     console.error('Team coverage error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
+
+export async function GET() {
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+    const { data } = await supabase
+      .from('team_coverage_snapshots')
+      .select('result, generated_at')
+      .eq('manager_id', user.id)
+      .single()
+
+    if (!data) return NextResponse.json(null)
+
+    return NextResponse.json({ ...data.result, generated_at: data.generated_at })
+  } catch (error) {
+    console.error('Team coverage load error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

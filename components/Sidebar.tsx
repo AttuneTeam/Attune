@@ -5,9 +5,9 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   Users,
-  Calendar,
-  CheckSquare,
   LogOut,
+  Settings,
+  Network,
   Briefcase,
   ChevronDown,
 } from "lucide-react";
@@ -19,11 +19,13 @@ import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/lib/supabase/types";
 
 const navItems = [
-  { href: "/", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/", label: "Home", icon: LayoutDashboard },
+];
+
+const settingsItems = [
+  { href: "/settings/org", label: "Organisation", icon: Network },
   { href: "/team", label: "Team", icon: Users },
   { href: "/roles", label: "Roles", icon: Briefcase },
-  { href: "/interactions", label: "Interactions", icon: Calendar },
-  { href: "/action-items", label: "Action Items", icon: CheckSquare },
 ];
 
 type Member = { id: string; name: string };
@@ -38,6 +40,11 @@ export function Sidebar({
   const pathname = usePathname();
   const router = useRouter();
   const [peopleOpen, setPeopleOpen] = useState(true);
+  const [settingsOpen, setSettingsOpen] = useState(
+    pathname.startsWith("/roles") ||
+      pathname.startsWith("/settings") ||
+      pathname.startsWith("/team"),
+  );
 
   const handleSignOut = async () => {
     const supabase = createClient();
@@ -52,6 +59,11 @@ export function Sidebar({
       .join("")
       .toUpperCase()
       .slice(0, 2) ?? "U";
+
+  const isSettingsActive =
+    pathname.startsWith("/roles") ||
+    pathname.startsWith("/settings") ||
+    pathname.startsWith("/team");
 
   return (
     <aside className="w-56 flex flex-col bg-sidebar shrink-0">
@@ -79,7 +91,10 @@ export function Sidebar({
               )}
               style={
                 active
-                  ? { background: "linear-gradient(135deg, var(--color-primary), var(--color-primary-dim))" }
+                  ? {
+                      background:
+                        "linear-gradient(135deg, var(--color-primary), var(--color-primary-dim))",
+                    }
                   : undefined
               }
             >
@@ -129,6 +144,51 @@ export function Sidebar({
             )}
           </div>
         )}
+
+        {/* Settings section */}
+        <div className="pt-2">
+          <button
+            type="button"
+            onClick={() => setSettingsOpen((o) => !o)}
+            className={cn(
+              "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all",
+              isSettingsActive
+                ? "text-foreground"
+                : "text-muted-foreground hover:bg-accent hover:text-foreground",
+            )}
+          >
+            <Settings className="h-4 w-4 shrink-0" />
+            <span className="flex-1 text-left">Settings</span>
+            <ChevronDown
+              className={cn(
+                "h-3.5 w-3.5 shrink-0 transition-transform duration-200",
+                settingsOpen && "rotate-180",
+              )}
+            />
+          </button>
+          {settingsOpen && (
+            <div className="mt-0.5 ml-3 pl-3 border-l border-border/50 space-y-0.5">
+              {settingsItems.map(({ href, label, icon: Icon }) => {
+                const active = pathname.startsWith(href);
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    className={cn(
+                      "flex items-center gap-2 px-2 py-1.5 rounded-md text-xs transition-colors",
+                      active
+                        ? "font-medium text-primary"
+                        : "text-muted-foreground hover:text-foreground hover:bg-accent",
+                    )}
+                  >
+                    <Icon className="h-3.5 w-3.5 shrink-0" />
+                    {label}
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </nav>
 
       {/* User footer */}

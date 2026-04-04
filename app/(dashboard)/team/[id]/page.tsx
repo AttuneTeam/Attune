@@ -4,13 +4,10 @@ import Link from "next/link";
 import { format, differenceInDays, parseISO } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import {
-  ArrowLeft,
   Calendar,
   Mail,
   Briefcase,
-  Check,
   Clock,
-  Circle,
   ExternalLink,
   Zap,
 } from "lucide-react";
@@ -19,16 +16,12 @@ import { MemberEditButton } from "@/components/team/MemberEditButton";
 import { NewInteractionButton } from "@/components/dashboard/NewMeetingButton";
 import { MemberIntegrationsForm } from "@/components/team/MemberIntegrationsForm";
 import { GitHubCard } from "@/components/team/GitHubCard";
+import { GitHubSummaryTile } from "@/components/team/GitHubSummaryTile";
 import { fetchAllIntegrations } from "@/lib/integrations";
 import type { IntegrationResult } from "@/lib/integrations";
 import { GoalsCard } from "@/components/team/GoalsCard";
-import { DeleteInteractionButton } from "@/components/team/DeleteInteractionButton";
-import type {
-  MemberGoal,
-  GoalTemplate,
-  Role,
-  RoleArea,
-} from "@/lib/supabase/types";
+import { InteractionsTabs } from "@/components/team/InteractionsTabs";
+import type { MemberGoal, GoalTemplate, Role } from "@/lib/supabase/types";
 
 type InteractionRow = {
   id: string;
@@ -197,10 +190,6 @@ export default async function MemberProfilePage({
   const openCount = items.filter((i) => i.status === "open").length;
   const nudges = generateNudges(interactions, openCount, daysSince);
 
-  const openItems = items.filter((i) => i.status === "open");
-  const inProgressItems = items.filter((i) => i.status === "in_progress");
-  const doneItems = items.filter((i) => i.status === "done");
-
   const teamName = teams?.find((t) => t.id === member.team_id)?.name ?? null;
 
   const { data: memberIntegrations } = await supabase
@@ -295,7 +284,7 @@ export default async function MemberProfilePage({
         {/* ── Left column ── */}
         <div className="space-y-6">
           {/* Details */}
-          <div className="rounded-lg bg-card p-5 space-y-4">
+          <div className="rounded-lg bg-card px-5 pt-0 pb-5 space-y-4">
             {/* Name as card title */}
             <div>
               <h2 className="text-xl font-bold tracking-tight leading-tight">
@@ -404,12 +393,12 @@ export default async function MemberProfilePage({
           />
 
           {/* Integrations */}
-          {githubIntegration && (
+          {/* {githubIntegration && (
             <GitHubCard
               handle={githubIntegration.handle}
               repo={githubIntegration.config?.repo}
             />
-          )}
+          )} */}
 
           {integrationResults.length > 0 ? (
             integrationResults.map((result) => (
@@ -520,166 +509,14 @@ export default async function MemberProfilePage({
         </div>
 
         {/* ── Right column ── */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Interaction history */}
-          <div className="rounded-lg bg-card">
-            <div className="px-5 py-4 flex items-center justify-between">
-              <h2 className="text-sm font-semibold">Interactions</h2>
-              <span className="text-xs text-muted-foreground">
-                {interactions.length} total
-              </span>
-            </div>
-            {interactions.length === 0 ? (
-              <div className="px-5 py-12 text-center">
-                <p className="text-sm text-muted-foreground">
-                  No interactions yet.
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Use "New interaction" above to get started.
-                </p>
-              </div>
-            ) : (
-              <div className="divide-y">
-                {interactions.map((interaction) => {
-                  const badge =
-                    interaction.sentiment_score !== null
-                      ? sentimentBadge(interaction.sentiment_score)
-                      : null;
-                  return (
-                    <div
-                      key={interaction.id}
-                      className="group flex items-start gap-2 pr-3 hover:bg-muted/30 transition-colors"
-                    >
-                      <Link
-                        href={`/interactions/${interaction.id}`}
-                        className="flex flex-1 min-w-0 items-start gap-4 px-5 py-4"
-                      >
-                        <div className="shrink-0 text-center px-2 py-1 border border-gray-100 rounded-md">
-                          <p className="text-sm font-medium tabular-nums">
-                            {format(
-                              parseISO(interaction.scheduled_at),
-                              "MMM d",
-                            )}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {format(parseISO(interaction.scheduled_at), "yyyy")}
-                          </p>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <p className="text-sm font-medium truncate">
-                              {interaction.title ?? "Untitled interaction"}
-                            </p>
-                            {badge && (
-                              <Badge
-                                variant={badge.variant}
-                                className="text-xs shrink-0"
-                              >
-                                {badge.label}
-                              </Badge>
-                            )}
-                          </div>
-                          {interaction.ai_summary && (
-                            <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
-                              {interaction.ai_summary}
-                            </p>
-                          )}
-                          {interaction.key_themes &&
-                            interaction.key_themes.length > 0 && (
-                              <div className="flex flex-wrap gap-1 mt-1.5">
-                                {interaction.key_themes
-                                  .slice(0, 4)
-                                  .map((theme) => (
-                                    <Badge
-                                      key={theme}
-                                      variant="outline"
-                                      className="text-xs px-1.5 py-0"
-                                    >
-                                      {theme}
-                                    </Badge>
-                                  ))}
-                              </div>
-                            )}
-                        </div>
-                      </Link>
-                      <div className="flex items-center self-stretch py-4">
-                        <DeleteInteractionButton
-                          interactionId={interaction.id}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          {/* Action items */}
-          <div className="rounded-lg border bg-card">
-            <div className="px-5 py-4 flex items-center justify-between">
-              <h2 className="text-sm font-semibold">Action items</h2>
-              <span className="text-xs text-muted-foreground">
-                {openItems.length + inProgressItems.length} open
-                {doneItems.length > 0 ? ` · ${doneItems.length} done` : ""}
-              </span>
-            </div>
-            {items.length === 0 ? (
-              <div className="px-5 py-12 text-center">
-                <p className="text-sm text-muted-foreground">
-                  No action items yet.
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Use "Extract items" in an interaction to generate them
-                  automatically.
-                </p>
-              </div>
-            ) : (
-              <div className="divide-y">
-                {[...openItems, ...inProgressItems, ...doneItems].map(
-                  (item) => (
-                    <div
-                      key={item.id}
-                      className={`flex items-start gap-3 px-5 py-3.5 ${item.status === "done" ? "opacity-50" : ""}`}
-                    >
-                      <div className="mt-0.5 shrink-0">
-                        {item.status === "done" ? (
-                          <Check className="h-3.5 w-3.5 text-green-500" />
-                        ) : item.status === "in_progress" ? (
-                          <Clock className="h-3.5 w-3.5 text-amber-500" />
-                        ) : (
-                          <Circle className="h-3.5 w-3.5 text-muted-foreground" />
-                        )}
-                      </div>
-                      <p
-                        className={`flex-1 text-sm leading-relaxed ${item.status === "done" ? "line-through" : ""}`}
-                      >
-                        {item.description}
-                      </p>
-                      <div className="flex items-center gap-2 shrink-0">
-                        {item.due_date && (
-                          <span className="text-xs text-muted-foreground">
-                            {format(parseISO(item.due_date), "MMM d")}
-                          </span>
-                        )}
-                        <Badge
-                          variant={
-                            item.status === "done"
-                              ? "secondary"
-                              : item.status === "in_progress"
-                                ? "default"
-                                : "outline"
-                          }
-                          className="text-xs"
-                        >
-                          {item.status.replace("_", " ")}
-                        </Badge>
-                      </div>
-                    </div>
-                  ),
-                )}
-              </div>
-            )}
-          </div>
+        <div className="lg:col-span-2 space-y-4">
+          {githubIntegration && (
+            <GitHubSummaryTile
+              handle={githubIntegration.handle}
+              repo={githubIntegration.config?.repo}
+            />
+          )}
+          <InteractionsTabs interactions={interactions} items={items} />
         </div>
       </div>
     </div>

@@ -1,87 +1,73 @@
-'use client'
+"use client";
 
-import Link from 'next/link'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
-import { SentimentSparkline } from './SentimentSparkline'
-import { NewInteractionButton } from './NewMeetingButton'
-import type { TeamMember } from '@/lib/supabase/types'
+import Link from "next/link";
+import { Badge } from "@/components/ui/badge";
+import type { TeamMember } from "@/lib/supabase/types";
 
-interface Props {
-  member: TeamMember
-  lastInteractionId: string | null
-  daysSince: number | null
-  sentimentHistory: number[]
+function sentimentBadge(score: number | null) {
+  if (score === null) return null;
+  if (score >= 0.3) return { label: "Positive", variant: "default" as const };
+  if (score >= -0.3) return { label: "Neutral", variant: "secondary" as const };
+  return { label: "Concerning", variant: "destructive" as const };
 }
 
-export function TeamMemberCard({ member, lastInteractionId, daysSince, sentimentHistory }: Props) {
-  const overdue = daysSince === null || daysSince > 14
+interface Props {
+  member: TeamMember;
+  daysSince: number | null;
+  currentSentiment: number | null;
+  openActionCount: number;
+}
+
+export function TeamMemberCard({
+  member,
+  daysSince,
+  currentSentiment,
+  openActionCount,
+}: Props) {
+  const overdue = daysSince === null || daysSince > 14;
+  const sentiment = sentimentBadge(currentSentiment);
 
   return (
-    <Card className="flex flex-col">
-      <CardHeader className="pb-2">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <h3 className="font-semibold truncate">{member.name}</h3>
-            {member.level && (
-              <p className="text-xs text-muted-foreground capitalize">{member.level}</p>
-            )}
-          </div>
-          {member.level && (
-            <Badge variant="secondary" className="shrink-0 capitalize text-xs">
-              {member.level}
-            </Badge>
-          )}
-        </div>
-        {member.role_description && (
-          <p className="text-xs text-muted-foreground line-clamp-2">{member.role_description}</p>
+    <Link
+      href={`/team/${member.id}`}
+      className="flex items-center gap-3 rounded-lg border bg-card px-3 py-2 hover:bg-muted/40 transition-colors"
+    >
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium truncate">{member.name}</p>
+        {member.level && (
+          <p className="text-xs text-muted-foreground capitalize">{member.level}</p>
         )}
-      </CardHeader>
-      <CardContent className="flex-1 space-y-3">
-        {/* Days since last 1-on-1 */}
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-muted-foreground">Last 1-on-1</span>
-          <Badge variant={overdue ? 'destructive' : 'outline'} className="text-xs">
-            {daysSince === null ? 'Never' : daysSince === 0 ? 'Today' : `${daysSince}d ago`}
+      </div>
+
+      <div className="flex items-center gap-2 shrink-0">
+        <Badge
+          variant={overdue ? "destructive" : "outline"}
+          className="text-xs tabular-nums"
+        >
+          {daysSince === null
+            ? "No check-in"
+            : daysSince === 0
+              ? "Today"
+              : `${daysSince}d ago`}
+        </Badge>
+
+        {sentiment ? (
+          <Badge variant={sentiment.variant} className="text-xs">
+            {sentiment.label}
           </Badge>
-        </div>
-
-        {/* Sentiment sparkline */}
-        <div>
-          <p className="text-xs text-muted-foreground mb-1">Sentiment trend</p>
-          <SentimentSparkline data={sentimentHistory} />
-        </div>
-
-        {/* Skills */}
-        {member.skills && member.skills.length > 0 && (
-          <div className="flex flex-wrap gap-1">
-            {member.skills.slice(0, 4).map((skill) => (
-              <Badge key={skill} variant="outline" className="text-xs px-1.5 py-0">
-                {skill}
-              </Badge>
-            ))}
-            {member.skills.length > 4 && (
-              <Badge variant="outline" className="text-xs px-1.5 py-0">
-                +{member.skills.length - 4}
-              </Badge>
-            )}
-          </div>
+        ) : (
+          <Badge variant="outline" className="text-xs text-muted-foreground">
+            No data
+          </Badge>
         )}
 
-        {/* Actions */}
-        <div className="flex gap-2 pt-1">
-          {lastInteractionId && (
-            <Link
-              href={`/interactions/${lastInteractionId}`}
-              className="flex-1 text-xs inline-flex items-center justify-center rounded-lg border border-border bg-background px-2.5 h-7 text-[0.8rem] font-medium hover:bg-muted transition-colors"
-            >
-              Last notes
-            </Link>
-          )}
-          <NewInteractionButton memberId={member.id} memberName={member.name} />
-        </div>
-      </CardContent>
-    </Card>
-  )
+        <Badge
+          variant={openActionCount > 0 ? "secondary" : "outline"}
+          className="text-xs tabular-nums"
+        >
+          {openActionCount} open
+        </Badge>
+      </div>
+    </Link>
+  );
 }
