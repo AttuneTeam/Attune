@@ -10,22 +10,24 @@ import {
   Network,
   Briefcase,
   ChevronDown,
+  Sparkles,
+  BookOpen,
 } from "lucide-react";
 import { useState } from "react";
+import { ChatSheet } from "@/components/chat/ChatSheet";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/lib/supabase/types";
 
-const navItems = [
-  { href: "/", label: "Home", icon: LayoutDashboard },
-];
+const navItems = [{ href: "/", label: "Home", icon: LayoutDashboard }];
 
 const settingsItems = [
   { href: "/settings/org", label: "Organisation", icon: Network },
   { href: "/team", label: "Team", icon: Users },
   { href: "/roles", label: "Roles", icon: Briefcase },
+  { href: "/settings/knowledge", label: "Knowledge", icon: BookOpen },
 ];
 
 type Member = { id: string; name: string };
@@ -39,6 +41,7 @@ export function Sidebar({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const [chatOpen, setChatOpen] = useState(false);
   const [peopleOpen, setPeopleOpen] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(
     pathname.startsWith("/roles") ||
@@ -216,6 +219,8 @@ export function Sidebar({
           <LogOut className="h-4 w-4" />
         </Button>
       </div>
+
+      <ChatSheet open={chatOpen} onOpenChange={setChatOpen} />
     </aside>
   );
 }

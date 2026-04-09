@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { Sidebar } from '@/components/Sidebar'
 import { Toaster } from '@/components/ui/sonner'
+import { FloatingChatButton } from '@/components/chat/FloatingChatButton'
 
 export default async function DashboardLayout({
   children,
@@ -39,6 +40,7 @@ export default async function DashboardLayout({
       <main className="flex-1 overflow-y-auto">
         {children}
       </main>
+      <FloatingChatButton />
       <Toaster />
     </div>
   )

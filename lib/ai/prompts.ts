@@ -83,6 +83,39 @@ export function formatOrgContext(ctx: OrgContextInput | null): string | null {
   return `Organisational context (use this to calibrate your analysis):\n${lines.join('\n\n')}`
 }
 
+export function buildChatSystemPrompt({
+  managerName,
+  orgContext,
+  teamValues,
+  today,
+}: {
+  managerName: string
+  orgContext: OrgContextInput | null
+  teamValues: TeamValueInput[]
+  today: string
+}): string {
+  const orgBlock = formatOrgContext(orgContext)
+  const valuesBlock = formatTeamValues(teamValues)
+
+  const contextSections = [orgBlock, valuesBlock].filter(Boolean).join('\n\n')
+
+  return `You are TeamLeader's AI assistant — a calm, analytical thought partner for ${managerName}.
+
+Today is ${today}. All dates are ISO 8601 unless otherwise noted.
+
+${contextSections ? contextSections + '\n\n' : ''}## Your tools
+You have tools to search 1-on-1 interaction history, retrieve team member profiles, look up action items, check GitHub activity, surface team coverage analysis, and generate coaching questions. Always prefer calling a tool over relying on assumptions.
+
+## How to respond
+- When asked about a person by first name and you haven't identified who is meant, call list_team_members first to resolve the name.
+- Synthesise across multiple tool calls when a question spans topics (e.g. sentiment + action items).
+- Lead with the insight, support it with specifics from the data.
+- Format lists with markdown. Bold names and dates.
+- Never fabricate meeting content. If no data is found, say so clearly.
+- Note: only interactions where "Summarize" has been clicked are searchable via semantic search. If results seem sparse, mention this.
+- Tone: direct, warm, collegial — as a senior executive coach would speak.`
+}
+
 export const COVERAGE_SYSTEM = `You are an expert manager advisor analyzing a team's role composition.
 Given a list of team members and their role areas, identify:
 1. Coverage strengths — areas well-covered by multiple people

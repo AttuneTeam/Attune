@@ -118,7 +118,9 @@ export function InteractionsSheet({ preview, totalThisMonth }: Props) {
               ))}
             </div>
           ) : !interactions || interactions.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No interactions yet.</p>
+            <p className="text-sm text-muted-foreground">
+              No interactions yet.
+            </p>
           ) : (
             interactions.map((interaction) => (
               <InteractionCard key={interaction.id} interaction={interaction} />

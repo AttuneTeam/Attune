@@ -152,7 +152,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Three-column layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr_320px] gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-6 w-full">
         {/* ── Col 1: upcoming + summary tiles ── */}
         <div className="space-y-4">
           {upcomingBookings && upcomingBookings.length > 0 && (
@@ -190,25 +190,25 @@ export default async function DashboardPage() {
               totalOpen={openItemsCount ?? 0}
             />
           </div>
+          <div>
+            <h2 className="text-xs font-medium text-muted-foreground uppercase  mb-2">
+              Direct Reports ({members.length})
+            </h2>
+            <div className="space-y-1">
+              {memberData.map(({ member, daysSince, currentSentiment }) => (
+                <TeamMemberCard
+                  key={member.id}
+                  member={member}
+                  daysSince={daysSince}
+                  currentSentiment={currentSentiment}
+                  openActionCount={openCountByMember[member.id] ?? 0}
+                />
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* ── Col 3 ── */}
-        <div>
-          <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
-            Direct Reports ({members.length})
-          </h2>
-          <div className="space-y-1">
-            {memberData.map(({ member, daysSince, currentSentiment }) => (
-              <TeamMemberCard
-                key={member.id}
-                member={member}
-                daysSince={daysSince}
-                currentSentiment={currentSentiment}
-                openActionCount={openCountByMember[member.id] ?? 0}
-              />
-            ))}
-          </div>
-        </div>
       </div>
     </div>
   );

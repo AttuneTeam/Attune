@@ -312,6 +312,98 @@ export type Database = {
           content_vector?: number[] | null
         }
       }
+      knowledge_documents: {
+        Row: {
+          id: string
+          manager_id: string
+          title: string
+          content: string
+          source: string | null
+          content_vector: number[] | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          manager_id: string
+          title: string
+          content: string
+          source?: string | null
+          content_vector?: number[] | null
+        }
+        Update: {
+          title?: string
+          content?: string
+          source?: string | null
+          content_vector?: number[] | null
+          updated_at?: string
+        }
+      }
+      knowledge_chunks: {
+        Row: {
+          id: string
+          document_id: string
+          manager_id: string
+          content: string
+          content_vector: number[] | null
+          chunk_index: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          document_id: string
+          manager_id: string
+          content: string
+          content_vector?: number[] | null
+          chunk_index?: number
+        }
+        Update: {
+          content?: string
+          content_vector?: number[] | null
+        }
+      }
+      chat_conversations: {
+        Row: {
+          id: string
+          manager_id: string
+          title: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          manager_id: string
+          title?: string | null
+        }
+        Update: {
+          title?: string | null
+          updated_at?: string
+        }
+      }
+      chat_messages: {
+        Row: {
+          id: string
+          conversation_id: string
+          role: string
+          content: string | null
+          tool_calls: Json | null
+          tool_results: Json | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          conversation_id: string
+          role: string
+          content?: string | null
+          tool_calls?: Json | null
+          tool_results?: Json | null
+        }
+        Update: {
+          content?: string | null
+          tool_calls?: Json | null
+          tool_results?: Json | null
+        }
+      }
     }
     Functions: {
       match_documents: {
@@ -345,3 +437,7 @@ export type GoalTemplate = Database['public']['Tables']['goal_templates']['Row']
 export type MemberGoal = Database['public']['Tables']['member_goals']['Row']
 export type Role = Database['public']['Tables']['roles']['Row']
 export type RoleArea = Database['public']['Tables']['role_areas']['Row']
+export type ChatConversation = Database['public']['Tables']['chat_conversations']['Row']
+export type ChatMessage = Database['public']['Tables']['chat_messages']['Row']
+export type KnowledgeDocument = Database['public']['Tables']['knowledge_documents']['Row']
+export type KnowledgeChunk = Database['public']['Tables']['knowledge_chunks']['Row']
