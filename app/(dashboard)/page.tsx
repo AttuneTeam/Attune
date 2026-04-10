@@ -1,11 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
-import { TeamMemberCard } from "@/components/dashboard/TeamMemberCard";
 import { NewBookingButton } from "@/components/dashboard/NewBookingButton";
 import { UpcomingList } from "@/components/dashboard/UpcomingList";
 import { InteractionsSheet } from "@/components/dashboard/InteractionsSheet";
-import { ActionItemsSheet } from "@/components/dashboard/ActionItemsSheet";
 import { OrgStructureSheet } from "@/components/dashboard/OrgStructureSheet";
 import { TeamCoverageCard } from "@/components/team/TeamCoverageCard";
+import { DashboardActionItems } from "@/components/dashboard/DashboardActionItems";
 import { redirect } from "next/navigation";
 import { differenceInDays, parseISO } from "date-fns";
 
@@ -115,24 +114,15 @@ export default async function DashboardPage() {
     memberName: (i.team_members as any)?.name ?? "Unknown",
   }));
 
-  // Open action items preview
-  const { data: openItemsPreviewRaw } = await supabase
+  // Action items for inline dashboard table
+  const { data: actionItemsRaw } = await supabase
     .from("action_items")
     .select(
-      "id, description, status, due_date, interactions!inner(participant_id, team_members(name))",
+      "id, description, status, due_date, created_at, interactions!inner(id, team_members(id, name))",
     )
-    .eq("status", "open")
+    .in("status", ["open", "in_progress"])
     .order("due_date", { ascending: true, nullsFirst: false })
-    .limit(4);
-
-  const actionItemsPreview = (openItemsPreviewRaw ?? []).map((i) => ({
-    id: i.id,
-    description: i.description,
-    status: i.status,
-    due_date: i.due_date,
-    memberName:
-      ((i.interactions as any)?.team_members as any)?.name ?? "Unknown",
-  }));
+    .limit(50);
 
   // Teams + team values for org chart
   const [{ data: teams }, { data: teamValues }] = await Promise.all([
@@ -151,10 +141,9 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* Three-column layout */}
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-6 w-full">
-        {/* ── Col 1: upcoming + summary tiles ── */}
-        <div className="space-y-4">
+        {/* ── Col 1: upcoming + insights ── */}
+        <div className="space-y-6">
           {upcomingBookings && upcomingBookings.length > 0 && (
             <div>
               <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
@@ -164,51 +153,35 @@ export default async function DashboardPage() {
             </div>
           )}
 
-          {/* <InteractionsSheet
-            preview={interactionsPreview}
-            totalThisMonth={meetingsThisMonth ?? 0}
-          />
-          <ActionItemsSheet
-            preview={actionItemsPreview}
-            totalOpen={openItemsCount ?? 0}
-          /> */}
-          <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
-            Insights
-          </h2>
-          <TeamCoverageCard />
-        </div>
-
-        {/* ── Col 2 ── */}
-        <div>
-          <div>
+          <div className="space-y-4">
+            <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              Insights
+            </h2>
             <InteractionsSheet
               preview={interactionsPreview}
               totalThisMonth={meetingsThisMonth ?? 0}
             />
-            <ActionItemsSheet
-              preview={actionItemsPreview}
-              totalOpen={openItemsCount ?? 0}
-            />
-          </div>
-          <div>
-            <h2 className="text-xs font-medium text-muted-foreground uppercase  mb-2">
-              Direct Reports ({members.length})
-            </h2>
-            <div className="space-y-1">
-              {memberData.map(({ member, daysSince, currentSentiment }) => (
-                <TeamMemberCard
-                  key={member.id}
-                  member={member}
-                  daysSince={daysSince}
-                  currentSentiment={currentSentiment}
-                  openActionCount={openCountByMember[member.id] ?? 0}
-                />
-              ))}
-            </div>
+            <TeamCoverageCard />
           </div>
         </div>
 
-        {/* ── Col 3 ── */}
+        {/* ── Col 2: action items + direct reports ── */}
+        <div className="space-y-6">
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                Action Items ({openItemsCount ?? 0} open)
+              </h2>
+              <a
+                href="/action-items"
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                View all
+              </a>
+            </div>
+            <DashboardActionItems items={(actionItemsRaw ?? []) as never} />
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+import logo from "@/components/logo.png";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -10,7 +12,6 @@ import {
   Network,
   Briefcase,
   ChevronDown,
-  Sparkles,
   BookOpen,
 } from "lucide-react";
 import { useState } from "react";
@@ -70,9 +71,7 @@ export function Sidebar({
     <aside className="w-56 flex flex-col bg-sidebar shrink-0">
       {/* Logo */}
       <div className="h-14 flex items-center px-5">
-        <span className="font-bold text-base tracking-tight text-foreground">
-          TeamLeader
-        </span>
+        <Image src={logo} alt="TeamLeader" height={32} />
       </div>
 
       {/* Nav */}
@@ -217,7 +216,6 @@ export function Sidebar({
           <LogOut className="h-4 w-4" />
         </Button>
       </div>
-
     </aside>
   );
 }
