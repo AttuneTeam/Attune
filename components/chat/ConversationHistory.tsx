@@ -3,15 +3,17 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { formatDistanceToNow } from 'date-fns'
+import { PERSONAS, type PersonaId } from '@/lib/ai/personas'
 
 type ConversationSummary = {
   id: string
   title: string | null
   updated_at: string
+  persona_id: string
 }
 
 type Props = {
-  onSelect: (id: string, title: string | null) => void
+  onSelect: (id: string, title: string | null, personaId: string) => void
 }
 
 export function ConversationHistory({ onSelect }: Props) {
@@ -22,7 +24,7 @@ export function ConversationHistory({ onSelect }: Props) {
     const supabase = createClient()
     supabase
       .from('chat_conversations')
-      .select('id, title, updated_at')
+      .select('id, title, updated_at, persona_id')
       .order('updated_at', { ascending: false })
       .limit(50)
       .then(({ data }) => {
@@ -58,21 +60,36 @@ export function ConversationHistory({ onSelect }: Props) {
 
   return (
     <div className="flex-1 overflow-y-auto py-2">
-      {conversations.map((conv) => (
-        <button
-          key={conv.id}
-          type="button"
-          onClick={() => onSelect(conv.id, conv.title)}
-          className="w-full text-left px-4 py-3 transition-colors hover:bg-black/[0.04] flex flex-col gap-0.5"
-        >
-          <span className="text-sm font-medium truncate" style={{ color: 'var(--color-foreground)' }}>
-            {conv.title ?? 'Conversation'}
-          </span>
-          <span className="text-xs" style={{ color: 'var(--color-muted-foreground)' }}>
-            {formatDistanceToNow(new Date(conv.updated_at), { addSuffix: true })}
-          </span>
-        </button>
-      ))}
+      {conversations.map((conv) => {
+        const persona = PERSONAS.find((p) => p.id === conv.persona_id)
+        const showPersona = persona && persona.id !== 'default'
+
+        return (
+          <button
+            key={conv.id}
+            type="button"
+            onClick={() => onSelect(conv.id, conv.title, conv.persona_id)}
+            className="w-full text-left px-4 py-3 transition-colors hover:bg-black/[0.04] flex flex-col gap-0.5"
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="text-sm font-medium truncate flex-1" style={{ color: 'var(--color-foreground)' }}>
+                {conv.title ?? 'Conversation'}
+              </span>
+              {showPersona && (
+                <span
+                  className="shrink-0 text-[10px] px-1.5 py-0.5 rounded-full font-medium"
+                  style={{ background: 'rgba(0,0,0,0.07)', color: 'var(--color-muted-foreground)' }}
+                >
+                  {persona.name}
+                </span>
+              )}
+            </div>
+            <span className="text-xs" style={{ color: 'var(--color-muted-foreground)' }}>
+              {formatDistanceToNow(new Date(conv.updated_at), { addSuffix: true })}
+            </span>
+          </button>
+        )
+      })}
     </div>
   )
 }

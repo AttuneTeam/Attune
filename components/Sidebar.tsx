@@ -14,7 +14,6 @@ import {
   BookOpen,
 } from "lucide-react";
 import { useState } from "react";
-import { ChatSheet } from "@/components/chat/ChatSheet";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -41,7 +40,6 @@ export function Sidebar({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [chatOpen, setChatOpen] = useState(false);
   const [peopleOpen, setPeopleOpen] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(
     pathname.startsWith("/roles") ||
@@ -220,7 +218,6 @@ export function Sidebar({
         </Button>
       </div>
 
-      <ChatSheet open={chatOpen} onOpenChange={setChatOpen} />
     </aside>
   );
 }

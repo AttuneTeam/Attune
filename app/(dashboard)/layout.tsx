@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { Sidebar } from '@/components/Sidebar'
 import { Toaster } from '@/components/ui/sonner'
-import { FloatingChatButton } from '@/components/chat/FloatingChatButton'
+import { DashboardShell } from '@/components/layout/DashboardShell'
 
 export default async function DashboardLayout({
   children,
@@ -35,13 +35,11 @@ export default async function DashboardLayout({
     .order('name')
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
-      <Sidebar profile={profile} members={members ?? []} />
-      <main className="flex-1 overflow-y-auto">
+    <>
+      <DashboardShell sidebar={<Sidebar profile={profile} members={members ?? []} />}>
         {children}
-      </main>
-      <FloatingChatButton />
+      </DashboardShell>
       <Toaster />
-    </div>
+    </>
   )
 }

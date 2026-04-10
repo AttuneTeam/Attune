@@ -1,3 +1,6 @@
+import type { PersonaId } from './personas'
+import { getPersona } from './personas'
+
 export const SUMMARIZE_SYSTEM = `You are an expert engineering manager coach analyzing 1-on-1 meeting notes.
 Extract the key themes, overall sentiment, and produce a concise professional summary.
 Sentiment should be a float from -1.0 (very negative/concerning) to 1.0 (very positive/energized).
@@ -88,18 +91,20 @@ export function buildChatSystemPrompt({
   orgContext,
   teamValues,
   today,
+  personaId,
 }: {
   managerName: string
   orgContext: OrgContextInput | null
   teamValues: TeamValueInput[]
   today: string
+  personaId?: PersonaId
 }): string {
   const orgBlock = formatOrgContext(orgContext)
   const valuesBlock = formatTeamValues(teamValues)
-
   const contextSections = [orgBlock, valuesBlock].filter(Boolean).join('\n\n')
 
-  return `You are TeamLeader's AI assistant — a calm, analytical thought partner for ${managerName}.
+  if (!personaId || personaId === 'default') {
+    return `You are TeamLeader's AI assistant — a calm, analytical thought partner for ${managerName}.
 
 Today is ${today}. All dates are ISO 8601 unless otherwise noted.
 
@@ -114,6 +119,24 @@ You have tools to search 1-on-1 interaction history, retrieve team member profil
 - Never fabricate meeting content. If no data is found, say so clearly.
 - Note: only interactions where "Summarize" has been clicked are searchable via semantic search. If results seem sparse, mention this.
 - Tone: direct, warm, collegial — as a senior executive coach would speak.`
+  }
+
+  const persona = getPersona(personaId)
+
+  return `${persona.systemPrompt}
+
+---
+
+You are working with ${managerName}. Today is ${today}. All dates are ISO 8601 unless otherwise noted.
+
+${contextSections ? contextSections + '\n\n' : ''}## Your tools
+You have tools to search 1-on-1 interaction history, retrieve team member profiles, look up action items, check GitHub activity, surface team coverage analysis, and generate coaching questions. Always prefer calling a tool over relying on assumptions.
+
+## Data guidelines
+- When asked about a person by first name and you haven't identified who is meant, call list_team_members first to resolve the name.
+- Never fabricate meeting content. If no data is found, say so clearly.
+- Note: only interactions where "Summarize" has been clicked are searchable via semantic search. If results seem sparse, mention this.
+- Format lists with markdown. Bold names and dates.`
 }
 
 export const COVERAGE_SYSTEM = `You are an expert manager advisor analyzing a team's role composition.

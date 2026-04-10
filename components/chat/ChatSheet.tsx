@@ -1,17 +1,13 @@
 'use client'
 
 import { useState, useRef, useCallback } from 'react'
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { ChatMessageList } from './ChatMessageList'
 import { ChatInput } from './ChatInput'
 import { ConversationHistory } from './ConversationHistory'
 import { createClient } from '@/lib/supabase/client'
+import { PERSONAS, type PersonaId } from '@/lib/ai/personas'
+import { cn } from '@/lib/utils'
 import type { ChatMessageData, ToolCallData } from './ChatMessage'
 
 type UIMessageChunk =
@@ -29,17 +25,17 @@ type StoredToolCall = { toolCallId: string; toolName: string }
 type View = 'chat' | 'history'
 
 type Props = {
-  open: boolean
-  onOpenChange: (open: boolean) => void
+  onClose: () => void
 }
 
-export function ChatSheet({ open, onOpenChange }: Props) {
+export function ChatPanel({ onClose }: Props) {
   const [view, setView] = useState<View>('chat')
   const [messages, setMessages] = useState<ChatMessageData[]>([])
   const [status, setStatus] = useState<'ready' | 'streaming' | 'error'>('ready')
   const [conversationId, setConversationId] = useState<string | undefined>()
   const [conversationTitle, setConversationTitle] = useState<string | undefined>()
   const [loadingHistory, setLoadingHistory] = useState(false)
+  const [personaId, setPersonaId] = useState<PersonaId>('default')
   const abortRef = useRef<AbortController | null>(null)
 
   const reset = useCallback(() => {
@@ -48,14 +44,16 @@ export function ChatSheet({ open, onOpenChange }: Props) {
     setConversationId(undefined)
     setConversationTitle(undefined)
     setStatus('ready')
+    setPersonaId('default')
     setView('chat')
   }, [])
 
-  const loadConversation = useCallback(async (id: string, title: string | null) => {
+  const loadConversation = useCallback(async (id: string, title: string | null, storedPersonaId: string) => {
     setLoadingHistory(true)
     setView('chat')
     setConversationId(id)
     setConversationTitle(title ?? undefined)
+    setPersonaId((storedPersonaId as PersonaId) ?? 'default')
 
     const supabase = createClient()
     const { data: rows } = await supabase
@@ -119,7 +117,7 @@ export function ChatSheet({ open, onOpenChange }: Props) {
         const res = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ conversationId, messages: uiMessages }),
+          body: JSON.stringify({ conversationId, messages: uiMessages, personaId }),
           signal: ctrl.signal,
         })
 
@@ -206,113 +204,131 @@ export function ChatSheet({ open, onOpenChange }: Props) {
         }
       }
     },
-    [messages, status, conversationId]
+    [messages, status, conversationId, personaId]
   )
 
   const isReadonlyHistory = !!conversationId && view === 'chat' && messages.length > 0 && status === 'ready'
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent
-        side="right"
-        showCloseButton={false}
-        className="flex flex-col p-0 gap-0 w-[480px] sm:w-[520px] max-w-full"
-        style={{ background: '#fcf9f2' }}
+    <div
+      className="flex flex-col w-[440px] shrink-0 h-full border-l"
+      style={{ background: '#fcf9f2' }}
+    >
+      {/* Header */}
+      <div
+        className="flex flex-row items-center justify-between px-4 py-3 shrink-0"
+        style={{ background: '#eae8de', borderBottom: '1px solid rgba(0,0,0,0.08)' }}
       >
-        {/* Header */}
-        <SheetHeader
-          className="flex flex-row items-center justify-between px-4 py-3 shrink-0"
-          style={{ background: '#eae8de' }}
-        >
-          <div className="flex items-center gap-2 min-w-0">
-            {view === 'history' && (
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                onClick={() => setView('chat')}
-                className="h-7 w-7 shrink-0"
-                title="Back to chat"
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
-                  <path d="M15 18l-6-6 6-6" />
-                </svg>
-              </Button>
-            )}
-            <SheetTitle className="text-sm font-semibold truncate">
-              {view === 'history'
-                ? 'Past conversations'
-                : conversationTitle ?? 'Team AI'}
-            </SheetTitle>
-          </div>
-
-          <div className="flex items-center gap-1 shrink-0">
-            {view === 'chat' && (
-              <>
-                {messages.length > 0 && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={reset}
-                    className="h-7 px-2 text-xs text-muted-foreground"
-                  >
-                    New chat
-                  </Button>
-                )}
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  onClick={() => setView('history')}
-                  className="h-7 w-7"
-                  title="Past conversations"
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
-                    <path d="M12 8v4l3 3" />
-                    <path d="M3.05 11a9 9 0 1 1 .5 4" />
-                    <path d="M3 16v-5h5" />
-                  </svg>
-                  <span className="sr-only">History</span>
-                </Button>
-              </>
-            )}
+        <div className="flex items-center gap-2 min-w-0">
+          {view === 'history' && (
             <Button
               variant="ghost"
               size="icon-sm"
-              onClick={() => onOpenChange(false)}
-              className="h-7 w-7"
+              onClick={() => setView('chat')}
+              className="h-7 w-7 shrink-0"
+              title="Back to chat"
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
-                <path d="M18 6L6 18M6 6l12 12" />
+                <path d="M15 18l-6-6 6-6" />
               </svg>
-              <span className="sr-only">Close</span>
             </Button>
-          </div>
-        </SheetHeader>
+          )}
+          <h2 className="text-sm font-semibold truncate">
+            {view === 'history'
+              ? 'Past conversations'
+              : conversationTitle ?? 'Team AI'}
+          </h2>
+        </div>
 
-        {/* Body */}
-        {view === 'history' ? (
-          <ConversationHistory onSelect={loadConversation} />
-        ) : loadingHistory ? (
-          <div className="flex-1 flex items-center justify-center">
-            <div className="flex gap-1">
-              <span className="h-1.5 w-1.5 rounded-full animate-bounce [animation-delay:-0.3s]" style={{ background: 'var(--color-muted-foreground)' }} />
-              <span className="h-1.5 w-1.5 rounded-full animate-bounce [animation-delay:-0.15s]" style={{ background: 'var(--color-muted-foreground)' }} />
-              <span className="h-1.5 w-1.5 rounded-full animate-bounce" style={{ background: 'var(--color-muted-foreground)' }} />
-            </div>
+        <div className="flex items-center gap-1 shrink-0">
+          {view === 'chat' && (
+            <>
+              {messages.length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={reset}
+                  className="h-7 px-2 text-xs text-muted-foreground"
+                >
+                  New chat
+                </Button>
+              )}
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={() => setView('history')}
+                className="h-7 w-7"
+                title="Past conversations"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                  <path d="M12 8v4l3 3" />
+                  <path d="M3.05 11a9 9 0 1 1 .5 4" />
+                  <path d="M3 16v-5h5" />
+                </svg>
+                <span className="sr-only">History</span>
+              </Button>
+            </>
+          )}
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={onClose}
+            className="h-7 w-7"
+            title="Close"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+            <span className="sr-only">Close</span>
+          </Button>
+        </div>
+      </div>
+
+      {/* Persona selector */}
+      {view === 'chat' && (
+        <div className="flex items-center gap-1.5 px-4 py-2 shrink-0" style={{ background: '#eae8de', borderBottom: '1px solid rgba(0,0,0,0.08)' }}>
+          {PERSONAS.map((p) => (
+            <button
+              key={p.id}
+              disabled={status === 'streaming'}
+              onClick={() => setPersonaId(p.id)}
+              className={cn(
+                'h-6 px-2.5 rounded-full text-[11px] font-medium transition-colors',
+                personaId === p.id
+                  ? 'bg-foreground text-background'
+                  : 'bg-transparent text-muted-foreground hover:text-foreground border border-current'
+              )}
+            >
+              {p.name}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Body */}
+      {view === 'history' ? (
+        <ConversationHistory onSelect={loadConversation} />
+      ) : loadingHistory ? (
+        <div className="flex-1 flex items-center justify-center">
+          <div className="flex gap-1">
+            <span className="h-1.5 w-1.5 rounded-full animate-bounce [animation-delay:-0.3s]" style={{ background: 'var(--color-muted-foreground)' }} />
+            <span className="h-1.5 w-1.5 rounded-full animate-bounce [animation-delay:-0.15s]" style={{ background: 'var(--color-muted-foreground)' }} />
+            <span className="h-1.5 w-1.5 rounded-full animate-bounce" style={{ background: 'var(--color-muted-foreground)' }} />
           </div>
-        ) : (
-          <>
-            <ChatMessageList messages={messages} isStreaming={status === 'streaming'} />
-            <div className="shrink-0 p-3">
-              <ChatInput onSubmit={sendMessage} disabled={status === 'streaming'} />
-              <p className="text-center text-[10px] mt-1.5" style={{ color: 'var(--color-muted-foreground)' }}>
-                {isReadonlyHistory
-                  ? 'This is a past conversation — continue below or start a new chat'
-                  : '⌘ Enter to send · Responses based on your interaction data'}
-              </p>
-            </div>
-          </>
-        )}
-      </SheetContent>
-    </Sheet>
+        </div>
+      ) : (
+        <>
+          <ChatMessageList messages={messages} isStreaming={status === 'streaming'} />
+          <div className="shrink-0 p-3">
+            <ChatInput onSubmit={sendMessage} disabled={status === 'streaming'} />
+            <p className="text-center text-[10px] mt-1.5" style={{ color: 'var(--color-muted-foreground)' }}>
+              {isReadonlyHistory
+                ? 'This is a past conversation — continue below or start a new chat'
+                : '⌘ Enter to send · Responses based on your interaction data'}
+            </p>
+          </div>
+        </>
+      )}
+    </div>
   )
 }

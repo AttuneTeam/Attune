@@ -406,7 +406,7 @@ export function buildChatTools(supabase: SupabaseClient, userId: string) {
           .join("\n");
 
         const { object } = await generateObject({
-          model: openai("gpt-4o"),
+          model: openai("gpt-5.4"),
           system: COACHING_SYSTEM,
           prompt: contextParts,
           schema: z.object({
@@ -582,9 +582,7 @@ export function buildChatTools(supabase: SupabaseClient, userId: string) {
       description:
         "Search the manager's uploaded reference documents: career ladders, performance frameworks, engineering principles, company strategy, handbooks. Use when asked about policies, best practices, or frameworks. If results are empty or the note says no documents were found, call web_search next with the same query.",
       inputSchema: z.object({
-        query: z
-          .string()
-          .describe("What to look up in the knowledge base"),
+        query: z.string().describe("What to look up in the knowledge base"),
       }),
       execute: async ({ query }) => {
         const openaiClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -652,7 +650,7 @@ export function buildChatTools(supabase: SupabaseClient, userId: string) {
               title: r.title,
               url: r.url,
               snippet: r.content?.slice(0, 400),
-            })
+            }),
           ),
         };
       },
