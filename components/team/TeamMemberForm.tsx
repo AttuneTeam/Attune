@@ -51,6 +51,7 @@ export function TeamMemberForm({ teams, roles, managerId, existing }: Props) {
   );
   const [teamId, setTeamId] = useState(existing?.team_id ?? "");
   const [roleId, setRoleId] = useState(existing?.role_id ?? "");
+  const [isSquadLead, setIsSquadLead] = useState(existing?.is_squad_lead ?? false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,6 +74,7 @@ export function TeamMemberForm({ teams, roles, managerId, existing }: Props) {
             start_date: startDate || null,
             skills,
             team_id: teamId || null,
+            is_squad_lead: teamId ? isSquadLead : false,
           })
           .eq("id", existing.id);
         if (error) {
@@ -91,6 +93,7 @@ export function TeamMemberForm({ teams, roles, managerId, existing }: Props) {
           start_date: startDate || null,
           skills,
           team_id: teamId || null,
+          is_squad_lead: teamId ? isSquadLead : false,
         });
         if (error) {
           toast.error(error.message);
@@ -230,6 +233,20 @@ export function TeamMemberForm({ teams, roles, managerId, existing }: Props) {
                 </SelectContent>
               </Select>
             </div>
+            {teamId && (
+              <div className="col-span-2 flex items-center gap-2">
+                <input
+                  id="is_squad_lead"
+                  type="checkbox"
+                  checked={isSquadLead}
+                  onChange={(e) => setIsSquadLead(e.target.checked)}
+                  className="h-4 w-4 rounded border-input accent-primary cursor-pointer"
+                />
+                <Label htmlFor="is_squad_lead" className="cursor-pointer font-normal">
+                  Squad lead
+                </Label>
+              </div>
+            )}
             <div className="col-span-2 space-y-1.5">
               <Label htmlFor="role">Role description</Label>
               <Textarea

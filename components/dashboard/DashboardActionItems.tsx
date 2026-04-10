@@ -157,6 +157,9 @@ export function DashboardActionItems({
           <thead>
             <tr className="border-b bg-muted/50">
               <th className="w-7 px-2 py-1.5" />
+              <th className="text-left font-medium text-muted-foreground w-20">
+                Due
+              </th>
               <th className="text-left px-2 py-1.5 font-medium text-muted-foreground">
                 Description
               </th>
@@ -185,17 +188,18 @@ export function DashboardActionItems({
                       <StatusIcon status={item.status} />
                     </button>
                   </td>
+                  <td>
+                    {item.due_date
+                      ? format(parseISO(item.due_date), "MMM d")
+                      : "—"}
+                  </td>
                   <td
                     className={`px-2 py-1.5 max-w-0 ${item.status === "done" ? "line-through text-muted-foreground" : ""}`}
                   >
                     <span className="block truncate">{item.description}</span>
                   </td>
                   <td className="px-2 py-1.5 text-muted-foreground whitespace-nowrap hidden sm:table-cell">
-                    {`${item.interactions?.team_members?.name ?? "—"} / ${
-                      item.due_date
-                        ? format(parseISO(item.due_date), "MMM d")
-                        : "—"
-                    } `}
+                    {`${item.interactions?.team_members?.name ?? "—"}`}
                   </td>
 
                   <td className="px-2 py-1.5">

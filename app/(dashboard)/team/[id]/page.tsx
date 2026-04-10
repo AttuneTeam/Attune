@@ -314,6 +314,11 @@ export default async function MemberProfilePage({
                       {teamName}
                     </Badge>
                   )}
+                  {member.is_squad_lead && (
+                    <Badge variant="outline" className="text-xs text-primary border-primary/40">
+                      Squad Lead
+                    </Badge>
+                  )}
                 </div>
               )}
             </div>

@@ -62,6 +62,9 @@ function OrgNode({
                         · {m.level}
                       </span>
                     )}
+                    {m.is_squad_lead && (
+                      <span className="text-primary font-semibold">· Lead</span>
+                    )}
                   </Link>
                 ))}
               </div>

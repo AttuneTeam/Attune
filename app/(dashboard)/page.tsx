@@ -38,27 +38,6 @@ export default async function DashboardPage() {
     );
   }
 
-  // Per-member: most recent interaction + latest sentiment score
-  const memberData = await Promise.all(
-    members.map(async (member) => {
-      const { data: recentInteractions } = await supabase
-        .from("interactions")
-        .select("id, scheduled_at, sentiment_score")
-        .eq("participant_id", member.id)
-        .eq("status", "completed")
-        .order("scheduled_at", { ascending: false })
-        .limit(1);
-
-      const lastInteraction = recentInteractions?.[0] ?? null;
-      const daysSince = lastInteraction
-        ? differenceInDays(new Date(), parseISO(lastInteraction.scheduled_at))
-        : null;
-      const currentSentiment = lastInteraction?.sentiment_score ?? null;
-
-      return { member, daysSince, currentSentiment };
-    }),
-  );
-
   // Open action items count per member
   const { data: openActionItems } = await supabase
     .from("action_items")
@@ -87,13 +66,13 @@ export default async function DashboardPage() {
     .from("interactions")
     .select("*", { count: "exact", head: true })
     .eq("status", "completed")
-    .gte("scheduled_at", thisMonthStart.toISOString());
+    .gte("scheduled_at", thisMonthStart.toISOString())
+    .lt("scheduled_at", new Date().toISOString());
 
-  // Upcoming check-ins
+  // Upcoming check-ins — all future interactions regardless of status
   const { data: upcomingBookings } = await supabase
     .from("interactions")
     .select("id, title, scheduled_at, agenda, team_members(name)")
-    .eq("status", "upcoming")
     .gt("scheduled_at", new Date().toISOString())
     .order("scheduled_at", { ascending: true })
     .limit(10);
