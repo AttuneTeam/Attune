@@ -61,6 +61,8 @@ export type Database = {
           start_date: string | null
           skills: string[]
           created_at: string
+          manager_read: string[]
+          manager_read_updated_at: string | null
         }
         Insert: {
           id?: string
@@ -73,6 +75,8 @@ export type Database = {
           role_id?: string | null
           start_date?: string | null
           skills?: string[]
+          manager_read?: string[]
+          manager_read_updated_at?: string | null
         }
         Update: {
           team_id?: string | null
@@ -83,6 +87,8 @@ export type Database = {
           role_id?: string | null
           start_date?: string | null
           skills?: string[]
+          manager_read?: string[]
+          manager_read_updated_at?: string | null
         }
       }
       roles: {

@@ -139,6 +139,13 @@ You have tools to search 1-on-1 interaction history, retrieve team member profil
 - Format lists with markdown. Bold names and dates.`
 }
 
+export const MANAGER_READ_SYSTEM = `You are an expert manager coach synthesising interaction history.
+Given the last few summaries and themes from 1-on-1s with a team member, produce 4–5 concise bullet points
+that capture the manager's current read on this person.
+Focus on: motivations, focus areas, patterns, concerns, and things to keep in mind.
+Write each bullet in lowercase, starting with a verb or noun phrase, no trailing period.
+Be specific and grounded in the data — avoid generic advice.`
+
 export const COVERAGE_SYSTEM = `You are an expert manager advisor analyzing a team's role composition.
 Given a list of team members and their role areas, identify:
 1. Coverage strengths — areas well-covered by multiple people

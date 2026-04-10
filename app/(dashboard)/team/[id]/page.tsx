@@ -390,6 +390,8 @@ export default async function MemberProfilePage({
             themes={themes}
             nudges={nudges}
             meetingCount={withScore.length}
+            managerRead={member.manager_read ?? []}
+            memberName={member.name}
           />
 
           {/* Integrations */}

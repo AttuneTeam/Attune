@@ -7,6 +7,7 @@ import {
   extractPlainText,
   formatTeamValues,
   SUMMARIZE_SYSTEM,
+  MANAGER_READ_SYSTEM,
 } from "@/lib/ai/prompts";
 import { embedInteraction } from "@/lib/ai/embeddings";
 
@@ -79,7 +80,9 @@ export async function POST(request: NextRequest) {
         keyThemes: z
           .array(z.string())
           .max(4)
-          .describe("Up to 4 key themes or topics discussed. Each theme must be a single short phrase with no commas — do not combine multiple themes into one item."),
+          .describe(
+            "Up to 4 key themes or topics discussed. Each theme must be a single short phrase with no commas — do not combine multiple themes into one item.",
+          ),
       }),
     });
 
@@ -97,6 +100,66 @@ export async function POST(request: NextRequest) {
     embedInteraction(interactionId, interaction.raw_json_notes).catch(
       console.error,
     );
+
+    // Regenerate manager read for this member (fire & forget)
+    (async () => {
+      try {
+        const { data: recent } = await supabase
+          .from("interactions")
+          .select("scheduled_at, ai_summary, key_themes, sentiment_score")
+          .eq("participant_id", interaction.participant_id)
+          .not("ai_summary", "is", null)
+          .order("scheduled_at", { ascending: false })
+          .limit(5);
+
+        if (!recent || recent.length === 0) return;
+
+        const { data: memberInfo } = await supabase
+          .from("team_members")
+          .select("name")
+          .eq("id", interaction.participant_id)
+          .single();
+
+        const lines = recent
+          .map((r, i) => {
+            const date = r.scheduled_at.slice(0, 10);
+            const themes = (r.key_themes ?? []).join(", ");
+            const score =
+              r.sentiment_score !== null
+                ? ` (sentiment: ${r.sentiment_score.toFixed(2)})`
+                : "";
+            return `[${i + 1}] ${date}${score}: ${r.ai_summary}${themes ? `\nThemes: ${themes}` : ""}`;
+          })
+          .join("\n\n");
+
+        const readPrompt = `Team member: ${memberInfo?.name ?? "Unknown"}\n\nRecent interaction summaries:\n\n${lines}`;
+
+        const { object: readObject } = await generateObject({
+          model: openai("gpt-5.4"),
+          system: MANAGER_READ_SYSTEM,
+          prompt: readPrompt,
+          schema: z.object({
+            bullets: z
+              .array(z.string())
+              .min(3)
+              .max(5)
+              .describe(
+                "4–5 concise bullet points about this person right now",
+              ),
+          }),
+        });
+
+        await supabase
+          .from("team_members")
+          .update({
+            manager_read: readObject.bullets,
+            manager_read_updated_at: new Date().toISOString(),
+          })
+          .eq("id", interaction.participant_id);
+      } catch (e) {
+        console.error("Manager read error:", e);
+      }
+    })();
 
     return NextResponse.json({
       summary: object.summary,

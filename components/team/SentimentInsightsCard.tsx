@@ -20,6 +20,8 @@ interface Props {
   themes: string[];
   nudges: string[];
   meetingCount: number;
+  managerRead: string[];
+  memberName: string;
 }
 
 function scoreColor(score: number) {
@@ -40,6 +42,8 @@ export function SentimentInsightsCard({
   themes,
   nudges,
   meetingCount,
+  managerRead,
+  memberName,
 }: Props) {
   const color = avgSentiment !== null ? scoreColor(avgSentiment) : "#94a3b8";
 
@@ -52,7 +56,7 @@ export function SentimentInsightsCard({
     <div className="rounded-lg border bg-card p-5 space-y-4">
       <div className="flex items-center gap-1.5">
         <Sparkles className="h-3.5 w-3.5" />
-        <h2 className="text-sm font-semibold">AI Insights</h2>
+        <h2 className="text-sm font-semibold">Insights</h2>
       </div>
 
       {meetingCount === 0 ? (
@@ -157,6 +161,28 @@ export function SentimentInsightsCard({
                   </LineChart>
                 </ResponsiveContainer>
               </div>
+            </div>
+          )}
+
+          {/* Manager read */}
+          {managerRead.length > 0 && (
+            <div>
+              <h3 className="text-sm font-semibold mb-2">
+                My read on {memberName} right now
+              </h3>
+              <ul className="space-y-1.5">
+                {managerRead.map((bullet, i) => (
+                  <li
+                    key={i}
+                    className="flex gap-2 text-xs text-foreground leading-relaxed"
+                  >
+                    <span className="shrink-0 text-lg font-medium text-muted-foreground ">
+                      ·
+                    </span>
+                    {bullet}
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
 
