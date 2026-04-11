@@ -5,8 +5,8 @@ import { InteractionsSheet } from "@/components/dashboard/InteractionsSheet";
 import { OrgStructureSheet } from "@/components/dashboard/OrgStructureSheet";
 import { TeamCoverageCard } from "@/components/team/TeamCoverageCard";
 import { DashboardActionItems } from "@/components/dashboard/DashboardActionItems";
+import { DashboardPageTabs } from "@/components/dashboard/DashboardPageTabs";
 import { redirect } from "next/navigation";
-import { differenceInDays, parseISO } from "date-fns";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -104,15 +104,65 @@ export default async function DashboardPage() {
     .limit(50);
 
   // Teams + team values for org chart
-  const [{ data: teams }, { data: teamValues }] = await Promise.all([
-    supabase.from("teams").select("*").order("name"),
-    supabase.from("team_values").select("*"),
-  ]);
+  const [{ data: teams }, { data: teamValues }, { data: personalItemsRaw }] =
+    await Promise.all([
+      supabase.from("teams").select("*").order("name"),
+      supabase.from("team_values").select("*"),
+      supabase
+        .from("personal_items")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false }),
+    ]);
+
+  const teamContent = (
+    <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-6 w-full pt-4">
+      {/* ── Col 1: upcoming + insights ── */}
+      <div className="space-y-6">
+        <div className="space-y-4">
+          <InteractionsSheet
+            preview={interactionsPreview}
+            totalThisMonth={meetingsThisMonth ?? 0}
+          />
+          <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+            Team Insights
+          </h2>
+          <TeamCoverageCard />
+        </div>
+      </div>
+
+      {/* ── Col 2: action items + direct reports ── */}
+      <div className="space-y-6">
+        <div>
+          {upcomingBookings && upcomingBookings.length > 0 && (
+            <div>
+              <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
+                Upcoming
+              </h2>
+              <UpcomingList bookings={upcomingBookings as never} />
+            </div>
+          )}
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              Action Items
+            </h2>
+            <a
+              href="/action-items"
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              View all
+            </a>
+          </div>
+          <DashboardActionItems items={(actionItemsRaw ?? []) as never} />
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="p-8">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-6">
         <div />
         <div className="flex items-center gap-2">
           <OrgStructureSheet teams={teams ?? []} members={members} />
@@ -120,48 +170,11 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-6 w-full">
-        {/* ── Col 1: upcoming + insights ── */}
-        <div className="space-y-6">
-          {upcomingBookings && upcomingBookings.length > 0 && (
-            <div>
-              <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
-                Upcoming ({upcomingBookings.length})
-              </h2>
-              <UpcomingList bookings={upcomingBookings as never} />
-            </div>
-          )}
-
-          <div className="space-y-4">
-            <InteractionsSheet
-              preview={interactionsPreview}
-              totalThisMonth={meetingsThisMonth ?? 0}
-            />
-            <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-              Insights
-            </h2>
-            <TeamCoverageCard />
-          </div>
-        </div>
-
-        {/* ── Col 2: action items + direct reports ── */}
-        <div className="space-y-6">
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                Action Items ({openItemsCount ?? 0} open)
-              </h2>
-              <a
-                href="/action-items"
-                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-              >
-                View all
-              </a>
-            </div>
-            <DashboardActionItems items={(actionItemsRaw ?? []) as never} />
-          </div>
-        </div>
-      </div>
+      <DashboardPageTabs
+        teamContent={teamContent}
+        personalItems={(personalItemsRaw ?? []) as never}
+        userId={user.id}
+      />
     </div>
   );
 }

@@ -22,6 +22,7 @@ import type { IntegrationResult } from "@/lib/integrations";
 import { GoalsCard } from "@/components/team/GoalsCard";
 import { InteractionsTabs } from "@/components/team/InteractionsTabs";
 import type { MemberGoal, GoalTemplate, Role } from "@/lib/supabase/types";
+import { formatTenure } from "@/lib/tenure";
 
 type InteractionRow = {
   id: string;
@@ -304,18 +305,16 @@ export default async function MemberProfilePage({
               )}
               {(member.level || teamName) && (
                 <div className="flex items-center gap-2 mt-1.5">
-                  {member.level && (
-                    <Badge variant="outline" className="capitalize text-xs">
-                      {member.level}
-                    </Badge>
-                  )}
                   {teamName && (
                     <Badge variant="outline" className="text-xs">
                       {teamName}
                     </Badge>
                   )}
                   {member.is_squad_lead && (
-                    <Badge variant="outline" className="text-xs text-primary border-primary/40">
+                    <Badge
+                      variant="outline"
+                      className="text-xs text-primary border-primary/40"
+                    >
                       Squad Lead
                     </Badge>
                   )}
@@ -335,7 +334,12 @@ export default async function MemberProfilePage({
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <Calendar className="h-3.5 w-3.5 shrink-0" />
                   <span>
-                    Joined {format(new Date(member.start_date), "MMM d, yyyy")}
+                    Joined {format(new Date(member.start_date), "MMM d, yyyy")}{" "}
+                    <Badge variant="outline" className="text-xs">
+                      {member.start_date
+                        ? formatTenure(member.start_date)
+                        : "—"}
+                    </Badge>
                   </span>
                 </div>
               )}
@@ -348,7 +352,7 @@ export default async function MemberProfilePage({
                 </span>
               </div>
               {daysSince !== null && (
-                <div className="flex items-center justify-between">
+                <div className="flex items-center">
                   <span className="text-muted-foreground flex items-center gap-2">
                     <Clock className="h-3.5 w-3.5 shrink-0" />
                     Last interaction

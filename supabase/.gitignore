@@ -2,6 +2,9 @@
 .branches
 .temp
 
+# Seed file may contain PII — never commit
+seed.sql
+
 # dotenvx
 .env.keys
 .env.local

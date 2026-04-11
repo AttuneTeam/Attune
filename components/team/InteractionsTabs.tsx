@@ -227,14 +227,14 @@ export function InteractionsTabs({ interactions, items: initialItems }: Props) {
                             <p className="text-sm font-medium truncate">
                               {interaction.title ?? "Untitled interaction"}
                             </p>
-                            {badge && (
+                            {/* {badge && (
                               <Badge
                                 variant={badge.variant}
                                 className="text-xs shrink-0"
                               >
                                 {badge.label}
                               </Badge>
-                            )}
+                            )} */}
                           </div>
                           {interaction.ai_summary && (
                             <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">

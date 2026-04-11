@@ -19,7 +19,7 @@ export default async function InteractionEditorPage({
     .select(
       `
       id, scheduled_at, raw_json_notes, ai_summary, sentiment_score, key_themes, title, type,
-      team_members (id, name, level, role_description)
+      team_members (id, name, level, role_description, manager_read, is_squad_lead, role_id, team_id)
     `,
     )
     .eq("id", id)
@@ -27,22 +27,58 @@ export default async function InteractionEditorPage({
 
   if (!interaction) notFound();
 
-  const { data: actionItems } = await supabase
-    .from("action_items")
-    .select("*")
-    .eq("interaction_id", id)
-    .order("created_at");
+  const member = interaction.team_members as {
+    role_id: string | null;
+    team_id: string | null;
+  } | null;
 
-  const { data: allMembers } = await supabase
-    .from("team_members")
-    .select("id, name")
-    .order("name");
+  const [assignedRole, teamName, actionItems, agendaItems, allMembers] =
+    await Promise.all([
+      member?.role_id
+        ? supabase
+            .from("roles")
+            .select("id, title")
+            .eq("id", member.role_id)
+            .single()
+            .then(({ data }) =>
+              data ? (data as { id: string; title: string }) : null,
+            )
+        : Promise.resolve(null),
+      member?.team_id
+        ? supabase
+            .from("teams")
+            .select("name")
+            .eq("id", member.team_id)
+            .single()
+            .then(({ data }) => data?.name ?? null)
+        : Promise.resolve(null),
+      supabase
+        .from("action_items")
+        .select("*")
+        .eq("interaction_id", id)
+        .order("created_at")
+        .then(({ data }) => data ?? []),
+      supabase
+        .from("agenda_items")
+        .select("*")
+        .eq("interaction_id", id)
+        .order("created_at")
+        .then(({ data }) => data ?? []),
+      supabase
+        .from("team_members")
+        .select("id, name")
+        .order("name")
+        .then(({ data }) => data ?? []),
+    ]);
 
   return (
     <InteractionEditorClient
       interaction={interaction as never}
-      initialActionItems={actionItems ?? []}
-      allMembers={allMembers ?? []}
+      initialActionItems={actionItems}
+      initialAgendaItems={agendaItems}
+      allMembers={allMembers}
+      assignedRole={assignedRole}
+      teamName={teamName ?? null}
     />
   );
 }

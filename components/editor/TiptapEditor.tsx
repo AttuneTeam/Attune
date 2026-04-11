@@ -5,7 +5,6 @@ import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
 import CharacterCount from '@tiptap/extension-character-count'
 import { Markdown } from 'tiptap-markdown'
-import { FloatingAIMenu } from './FloatingAIMenu'
 import { FormattingBubbleMenu } from './FormattingBubbleMenu'
 import { useCallback, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
@@ -15,11 +14,9 @@ import type { Json } from '@/lib/supabase/types'
 interface Props {
   interactionId: string
   initialContent: Json | null
-  onSummaryUpdate?: (summary: string, sentiment: number, themes: string[]) => void
-  onActionItemsUpdate?: () => void
 }
 
-export function TiptapEditor({ interactionId, initialContent, onSummaryUpdate, onActionItemsUpdate }: Props) {
+export function TiptapEditor({ interactionId, initialContent }: Props) {
   const saveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isSaving = useRef(false)
 
@@ -78,12 +75,6 @@ export function TiptapEditor({ interactionId, initialContent, onSummaryUpdate, o
   return (
     <div className="flex flex-col flex-1">
       <FormattingBubbleMenu editor={editor} />
-      <FloatingAIMenu
-        editor={editor}
-        interactionId={interactionId}
-        onSummaryUpdate={onSummaryUpdate}
-        onActionItemsUpdate={onActionItemsUpdate}
-      />
       <EditorContent editor={editor} className="flex-1" />
       <div className="px-8 py-2 border-t text-xs text-muted-foreground flex gap-4">
         <span>{wordCount} words</span>

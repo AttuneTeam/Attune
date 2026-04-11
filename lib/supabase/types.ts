@@ -204,6 +204,25 @@ export type Database = {
           assignee_id?: string | null
         }
       }
+      agenda_items: {
+        Row: {
+          id: string
+          interaction_id: string
+          text: string
+          status: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          interaction_id: string
+          text: string
+          status?: string
+        }
+        Update: {
+          text?: string
+          status?: string
+        }
+      }
       team_values: {
         Row: {
           id: string
@@ -413,6 +432,34 @@ export type Database = {
           tool_results?: Json | null
         }
       }
+      personal_items: {
+        Row: {
+          id: string
+          user_id: string
+          type: 'note' | 'todo' | 'link' | 'reminder'
+          content: string
+          url: string | null
+          status: 'open' | 'done'
+          due_date: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          type: 'note' | 'todo' | 'link' | 'reminder'
+          content?: string
+          url?: string | null
+          status?: 'open' | 'done'
+          due_date?: string | null
+        }
+        Update: {
+          type?: 'note' | 'todo' | 'link' | 'reminder'
+          content?: string
+          url?: string | null
+          status?: 'open' | 'done'
+          due_date?: string | null
+        }
+      }
     }
     Functions: {
       match_documents: {
@@ -450,3 +497,5 @@ export type ChatConversation = Database['public']['Tables']['chat_conversations'
 export type ChatMessage = Database['public']['Tables']['chat_messages']['Row']
 export type KnowledgeDocument = Database['public']['Tables']['knowledge_documents']['Row']
 export type KnowledgeChunk = Database['public']['Tables']['knowledge_chunks']['Row']
+export type AgendaItem = Database['public']['Tables']['agenda_items']['Row']
+export type PersonalItem = Database['public']['Tables']['personal_items']['Row']

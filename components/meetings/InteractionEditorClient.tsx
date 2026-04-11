@@ -3,8 +3,15 @@
 import { useState, useCallback, useRef } from "react";
 import { TiptapEditor } from "@/components/editor/TiptapEditor";
 import { ActionItemsSidebar } from "./ActionItemsSidebar";
+import { AgendaItemsSidebar } from "./AgendaItemsSidebar";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Select,
   SelectContent,
@@ -13,9 +20,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import Link from "next/link";
-import { ChevronLeft, PanelRight } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronDown,
+  Sparkles,
+  List,
+  HelpCircle,
+  Loader2,
+} from "lucide-react";
 import { format, parseISO } from "date-fns";
-import type { ActionItem } from "@/lib/supabase/types";
+import type { ActionItem, AgendaItem } from "@/lib/supabase/types";
 import type { Json } from "@/lib/supabase/types";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
@@ -41,6 +55,10 @@ interface InteractionWithMember {
     name: string;
     level: string | null;
     role_description: string | null;
+    manager_read: string[] | null;
+    is_squad_lead: boolean | null;
+    role_id: string | null;
+    team_id: string | null;
   } | null;
 }
 
@@ -52,7 +70,10 @@ interface Member {
 interface Props {
   interaction: InteractionWithMember;
   initialActionItems: ActionItem[];
+  initialAgendaItems: AgendaItem[];
   allMembers: Member[];
+  assignedRole: { id: string; title: string } | null;
+  teamName: string | null;
 }
 
 function sentimentColor(score: number | null) {
@@ -62,65 +83,106 @@ function sentimentColor(score: number | null) {
   return "destructive";
 }
 
+function CollapsibleSection({
+  title,
+  children,
+  defaultOpen = false,
+  bordered = true,
+  padContent = true,
+}: {
+  title: React.ReactNode;
+  children: React.ReactNode;
+  defaultOpen?: boolean;
+  bordered?: boolean;
+  padContent?: boolean;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className={bordered ? "border-t" : ""}>
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-2 w-full px-4 py-3 text-sm font-medium text-left hover:bg-muted/30 transition-colors"
+      >
+        <ChevronDown
+          className={`h-4 w-4 transition-transform text-muted-foreground ${!open ? "-rotate-90" : ""}`}
+        />
+        {title}
+      </button>
+      {open && <div className={padContent ? "px-4 pb-4" : ""}>{children}</div>}
+    </div>
+  );
+}
+
 export function InteractionEditorClient({
   interaction,
   initialActionItems,
+  initialAgendaItems,
   allMembers,
+  assignedRole,
+  teamName,
 }: Props) {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [summary, setSummary] = useState(interaction.ai_summary);
   const [sentiment, setSentiment] = useState(interaction.sentiment_score);
   const [themes, setThemes] = useState<string[]>(interaction.key_themes ?? []);
-  const [actionItems, setActionItems] = useState<ActionItem[]>(initialActionItems);
+  const [actionItems, setActionItems] =
+    useState<ActionItem[]>(initialActionItems);
+  const [agendaItems, setAgendaItems] =
+    useState<AgendaItem[]>(initialAgendaItems);
   const [scheduledAt, setScheduledAt] = useState(interaction.scheduled_at);
   const [isEditingDate, setIsEditingDate] = useState(false);
   const [title, setTitle] = useState(interaction.title ?? "");
   const [type, setType] = useState(interaction.type ?? "scheduled");
+  const [coachingQuestions, setCoachingQuestions] = useState<string[]>([]);
+  const [aiTab, setAiTab] = useState("summary");
+  const [aiLoading, setAiLoading] = useState<
+    "summarize" | "action-items" | "coaching" | null
+  >(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
 
-  const handleSummaryUpdate = useCallback(
-    (newSummary: string, newSentiment: number, newThemes: string[]) => {
-      setSummary(newSummary);
-      setSentiment(newSentiment);
-      setThemes(newThemes);
+  const handleTitleBlur = useCallback(
+    async (e: React.FocusEvent<HTMLInputElement>) => {
+      const newTitle = e.target.value.trim();
+      const supabase = createClient();
+      const { error } = await supabase
+        .from("interactions")
+        .update({ title: newTitle || null })
+        .eq("id", interaction.id);
+      if (error) toast.error("Failed to update title");
     },
-    [],
+    [interaction.id],
   );
 
-  const handleTitleBlur = useCallback(async (e: React.FocusEvent<HTMLInputElement>) => {
-    const newTitle = e.target.value.trim();
-    const supabase = createClient();
-    const { error } = await supabase
-      .from("interactions")
-      .update({ title: newTitle || null })
-      .eq("id", interaction.id);
-    if (error) toast.error("Failed to update title");
-  }, [interaction.id]);
+  const handleDateBlur = useCallback(
+    async (e: React.FocusEvent<HTMLInputElement>) => {
+      const newDate = e.target.value;
+      setIsEditingDate(false);
+      if (!newDate || newDate === scheduledAt.slice(0, 10)) return;
+      const iso = new Date(newDate + "T12:00:00").toISOString();
+      setScheduledAt(iso);
+      const supabase = createClient();
+      const { error } = await supabase
+        .from("interactions")
+        .update({ scheduled_at: iso })
+        .eq("id", interaction.id);
+      if (error) toast.error("Failed to update date");
+      else toast.success("Date updated");
+    },
+    [interaction.id, scheduledAt],
+  );
 
-  const handleDateBlur = useCallback(async (e: React.FocusEvent<HTMLInputElement>) => {
-    const newDate = e.target.value;
-    setIsEditingDate(false);
-    if (!newDate || newDate === scheduledAt.slice(0, 10)) return;
-    const iso = new Date(newDate + "T12:00:00").toISOString();
-    setScheduledAt(iso);
-    const supabase = createClient();
-    const { error } = await supabase
-      .from("interactions")
-      .update({ scheduled_at: iso })
-      .eq("id", interaction.id);
-    if (error) toast.error("Failed to update date");
-    else toast.success("Date updated");
-  }, [interaction.id, scheduledAt]);
-
-  const handleTypeChange = useCallback(async (newType: string) => {
-    setType(newType);
-    const supabase = createClient();
-    const { error } = await supabase
-      .from("interactions")
-      .update({ type: newType })
-      .eq("id", interaction.id);
-    if (error) toast.error("Failed to update type");
-  }, [interaction.id]);
+  const handleTypeChange = useCallback(
+    async (newType: string) => {
+      setType(newType);
+      const supabase = createClient();
+      const { error } = await supabase
+        .from("interactions")
+        .update({ type: newType })
+        .eq("id", interaction.id);
+      if (error) toast.error("Failed to update type");
+    },
+    [interaction.id],
+  );
 
   const refreshActionItems = useCallback(async () => {
     const supabase = createClient();
@@ -132,139 +194,312 @@ export function InteractionEditorClient({
     setActionItems(data ?? []);
   }, [interaction.id]);
 
+  const refreshAgendaItems = useCallback(async () => {
+    const supabase = createClient();
+    const { data } = await supabase
+      .from("agenda_items")
+      .select("*")
+      .eq("interaction_id", interaction.id)
+      .order("created_at");
+    setAgendaItems(data ?? []);
+  }, [interaction.id]);
+
+  const handleSummarize = useCallback(async () => {
+    setAiLoading("summarize");
+    try {
+      const res = await fetch("/api/ai/summarize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ interactionId: interaction.id }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json();
+      setSummary(data.summary);
+      setSentiment(data.sentiment);
+      setThemes(data.keyThemes ?? []);
+      setAiTab("summary");
+      toast.success("Summary generated");
+    } catch {
+      toast.error("Failed to summarize");
+    } finally {
+      setAiLoading(null);
+    }
+  }, [interaction.id]);
+
+  const handleExtractItems = useCallback(async () => {
+    setAiLoading("action-items");
+    try {
+      const res = await fetch("/api/ai/action-items", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ interactionId: interaction.id }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json();
+      await refreshActionItems();
+      setAiTab("actions");
+      toast.success(
+        `${data.count} action item${data.count !== 1 ? "s" : ""} extracted`,
+      );
+    } catch {
+      toast.error("Failed to extract action items");
+    } finally {
+      setAiLoading(null);
+    }
+  }, [interaction.id, refreshActionItems]);
+
+  const handleCoachingQuestions = useCallback(async () => {
+    setAiLoading("coaching");
+    try {
+      const res = await fetch("/api/ai/coaching-questions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ interactionId: interaction.id }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json();
+      setCoachingQuestions(data.questions ?? []);
+      setAiTab("coaching");
+    } catch {
+      toast.error("Failed to generate coaching questions");
+    } finally {
+      setAiLoading(null);
+    }
+  }, [interaction.id]);
+
   const member = interaction.team_members;
 
   return (
-    <div className="flex h-full">
-      {/* Main editor area */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header */}
-        <header className="h-14 border-b flex items-center px-4 gap-3 shrink-0">
-          <Link
-            href={member ? `/team/${member.id}` : '/interactions'}
-            className="inline-flex items-center justify-center size-8 rounded-lg hover:bg-muted transition-colors"
+    <div className="p-6 max-w-6xl mx-auto">
+      {/* Header */}
+      <div className="flex items-center justify-end gap-3 mb-6">
+        <div className="flex items-center gap-2 flex-wrap min-w-0">
+          <Select
+            value={type}
+            onValueChange={(type) => type && handleTypeChange(type)}
           >
-            <ChevronLeft className="h-4 w-4" />
-          </Link>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <span className="font-medium truncate">
-                {member?.name ?? "Interaction"}
-              </span>
-              {member?.level && (
-                <Badge
-                  variant="secondary"
-                  className="text-xs capitalize hidden sm:flex"
-                >
-                  {member.level}
-                </Badge>
-              )}
-              <Select value={type} onValueChange={handleTypeChange}>
-                <SelectTrigger className="h-6 text-xs border-0 bg-transparent px-1.5 gap-1 hover:bg-muted w-auto focus:ring-0 focus:ring-offset-0">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {INTERACTION_TYPES.map((t) => (
-                    <SelectItem key={t.value} value={t.value} className="text-xs">
-                      {t.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {isEditingDate ? (
-                <input
-                  ref={dateInputRef}
-                  type="date"
-                  defaultValue={scheduledAt.slice(0, 10)}
-                  className="text-sm text-muted-foreground bg-transparent border-b border-border focus:outline-none"
-                  onBlur={handleDateBlur}
-                  autoFocus
-                />
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setIsEditingDate(true)}
-                  className="text-sm text-muted-foreground hover:text-foreground hover:underline underline-offset-2 transition-colors"
-                  title="Click to change date"
-                >
-                  {format(parseISO(scheduledAt), "MMM d, yyyy")}
-                </button>
-              )}
-            </div>
-          </div>
-          {sentiment !== null && (
-            <Badge
-              variant={sentimentColor(sentiment)}
-              className="text-xs shrink-0"
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {INTERACTION_TYPES.map((t) => (
+                <SelectItem key={t.value} value={t.value} className="text-xs">
+                  {t.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {isEditingDate ? (
+            <input
+              ref={dateInputRef}
+              type="date"
+              defaultValue={scheduledAt.slice(0, 10)}
+              className="text-sm text-muted-foreground bg-transparent border-b border-border focus:outline-none"
+              onBlur={handleDateBlur}
+              autoFocus
+            />
+          ) : (
+            <button
+              type="button"
+              onClick={() => setIsEditingDate(true)}
+              className="text-sm text-muted-foreground hover:text-foreground hover:underline underline-offset-2 transition-colors"
+              title="Click to change date"
             >
-              {sentiment > 0 ? "+" : ""}
-              {sentiment.toFixed(2)}
-            </Badge>
+              {format(parseISO(scheduledAt), "MMM d, yyyy")}
+            </button>
           )}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 shrink-0"
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            title={sidebarOpen ? "Hide sidebar" : "Show sidebar"}
-          >
-            <PanelRight className="h-4 w-4" />
-          </Button>
-        </header>
-
-        {/* Title */}
-        <div className="px-8 pt-5 pb-1">
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            onBlur={handleTitleBlur}
-            placeholder="Untitled interaction"
-            className="w-full text-xl font-semibold bg-transparent border-none outline-none placeholder:text-muted-foreground/40 text-foreground"
-          />
-        </div>
-
-        {/* Summary bar (if exists) */}
-        {summary && (
-          <div className="px-8 py-3 bg-muted/30 border-b">
-            <p className="text-xs text-muted-foreground font-medium mb-1">
-              AI Summary
-            </p>
-            <p className="text-sm">{summary}</p>
-            {themes.length > 0 && (
-              <div className="flex flex-wrap gap-1 mt-2">
-                {themes.map((t) => (
-                  <Badge key={t} variant="outline" className="text-xs">
-                    {t}
-                  </Badge>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Editor */}
-        <div className="flex-1 overflow-y-auto">
-          <TiptapEditor
-            interactionId={interaction.id}
-            initialContent={interaction.raw_json_notes}
-            onSummaryUpdate={handleSummaryUpdate}
-            onActionItemsUpdate={refreshActionItems}
-          />
         </div>
       </div>
 
-      {/* Sidebar */}
-      {sidebarOpen && (
-        <div className="w-72 border-l flex flex-col shrink-0 overflow-hidden">
-          <ActionItemsSidebar
+      {/* Content grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        {/* Left column */}
+        <div className="space-y-4">
+          {/* Member name block */}
+          <div className="rounded-lg bg-card px-5 pt-4 pb-5">
+            <div>
+              <h2 className="text-xl font-bold tracking-tight leading-tight">
+                {member?.name ?? "Member"}
+              </h2>
+              {assignedRole && (
+                <div className="mt-0.5">
+                  <Link
+                    href={`/roles/${assignedRole.id}`}
+                    className="inline-flex items-center gap-1.5 text-sm font-medium hover:underline underline-offset-2"
+                  >
+                    {assignedRole.title}
+                  </Link>
+                </div>
+              )}
+              {(member?.level || teamName || member?.is_squad_lead) && (
+                <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                  {member?.level && (
+                    <Badge variant="outline" className="capitalize text-xs">
+                      {member.level}
+                    </Badge>
+                  )}
+                  {teamName && (
+                    <Badge variant="outline" className="text-xs">
+                      {teamName}
+                    </Badge>
+                  )}
+                  {member?.is_squad_lead && (
+                    <Badge
+                      variant="outline"
+                      className="text-xs text-primary border-primary/40"
+                    >
+                      Squad Lead
+                    </Badge>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Agenda + My read on + AI actions + Tabs */}
+          <div className="rounded-lg border overflow-hidden">
+            <CollapsibleSection
+              title={<h2 className="text-sm font-semibold">Agenda</h2>}
+              defaultOpen
+              bordered={false}
+            >
+              <AgendaItemsSidebar
+                interactionId={interaction.id}
+                participantId={member?.id ?? ""}
+                items={agendaItems}
+                onUpdate={refreshAgendaItems}
+              />
+            </CollapsibleSection>
+
+            {/* Tabs: Summary | Action Items | Coaching */}
+            <div className="border-t">
+              <div className="flex justify-between px-4 pt-4">
+                <div className="flex items-center gap-1.5">
+                  <h2 className="text-sm font-semibold">Insights</h2>
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-input bg-background text-xs font-medium hover:bg-accent hover:text-accent-foreground transition-colors shrink-0 disabled:opacity-50 disabled:pointer-events-none"
+                    disabled={aiLoading !== null}
+                  >
+                    Generate
+                    {aiLoading !== null ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Sparkles className="h-3.5 w-3.5" />
+                    )}
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuItem
+                      onClick={handleSummarize}
+                      disabled={aiLoading !== null}
+                    >
+                      <Sparkles className="h-3.5 w-3.5" />
+                      Summarize
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={handleExtractItems}
+                      disabled={aiLoading !== null}
+                    >
+                      <List className="h-3.5 w-3.5" />
+                      Extract action items
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={handleCoachingQuestions}
+                      disabled={aiLoading !== null}
+                    >
+                      <HelpCircle className="h-3.5 w-3.5" />
+                      Coaching questions
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+
+              <Tabs value={aiTab} onValueChange={(v) => setAiTab(v as string)}>
+                <div className="px-3 pt-3">
+                  <TabsList className="p-0.5">
+                    <TabsTrigger value="summary">Summary</TabsTrigger>
+                    <TabsTrigger value="actions">Actions</TabsTrigger>
+                    <TabsTrigger value="coaching">Coaching</TabsTrigger>
+                  </TabsList>
+                </div>
+
+                <TabsContent value="summary" className="px-4 py-3">
+                  {summary ? (
+                    <div className="space-y-3">
+                      <p className="text-sm">{summary}</p>
+                      {themes.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {themes.map((t) => (
+                            <Badge
+                              key={t}
+                              variant="secondary"
+                              className="text-xs"
+                            >
+                              {t}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      No summary yet. Use the AI dropdown next to the title.
+                    </p>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="actions">
+                  <ActionItemsSidebar
+                    interactionId={interaction.id}
+                    items={actionItems}
+                    allMembers={allMembers}
+                    onUpdate={refreshActionItems}
+                  />
+                </TabsContent>
+
+                <TabsContent value="coaching" className="px-4 py-3">
+                  {coachingQuestions.length > 0 ? (
+                    <ol className="space-y-2">
+                      {coachingQuestions.map((q, i) => (
+                        <li key={i} className="flex gap-2 text-sm">
+                          <span className="text-muted-foreground shrink-0">
+                            {i + 1}.
+                          </span>
+                          <span>{q}</span>
+                        </li>
+                      ))}
+                    </ol>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      No coaching questions yet. Use the AI dropdown next to the
+                      title.
+                    </p>
+                  )}
+                </TabsContent>
+              </Tabs>
+            </div>
+          </div>
+        </div>
+
+        {/* Right column — title + editor */}
+        <div className="lg:col-span-2">
+          <div className="mb-2 px-1 flex items-center gap-2">
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              onBlur={handleTitleBlur}
+              placeholder="Untitled interaction"
+              className="flex-1 text-xl font-semibold bg-transparent border-none outline-none placeholder:text-muted-foreground/40 text-foreground"
+            />
+          </div>
+          <TiptapEditor
             interactionId={interaction.id}
-            items={actionItems}
-            allMembers={allMembers}
-            onUpdate={refreshActionItems}
+            initialContent={interaction.raw_json_notes}
           />
         </div>
-      )}
+      </div>
     </div>
   );
 }

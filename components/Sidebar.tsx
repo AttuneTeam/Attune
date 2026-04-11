@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import logo from "@/components/logo.png";
+import logo from "@/components/darklogog.png";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
