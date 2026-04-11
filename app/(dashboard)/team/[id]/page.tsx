@@ -332,27 +332,26 @@ export default async function MemberProfilePage({
               )}
               {member.start_date && (
                 <div className="flex items-center gap-2 text-muted-foreground">
-                  <Calendar className="h-3.5 w-3.5 shrink-0" />
-                  <span>
-                    Joined {format(new Date(member.start_date), "MMM d, yyyy")}{" "}
-                    <Badge variant="outline" className="text-xs">
-                      {member.start_date
-                        ? formatTenure(member.start_date)
-                        : "—"}
-                    </Badge>
+                  <span className="text-muted-foreground flex items-center gap-2">
+                    <Calendar className="h-3.5 w-3.5 shrink-0" />
+                    Joined{" "}
+                    {format(new Date(member.start_date), "MMM d, yyyy")}{" "}
                   </span>
+                  <Badge variant="outline" className="text-xs">
+                    {member.start_date ? formatTenure(member.start_date) : "—"}
+                  </Badge>
                 </div>
               )}
-              <div className="flex items-center gap-2 text-muted-foreground">
+              {/* <div className="flex items-center gap-2 text-muted-foreground">
                 <Briefcase className="h-3.5 w-3.5 shrink-0" />
                 <span>
                   {interactions.length}{" "}
                   {interactions.length === 1 ? "interaction" : "interactions"}{" "}
                   total
                 </span>
-              </div>
+              </div> */}
               {daysSince !== null && (
-                <div className="flex items-center">
+                <div className="flex items-center gap-2">
                   <span className="text-muted-foreground flex items-center gap-2">
                     <Clock className="h-3.5 w-3.5 shrink-0" />
                     Last interaction

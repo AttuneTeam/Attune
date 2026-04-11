@@ -1,5 +1,7 @@
 'use client'
 
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { ToolCallChip } from './ToolCallChip'
 
 export type ToolCallData = {
@@ -50,31 +52,48 @@ export function ChatMessage({ message }: Props) {
         </div>
       )}
       {message.text && (
-        <div
-          className="prose prose-sm max-w-none text-sm leading-relaxed"
-          style={{ color: 'var(--color-foreground)' }}
-          dangerouslySetInnerHTML={{ __html: renderMarkdown(message.text) }}
-        />
+        <div className="prose prose-sm max-w-none text-sm leading-relaxed [&>*:first-child]:mt-0 [&>*:last-child]:mb-0" style={{ color: 'var(--color-foreground)' }}>
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
+            components={{
+              // Headings
+              h1: ({ children }) => <h1 className="text-base font-semibold mt-4 mb-1">{children}</h1>,
+              h2: ({ children }) => <h2 className="text-sm font-semibold mt-3 mb-1">{children}</h2>,
+              h3: ({ children }) => <h3 className="text-sm font-semibold mt-2 mb-0.5">{children}</h3>,
+              // Paragraphs
+              p: ({ children }) => <p className="mb-2">{children}</p>,
+              // Lists
+              ul: ({ children }) => <ul className="my-1.5 ml-4 space-y-0.5 list-disc">{children}</ul>,
+              ol: ({ children }) => <ol className="my-1.5 ml-4 space-y-0.5 list-decimal">{children}</ol>,
+              li: ({ children }) => <li className="leading-snug">{children}</li>,
+              // Horizontal rule
+              hr: () => <hr className="my-3 border-current opacity-15" />,
+              // Inline code
+              code: ({ children, className }) => {
+                const isBlock = className?.startsWith('language-')
+                if (isBlock) {
+                  return (
+                    <code className="block rounded px-3 py-2 my-2 text-xs font-mono overflow-x-auto" style={{ background: 'rgba(0,0,0,0.06)' }}>
+                      {children}
+                    </code>
+                  )
+                }
+                return (
+                  <code className="rounded px-1 py-0.5 text-xs font-mono" style={{ background: 'rgba(0,0,0,0.06)' }}>
+                    {children}
+                  </code>
+                )
+              },
+              pre: ({ children }) => <pre className="not-prose">{children}</pre>,
+              // Strong / em
+              strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+              em: ({ children }) => <em className="italic">{children}</em>,
+            }}
+          >
+            {message.text}
+          </ReactMarkdown>
+        </div>
       )}
     </div>
   )
-}
-
-// Minimal markdown renderer — avoids a full library dependency
-function renderMarkdown(text: string): string {
-  return text
-    // Bold
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    // Headers
-    .replace(/^### (.+)$/gm, '<h3 class="text-sm font-semibold mt-3 mb-1">$1</h3>')
-    .replace(/^## (.+)$/gm, '<h2 class="text-sm font-semibold mt-3 mb-1">$1</h2>')
-    // Unordered lists (must happen before line breaks)
-    .replace(/^- (.+)$/gm, '<li class="ml-4 list-disc">$1</li>')
-    .replace(/(<li.*<\/li>\n?)+/g, '<ul class="my-1 space-y-0.5">$&</ul>')
-    // Line breaks — double newline → paragraph break
-    .replace(/\n\n+/g, '</p><p class="mt-2">')
-    // Wrap in paragraph
-    .replace(/^(.+)$/, '<p>$1</p>')
-    // Single newlines within paragraphs
-    .replace(/(?<!>)\n(?!<)/g, '<br />')
 }
