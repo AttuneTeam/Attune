@@ -499,3 +499,17 @@ export type KnowledgeDocument = Database['public']['Tables']['knowledge_document
 export type KnowledgeChunk = Database['public']['Tables']['knowledge_chunks']['Row']
 export type AgendaItem = Database['public']['Tables']['agenda_items']['Row']
 export type PersonalItem = Database['public']['Tables']['personal_items']['Row']
+
+export type StrategicInitiative = {
+  id: string
+  manager_id: string
+  title: string
+  description: Json | null
+  status: 'active' | 'paused' | 'completed' | 'archived'
+  tags: string[]
+  domain: string | null
+  horizon: string | null
+  source_chat_id: string | null
+  created_at: string
+  updated_at: string
+}

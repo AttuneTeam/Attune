@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { createClient } from "@/lib/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 import { RichTextInput } from "@/components/ui/RichTextInput";
 import {
   Sheet,
@@ -33,6 +34,7 @@ import {
   Check,
   Plus,
   Pencil,
+  Target,
 } from "lucide-react";
 import { format, isPast, isToday, parseISO } from "date-fns";
 import type { PersonalItem } from "@/lib/supabase/types";
@@ -77,10 +79,28 @@ export function PersonalTab({
   initialItems: PersonalItem[];
   userId: string;
 }) {
+  const router = useRouter();
   const [items, setItems] = useState<PersonalItem[]>(initialItems);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<PersonalItem | null>(null);
   const [pendingDelete, setPendingDelete] = useState<PersonalItem | null>(null);
+  const [creatingStrategy, setCreatingStrategy] = useState(false);
+
+  const handleNewStrategy = useCallback(async () => {
+    setCreatingStrategy(true);
+    try {
+      const res = await fetch("/api/strategies", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      if (!res.ok) throw new Error("Failed");
+      const { id } = await res.json();
+      router.push(`/strategies/${id}`);
+    } catch {
+      setCreatingStrategy(false);
+    }
+  }, [router]);
 
   // Form fields
   const [type, setType] = useState<ItemType>("note");
@@ -234,10 +254,21 @@ export function PersonalTab({
             ? "No items yet"
             : `${items.length} item${items.length === 1 ? "" : "s"}`}
         </p>
-        <Button size="sm" onClick={openAdd}>
-          <Plus className="h-3.5 w-3.5 mr-1.5" />
-          New item
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleNewStrategy}
+            disabled={creatingStrategy}
+          >
+            <Target className="h-3.5 w-3.5 mr-1.5" />
+            {creatingStrategy ? "Creating…" : "New strategy"}
+          </Button>
+          <Button size="sm" onClick={openAdd}>
+            <Plus className="h-3.5 w-3.5 mr-1.5" />
+            New item
+          </Button>
+        </div>
       </div>
 
       {/* Feed */}

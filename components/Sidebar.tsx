@@ -14,6 +14,7 @@ import {
   Briefcase,
   ChevronDown,
   BookOpen,
+  Target,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -28,7 +29,10 @@ const pressStart = Press_Start_2P({
   subsets: ["latin"],
 });
 
-const navItems = [{ href: "/", label: "Home", icon: LayoutDashboard }];
+const navItems = [
+  { href: "/", label: "Home", icon: LayoutDashboard },
+  { href: "/strategies", label: "Strategies", icon: Target },
+];
 
 const settingsItems = [
   { href: "/settings/org", label: "Organisation", icon: Network },

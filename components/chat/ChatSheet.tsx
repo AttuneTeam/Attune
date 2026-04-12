@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { ChatMessageList } from './ChatMessageList'
 import { ChatInput } from './ChatInput'
@@ -29,6 +30,7 @@ type Props = {
 }
 
 export function ChatPanel({ onClose }: Props) {
+  const router = useRouter()
   const [view, setView] = useState<View>('chat')
   const [messages, setMessages] = useState<ChatMessageData[]>([])
   const [status, setStatus] = useState<'ready' | 'streaming' | 'error'>('ready')
@@ -36,6 +38,7 @@ export function ChatPanel({ onClose }: Props) {
   const [conversationTitle, setConversationTitle] = useState<string | undefined>()
   const [loadingHistory, setLoadingHistory] = useState(false)
   const [personaId, setPersonaId] = useState<PersonaId>('default')
+  const [savingStrategy, setSavingStrategy] = useState(false)
   const abortRef = useRef<AbortController | null>(null)
 
   const reset = useCallback(() => {
@@ -207,6 +210,28 @@ export function ChatPanel({ onClose }: Props) {
     [messages, status, conversationId, personaId]
   )
 
+  const saveAsStrategy = useCallback(async () => {
+    if (savingStrategy) return
+    setSavingStrategy(true)
+    try {
+      const payload: Record<string, unknown> = {
+        messages: messages.map((m) => ({ role: m.role, text: m.text })),
+      }
+      if (conversationId) payload.source_chat_id = conversationId
+      const res = await fetch('/api/strategies', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      if (!res.ok) throw new Error('Failed')
+      const { id } = await res.json()
+      onClose()
+      router.push(`/strategies/${id}`)
+    } catch {
+      setSavingStrategy(false)
+    }
+  }, [messages, conversationId, savingStrategy, onClose, router])
+
   const isReadonlyHistory = !!conversationId && view === 'chat' && messages.length > 0 && status === 'ready'
 
   return (
@@ -244,14 +269,26 @@ export function ChatPanel({ onClose }: Props) {
           {view === 'chat' && (
             <>
               {messages.length > 0 && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={reset}
-                  className="h-7 px-2 text-xs text-muted-foreground"
-                >
-                  New chat
-                </Button>
+                <>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={saveAsStrategy}
+                    disabled={savingStrategy || status === 'streaming'}
+                    className="h-7 px-2 text-xs text-muted-foreground"
+                    title="Save this conversation as a strategic initiative"
+                  >
+                    {savingStrategy ? 'Saving…' : 'Save as strategy'}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={reset}
+                    className="h-7 px-2 text-xs text-muted-foreground"
+                  >
+                    New chat
+                  </Button>
+                </>
               )}
               <Button
                 variant="ghost"
