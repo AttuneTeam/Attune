@@ -1,7 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import logo from "@/components/darklogog.png";
+import { Press_Start_2P } from "next/font/google";
+import logo from "@/components/logo2.png";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -20,6 +21,12 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/lib/supabase/types";
+
+const pressStart = Press_Start_2P({
+  variable: "--font-press-start",
+  weight: "400",
+  subsets: ["latin"],
+});
 
 const navItems = [{ href: "/", label: "Home", icon: LayoutDashboard }];
 
@@ -70,10 +77,22 @@ export function Sidebar({
   return (
     <aside className="w-56 flex flex-col bg-sidebar shrink-0">
       {/* Logo */}
-      <div className="h-14 flex items-center px-5">
-        <Image src={logo} alt="TeamLeader" height={32} />
-      </div>
+      {/* <div
+        style={{
+          ...pressStart.style,
+          backgroundColor: "#d6d4cb",
+          fontSize: "26px",
+          color: "#346057",
+          border: "4px solid #346057",
+        }}
+        className={`m-6 px-4 py-2 rounded-lg`}
+      >
+        <div className="block">ATTUNE</div>
+      </div> */}
 
+      <div className={`m-2 px-4 py-2 rounded-lg`}>
+        <Image alt="" src={logo} width="200" />
+      </div>
       {/* Nav */}
       <nav className="flex-1 py-4 px-2 space-y-0.5 overflow-y-auto">
         {navItems.map(({ href, label, icon: Icon }) => {
