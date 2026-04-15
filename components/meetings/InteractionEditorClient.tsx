@@ -28,6 +28,7 @@ import {
   HelpCircle,
   Loader2,
 } from "lucide-react";
+import { CalendarEventPicker } from "@/components/calendar/CalendarEventPicker";
 import { format, parseISO } from "date-fns";
 import type { ActionItem, AgendaItem } from "@/lib/supabase/types";
 import type { Json } from "@/lib/supabase/types";
@@ -51,6 +52,7 @@ interface InteractionWithMember {
   title: string | null;
   type: string;
   duration_minutes: number | null;
+  google_calendar_event_id: string | null;
   team_members: {
     id: string;
     name: string;
@@ -75,6 +77,7 @@ interface Props {
   allMembers: Member[];
   assignedRole: { id: string; title: string } | null;
   teamName: string | null;
+  hasGoogleCalendar: boolean;
 }
 
 function sentimentColor(score: number | null) {
@@ -122,6 +125,7 @@ export function InteractionEditorClient({
   allMembers,
   assignedRole,
   teamName,
+  hasGoogleCalendar,
 }: Props) {
   const [summary, setSummary] = useState(interaction.ai_summary);
   const [sentiment, setSentiment] = useState(interaction.sentiment_score);
@@ -137,6 +141,10 @@ export function InteractionEditorClient({
   const [durationMinutes, setDurationMinutes] = useState<number | null>(
     interaction.duration_minutes ?? null,
   );
+  const [linkedEventId, setLinkedEventId] = useState<string | null>(
+    interaction.google_calendar_event_id ?? null,
+  );
+  const [linkedEventTitle, setLinkedEventTitle] = useState<string | null>(null);
   const [coachingQuestions, setCoachingQuestions] = useState<string[]>([]);
   const [aiTab, setAiTab] = useState("summary");
   const [aiLoading, setAiLoading] = useState<
@@ -330,6 +338,7 @@ export function InteractionEditorClient({
           )}
           <div className="flex items-center gap-1">
             <input
+              key={durationMinutes}
               type="number"
               min={0}
               max={999}
@@ -341,6 +350,22 @@ export function InteractionEditorClient({
             />
             <span className="text-sm text-muted-foreground">min</span>
           </div>
+          {hasGoogleCalendar && (
+            <CalendarEventPicker
+              interactionId={interaction.id}
+              linkedEventId={linkedEventId}
+              linkedEventTitle={linkedEventTitle}
+              onLinked={(mins, eventId, eventTitle) => {
+                setDurationMinutes(mins > 0 ? mins : null);
+                setLinkedEventId(eventId);
+                setLinkedEventTitle(eventTitle);
+              }}
+              onUnlinked={() => {
+                setLinkedEventId(null);
+                setLinkedEventTitle(null);
+              }}
+            />
+          )}
         </div>
       </div>
 
@@ -351,9 +376,11 @@ export function InteractionEditorClient({
           {/* Member name block */}
           <div className="rounded-lg bg-card px-5 pt-4 pb-5">
             <div>
-              <h2 className="text-xl font-bold tracking-tight leading-tight">
-                {member?.name ?? "Member"}
-              </h2>
+              <Link href={`/team/${member?.id}`}>
+                <h2 className="text-xl font-bold tracking-tight leading-tight">
+                  {member?.name ?? "Member"}
+                </h2>
+              </Link>
               {assignedRole && (
                 <div className="mt-0.5">
                   <Link

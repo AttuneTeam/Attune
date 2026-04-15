@@ -4,6 +4,7 @@ import Link from "next/link";
 import { TeamMemberForm } from "@/components/team/TeamMemberForm";
 import { TeamForm } from "@/components/team/TeamForm";
 import { TeamMemberRowMenu } from "@/components/team/TeamMemberRowMenu";
+import { MeetingLoadBadge } from "@/components/team/MeetingLoadBadge";
 import { formatTenure } from "@/lib/tenure";
 
 export default async function TeamPage() {
@@ -23,12 +24,17 @@ export default async function TeamPage() {
     .select("*")
     .order("name");
 
-  const { data: roles } = await supabase
-    .from("roles")
-    .select("*")
-    .eq("manager_id", user.id)
-    .order("title");
+  const [{ data: roles }, { data: googleToken }] = await Promise.all([
+    supabase.from("roles").select("*").eq("manager_id", user.id).order("title"),
+    supabase
+      .from("user_oauth_tokens")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("provider", "google")
+      .maybeSingle(),
+  ]);
 
+  const hasGoogleCalendar = !!googleToken;
   const roleMap = Object.fromEntries((roles ?? []).map((r) => [r.id, r]));
 
   return (
@@ -70,6 +76,11 @@ export default async function TeamPage() {
                 <th className="text-left px-4 py-2 font-medium text-muted-foreground text-xs uppercase tracking-wide">
                   Tenure
                 </th>
+                {hasGoogleCalendar && (
+                  <th className="text-left px-4 py-2 font-medium text-muted-foreground text-xs uppercase tracking-wide">
+                    Meetings
+                  </th>
+                )}
                 <th className="px-4 py-2" />
               </tr>
             </thead>
@@ -100,6 +111,11 @@ export default async function TeamPage() {
                       ? formatTenure(member.start_date)
                       : "—"}
                   </td>
+                  {hasGoogleCalendar && (
+                    <td className="px-4 py-1 text-muted-foreground">
+                      <MeetingLoadBadge memberId={member.id} />
+                    </td>
+                  )}
                   <td className="px-4 py-1 text-right">
                     <TeamMemberRowMenu
                       member={member}

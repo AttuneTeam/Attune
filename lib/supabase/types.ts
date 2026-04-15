@@ -151,6 +151,7 @@ export type Database = {
           key_themes: string[]
           title: string | null
           duration_minutes: number | null
+          google_calendar_event_id: string | null
           created_at: string
           updated_at: string
         }
@@ -168,6 +169,7 @@ export type Database = {
           key_themes?: string[]
           title?: string | null
           duration_minutes?: number | null
+          google_calendar_event_id?: string | null
         }
         Update: {
           scheduled_at?: string
@@ -180,6 +182,33 @@ export type Database = {
           key_themes?: string[]
           title?: string | null
           duration_minutes?: number | null
+          google_calendar_event_id?: string | null
+        }
+      }
+      user_oauth_tokens: {
+        Row: {
+          id: string
+          user_id: string
+          provider: string
+          access_token: string
+          refresh_token: string | null
+          expires_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          provider: string
+          access_token: string
+          refresh_token?: string | null
+          expires_at?: string | null
+        }
+        Update: {
+          access_token?: string
+          refresh_token?: string | null
+          expires_at?: string | null
+          updated_at?: string
         }
       }
       action_items: {
@@ -502,6 +531,7 @@ export type KnowledgeDocument = Database['public']['Tables']['knowledge_document
 export type KnowledgeChunk = Database['public']['Tables']['knowledge_chunks']['Row']
 export type AgendaItem = Database['public']['Tables']['agenda_items']['Row']
 export type PersonalItem = Database['public']['Tables']['personal_items']['Row']
+export type UserOAuthToken = Database['public']['Tables']['user_oauth_tokens']['Row']
 
 export type StrategicInitiative = {
   id: string

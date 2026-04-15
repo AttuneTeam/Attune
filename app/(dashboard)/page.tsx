@@ -119,8 +119,8 @@ export default async function DashboardPage() {
     .order("due_date", { ascending: true, nullsFirst: false })
     .limit(50);
 
-  // Teams + team values for org chart
-  const [{ data: teams }, { data: teamValues }, { data: personalItemsRaw }] =
+  // Teams + team values for org chart + Google Calendar token status
+  const [{ data: teams }, { data: teamValues }, { data: personalItemsRaw }, { data: googleToken }] =
     await Promise.all([
       supabase.from("teams").select("*").order("name"),
       supabase.from("team_values").select("*"),
@@ -129,7 +129,15 @@ export default async function DashboardPage() {
         .select("*")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false }),
+      supabase
+        .from("user_oauth_tokens")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("provider", "google")
+        .maybeSingle(),
     ]);
+
+  const hasGoogleCalendar = !!googleToken;
 
   const teamContent = (
     <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-6 w-full pt-4">
@@ -188,6 +196,7 @@ export default async function DashboardPage() {
         teamContent={teamContent}
         personalItems={(personalItemsRaw ?? []) as never}
         userId={user.id}
+        hasGoogleCalendar={hasGoogleCalendar}
       />
     </div>
   );
