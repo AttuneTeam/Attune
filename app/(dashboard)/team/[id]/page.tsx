@@ -21,6 +21,7 @@ import { fetchAllIntegrations } from "@/lib/integrations";
 import type { IntegrationResult } from "@/lib/integrations";
 import { GoalsCard } from "@/components/team/GoalsCard";
 import { InteractionsTabs } from "@/components/team/InteractionsTabs";
+import { SlackCard } from "@/components/team/SlackCard";
 import type { MemberGoal, GoalTemplate, Role } from "@/lib/supabase/types";
 import { formatTenure } from "@/lib/tenure";
 
@@ -114,6 +115,69 @@ function generateNudges(
   }
 
   return nudges.slice(0, 3);
+}
+
+function IntegrationCard({ result }: { result: IntegrationResult }) {
+  return (
+    <div className="rounded-lg border border-dashed p-4">
+      <div className="flex items-center gap-2 mb-2">
+        <Zap className="h-4 w-4 text-muted-foreground" />
+        <h2 className="text-sm font-semibold">{result.label}</h2>
+        {result.profileUrl && (
+          <a
+            href={result.profileUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors ml-auto flex items-center gap-1"
+          >
+            @{result.handle}
+            <ExternalLink className="h-3 w-3" />
+          </a>
+        )}
+      </div>
+      {result.error ? (
+        <p className="text-xs text-destructive">{result.error}</p>
+      ) : result.items.length === 0 ? (
+        <p className="text-xs text-muted-foreground">
+          No recent activity found.
+        </p>
+      ) : (
+        <ul className="space-y-2">
+          {result.items.slice(0, 10).map((item) => (
+            <li key={item.id} className="flex items-start gap-2 text-xs">
+              <Badge
+                variant={
+                  item.status === "merged" ||
+                  item.status === "published" ||
+                  item.status === "done"
+                    ? "secondary"
+                    : item.status === "open"
+                      ? "secondary"
+                      : "outline"
+                }
+                className="text-[10px] px-1.5 py-0 shrink-0 mt-0.5 capitalize"
+              >
+                {item.status}
+              </Badge>
+              <div className="flex-1 min-w-0">
+                <a
+                  href={item.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium text-foreground hover:underline underline-offset-2 line-clamp-1"
+                >
+                  {item.title}
+                </a>
+                <p className="text-muted-foreground truncate">
+                  {item.subtitle}
+                </p>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
 }
 
 export default async function MemberProfilePage({
@@ -285,7 +349,7 @@ export default async function MemberProfilePage({
         {/* ── Left column ── */}
         <div className="space-y-6">
           {/* Details */}
-          <div className="rounded-lg bg-card px-5 pt-0 pb-5 space-y-4">
+          <div className="rounded-lg bg-card px-5 pt-0 pb-0 space-y-4">
             {/* Name as card title */}
             <div>
               <h2 className="text-xl font-bold tracking-tight leading-tight">
@@ -373,23 +437,17 @@ export default async function MemberProfilePage({
                 </p>
               </div>
             )}
-
-            {/* Skills */}
-            {/* {member.skills && member.skills.length > 0 && (
-              <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2">
-                  Skills
-                </p>
-                <div className="flex flex-wrap gap-1">
-                  {member.skills.map((skill: string) => (
-                    <Badge key={skill} variant="outline" className="text-xs">
-                      {skill}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            )} */}
           </div>
+
+          {(() => {
+            const leftResults = integrationResults.filter(
+              (r) => r.provider !== "slack",
+            );
+            if (leftResults.length === 0) return null;
+            return leftResults.map((result) => (
+              <IntegrationCard key={result.provider} result={result} />
+            ));
+          })()}
 
           {/* AI Insights */}
           <SentimentInsightsCard
@@ -402,113 +460,6 @@ export default async function MemberProfilePage({
             memberName={member.name}
           />
 
-          {/* Integrations */}
-          {/* {githubIntegration && (
-            <GitHubCard
-              handle={githubIntegration.handle}
-              repo={githubIntegration.config?.repo}
-            />
-          )} */}
-
-          {integrationResults.length > 0 ? (
-            integrationResults.map((result) => (
-              <div
-                key={result.provider}
-                className="rounded-lg bg-card p-5 space-y-3"
-              >
-                <div className="flex items-center gap-2">
-                  <Zap className="h-4 w-4 text-muted-foreground" />
-                  <h2 className="text-sm font-semibold">{result.label}</h2>
-                  {result.profileUrl && (
-                    <a
-                      href={result.profileUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs text-muted-foreground hover:text-foreground transition-colors ml-auto flex items-center gap-1"
-                    >
-                      @{result.handle}
-                      <ExternalLink className="h-3 w-3" />
-                    </a>
-                  )}
-                </div>
-                {result.error ? (
-                  <p className="text-xs text-destructive">{result.error}</p>
-                ) : result.items.length === 0 ? (
-                  <p className="text-xs text-muted-foreground">
-                    No recent activity found.
-                  </p>
-                ) : (
-                  <ul className="space-y-2">
-                    {result.items.slice(0, 10).map((item) => (
-                      <li
-                        key={item.id}
-                        className="flex items-start gap-2 text-xs"
-                      >
-                        <Badge
-                          variant={
-                            item.status === "merged" ||
-                            item.status === "published" ||
-                            item.status === "done"
-                              ? "default"
-                              : item.status === "open"
-                                ? "secondary"
-                                : "outline"
-                          }
-                          className="text-[10px] px-1.5 py-0 shrink-0 mt-0.5 capitalize"
-                        >
-                          {item.status}
-                        </Badge>
-                        <div className="flex-1 min-w-0">
-                          <a
-                            href={item.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="font-medium text-foreground hover:underline underline-offset-2 line-clamp-1"
-                          >
-                            {item.title}
-                          </a>
-                          <p className="text-muted-foreground truncate">
-                            {item.subtitle} ·{" "}
-                            {format(new Date(item.date), "MMM d, yyyy")}
-                          </p>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            ))
-          ) : (
-            <div className="rounded-lg border border-dashed p-5 space-y-3">
-              <div className="flex items-center gap-2">
-                <Zap className="h-4 w-4 text-muted-foreground" />
-                <h2 className="text-sm font-semibold text-muted-foreground">
-                  Integrations
-                </h2>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Connect external tools to build a fuller picture of each team
-                member.
-              </p>
-              <div className="space-y-2">
-                {[
-                  "GitHub — pull requests",
-                  "Slack — engagement patterns",
-                  "Confluence — pages published",
-                  "Trello — cards completed",
-                ].map((item) => (
-                  <div
-                    key={item}
-                    className="flex items-center gap-2 text-xs text-muted-foreground/60"
-                  >
-                    <div className="h-1.5 w-1.5 rounded-full bg-muted-foreground/30 shrink-0" />
-                    {item}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
           {/* Goals */}
           <GoalsCard
             memberId={member.id}
@@ -520,11 +471,21 @@ export default async function MemberProfilePage({
 
         {/* ── Right column ── */}
         <div className="lg:col-span-2 space-y-4">
-          {githubIntegration && (
-            <GitHubSummaryTile
-              handle={githubIntegration.handle}
-              repo={githubIntegration.config?.repo}
-            />
+          {(githubIntegration ||
+            integrationResults.some((r) => r.provider === "slack")) && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {githubIntegration && (
+                <GitHubSummaryTile
+                  handle={githubIntegration.handle}
+                  repo={githubIntegration.config?.repo}
+                />
+              )}
+              {integrationResults
+                .filter((r) => r.provider === "slack")
+                .map((result) => (
+                  <SlackCard key={result.provider} result={result} />
+                ))}
+            </div>
           )}
           <InteractionsTabs interactions={interactions} items={items} />
         </div>

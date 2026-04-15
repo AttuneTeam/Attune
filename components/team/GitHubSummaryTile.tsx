@@ -18,7 +18,10 @@ export function GitHubSummaryTile({ handle, repo }: Props) {
   useEffect(() => {
     const prParams = new URLSearchParams({ type: "prs", username: handle });
     if (repo) prParams.set("repo", repo);
-    const lcParams = new URLSearchParams({ type: "lastcommit", username: handle });
+    const lcParams = new URLSearchParams({
+      type: "lastcommit",
+      username: handle,
+    });
     if (repo) lcParams.set("repo", repo);
 
     Promise.all([
@@ -79,7 +82,7 @@ export function GitHubSummaryTile({ handle, repo }: Props) {
           No recent pull request activity.
         </p>
       ) : (
-        <div className="grid grid-cols-3 gap-4 divide-x">
+        <div className="gap-4">
           {/* Last commit */}
           <div className="space-y-0.5">
             <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
@@ -104,7 +107,7 @@ export function GitHubSummaryTile({ handle, repo }: Props) {
           </div>
 
           {/* Most recently opened PR */}
-          <div className="pl-4 space-y-0.5">
+          <div className="mt-2 space-y-0.5">
             <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1">
               <GitPullRequest className="h-3 w-3" /> Open PR
             </p>
@@ -123,7 +126,7 @@ export function GitHubSummaryTile({ handle, repo }: Props) {
           </div>
 
           {/* Most recently closed PR */}
-          <div className="pl-4 space-y-0.5">
+          {/* <div className="pl-4 space-y-0.5">
             <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1">
               <GitPullRequest className="h-3 w-3" />
               {closedPR?.status === "merged" ? "Merged PR" : "Closed PR"}
@@ -140,7 +143,7 @@ export function GitHubSummaryTile({ handle, repo }: Props) {
             ) : (
               <p className="text-xs text-muted-foreground">None found</p>
             )}
-          </div>
+          </div> */}
         </div>
       )}
     </div>
