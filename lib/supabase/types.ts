@@ -150,6 +150,7 @@ export type Database = {
           sentiment_score: number | null
           key_themes: string[]
           title: string | null
+          duration_minutes: number | null
           created_at: string
           updated_at: string
         }
@@ -166,6 +167,7 @@ export type Database = {
           sentiment_score?: number | null
           key_themes?: string[]
           title?: string | null
+          duration_minutes?: number | null
         }
         Update: {
           scheduled_at?: string
@@ -177,6 +179,7 @@ export type Database = {
           sentiment_score?: number | null
           key_themes?: string[]
           title?: string | null
+          duration_minutes?: number | null
         }
       }
       action_items: {

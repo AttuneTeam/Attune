@@ -50,6 +50,7 @@ interface InteractionWithMember {
   key_themes: string[];
   title: string | null;
   type: string;
+  duration_minutes: number | null;
   team_members: {
     id: string;
     name: string;
@@ -133,6 +134,9 @@ export function InteractionEditorClient({
   const [isEditingDate, setIsEditingDate] = useState(false);
   const [title, setTitle] = useState(interaction.title ?? "");
   const [type, setType] = useState(interaction.type ?? "scheduled");
+  const [durationMinutes, setDurationMinutes] = useState<number | null>(
+    interaction.duration_minutes ?? null,
+  );
   const [coachingQuestions, setCoachingQuestions] = useState<string[]>([]);
   const [aiTab, setAiTab] = useState("summary");
   const [aiLoading, setAiLoading] = useState<
@@ -180,6 +184,22 @@ export function InteractionEditorClient({
         .update({ type: newType })
         .eq("id", interaction.id);
       if (error) toast.error("Failed to update type");
+    },
+    [interaction.id],
+  );
+
+  const handleDurationBlur = useCallback(
+    async (e: React.FocusEvent<HTMLInputElement>) => {
+      const raw = e.target.value.trim();
+      const parsed = raw === "" ? null : parseInt(raw, 10);
+      const value = parsed !== null && !isNaN(parsed) ? parsed : null;
+      setDurationMinutes(value);
+      const supabase = createClient();
+      const { error } = await supabase
+        .from("interactions")
+        .update({ duration_minutes: value })
+        .eq("id", interaction.id);
+      if (error) toast.error("Failed to update duration");
     },
     [interaction.id],
   );
@@ -308,6 +328,19 @@ export function InteractionEditorClient({
               {format(parseISO(scheduledAt), "MMM d, yyyy")}
             </button>
           )}
+          <div className="flex items-center gap-1">
+            <input
+              type="number"
+              min={0}
+              max={999}
+              defaultValue={durationMinutes ?? ""}
+              placeholder="—"
+              onBlur={handleDurationBlur}
+              className="w-12 text-sm text-muted-foreground bg-transparent border-b border-border focus:outline-none text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              title="Duration in minutes"
+            />
+            <span className="text-sm text-muted-foreground">min</span>
+          </div>
         </div>
       </div>
 

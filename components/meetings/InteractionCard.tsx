@@ -11,6 +11,7 @@ interface InteractionWithMember {
   key_themes: string[]
   title: string | null
   type: string
+  duration_minutes: number | null
   team_members: { id: string; name: string; level: string | null } | null
 }
 
@@ -60,8 +61,11 @@ export function InteractionCard({ interaction }: { interaction: InteractionWithM
         ) : (
           <p className="text-sm text-muted-foreground/50 italic mb-0.5">Untitled interaction</p>
         )}
-        <p className="text-xs text-muted-foreground mb-2">
+        <p className="text-xs text-muted-foreground mb-2 flex items-center gap-2">
           {format(new Date(interaction.scheduled_at), 'MMMM d, yyyy')}
+          {interaction.duration_minutes != null && (
+            <span>{interaction.duration_minutes} min</span>
+          )}
         </p>
         {interaction.ai_summary ? (
           <p className="text-sm text-muted-foreground line-clamp-2">{interaction.ai_summary}</p>

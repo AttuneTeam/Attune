@@ -62,12 +62,28 @@ export default async function DashboardPage() {
   const thisMonthStart = new Date();
   thisMonthStart.setDate(1);
   thisMonthStart.setHours(0, 0, 0, 0);
-  const { count: meetingsThisMonth } = await supabase
-    .from("interactions")
-    .select("*", { count: "exact", head: true })
-    .eq("status", "completed")
-    .gte("scheduled_at", thisMonthStart.toISOString())
-    .lt("scheduled_at", new Date().toISOString());
+  const now = new Date();
+
+  const [{ count: meetingsThisMonth }, { data: durationData }] =
+    await Promise.all([
+      supabase
+        .from("interactions")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "completed")
+        .gte("scheduled_at", thisMonthStart.toISOString())
+        .lt("scheduled_at", now.toISOString()),
+      supabase
+        .from("interactions")
+        .select("duration_minutes")
+        .eq("status", "completed")
+        .gte("scheduled_at", thisMonthStart.toISOString())
+        .lt("scheduled_at", now.toISOString()),
+    ]);
+
+  const totalMinutesThisMonth = (durationData ?? []).reduce(
+    (sum, i) => sum + (i.duration_minutes ?? 0),
+    0,
+  );
 
   // Upcoming check-ins — all future interactions regardless of status
   const { data: upcomingBookings } = await supabase
@@ -123,6 +139,7 @@ export default async function DashboardPage() {
           <InteractionsSheet
             preview={interactionsPreview}
             totalThisMonth={meetingsThisMonth ?? 0}
+            totalMinutesThisMonth={totalMinutesThisMonth}
           />
           <TeamCoverageCard />
         </div>

@@ -23,9 +23,19 @@ type PreviewItem = {
   memberName: string;
 };
 
+function formatHours(minutes: number): string {
+  if (minutes === 0) return "0 min";
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (h === 0) return `${m}m`;
+  if (m === 0) return `${h}h`;
+  return `${h}h ${m}m`;
+}
+
 interface Props {
   preview: PreviewItem[];
   totalThisMonth: number;
+  totalMinutesThisMonth: number;
 }
 
 function sentimentVariant(score: number | null) {
@@ -35,7 +45,7 @@ function sentimentVariant(score: number | null) {
   return "destructive" as const;
 }
 
-export function InteractionsSheet({ preview, totalThisMonth }: Props) {
+export function InteractionsSheet({ preview, totalThisMonth, totalMinutesThisMonth }: Props) {
   const [interactions, setInteractions] = useState<any[] | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -46,7 +56,7 @@ export function InteractionsSheet({ preview, totalThisMonth }: Props) {
     const { data } = await supabase
       .from("interactions")
       .select(
-        "id, scheduled_at, ai_summary, sentiment_score, key_themes, title, type, team_members(id, name, level)",
+        "id, scheduled_at, ai_summary, sentiment_score, key_themes, title, type, duration_minutes, team_members(id, name, level)",
       )
       .eq("status", "completed")
       .order("scheduled_at", { ascending: false })
@@ -59,11 +69,23 @@ export function InteractionsSheet({ preview, totalThisMonth }: Props) {
     <Sheet onOpenChange={(open) => open && loadInteractions()}>
       <div className="rounded-lg border bg-card p-5 space-y-4">
         <div className="flex items-start justify-between gap-2">
-          <div>
-            <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">
-              Interactions this month
-            </p>
-            <p className="text-3xl font-bold">{totalThisMonth}</p>
+          <div className="flex items-start gap-6">
+            <div>
+              <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">
+                Interactions this month
+              </p>
+              <p className="text-3xl font-bold">{totalThisMonth}</p>
+            </div>
+            {totalMinutesThisMonth > 0 && (
+              <div>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">
+                  Hours this month
+                </p>
+                <p className="text-3xl font-bold">
+                  {formatHours(totalMinutesThisMonth)}
+                </p>
+              </div>
+            )}
           </div>
           <SheetTrigger
             render={

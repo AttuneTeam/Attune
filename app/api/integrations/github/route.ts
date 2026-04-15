@@ -197,6 +197,39 @@ async function fetchEvents(
   return items;
 }
 
+async function fetchLastCommit(
+  username: string,
+  repo: string,
+): Promise<ActivityItem | null> {
+  if (!repo) return null;
+
+  const repoFilter = repo.includes("/") ? `+repo:${repo}` : `+org:${repo}`;
+  const url = `https://api.github.com/search/commits?q=author:${encodeURIComponent(username)}${repoFilter}&sort=committer-date&order=desc&per_page=1`;
+
+  const res = await fetch(url, {
+    headers: GH_HEADERS,
+    next: { revalidate: 1800 },
+  });
+  if (!res.ok) {
+    const body = await res.text();
+    console.error("[github/lastcommit] failed", { status: res.status, body });
+    throw new Error(`GitHub API ${res.status}: ${body}`);
+  }
+
+  const data = await res.json();
+  const item = data.items?.[0];
+  if (!item) return null;
+
+  return {
+    id: item.sha,
+    title: item.commit.message.split("\n")[0],
+    url: item.html_url,
+    status: "commit",
+    subtitle: item.repository?.full_name ?? repo,
+    date: item.commit.committer.date,
+  };
+}
+
 export async function GET(req: NextRequest) {
   const supabase = await createClient();
   const {
@@ -214,6 +247,10 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "username required" }, { status: 400 });
 
   try {
+    if (type === "lastcommit") {
+      const item = await fetchLastCommit(username, repo);
+      return NextResponse.json({ item });
+    }
     const items =
       type === "prs"
         ? await fetchPRs(username, repo)

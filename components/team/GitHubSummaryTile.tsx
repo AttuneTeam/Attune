@@ -1,9 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { format, formatDistanceToNow, parseISO } from "date-fns";
+import { formatDistanceToNow, parseISO } from "date-fns";
 import { ExternalLink, GitPullRequest } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import type { ActivityItem } from "@/lib/integrations/types";
 
 interface Props {
@@ -13,21 +12,37 @@ interface Props {
 
 export function GitHubSummaryTile({ handle, repo }: Props) {
   const [prs, setPrs] = useState<ActivityItem[] | null>(null);
+  const [lastCommit, setLastCommit] = useState<ActivityItem | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const params = new URLSearchParams({ type: "prs", username: handle });
-    if (repo) params.set("repo", repo);
-    fetch(`/api/integrations/github?${params}`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => setPrs(data?.items ?? []))
+    const prParams = new URLSearchParams({ type: "prs", username: handle });
+    if (repo) prParams.set("repo", repo);
+    const lcParams = new URLSearchParams({ type: "lastcommit", username: handle });
+    if (repo) lcParams.set("repo", repo);
+
+    Promise.all([
+      fetch(`/api/integrations/github?${prParams}`).then((r) =>
+        r.ok ? r.json() : null,
+      ),
+      repo
+        ? fetch(`/api/integrations/github?${lcParams}`).then((r) =>
+            r.ok ? r.json() : null,
+          )
+        : Promise.resolve(null),
+    ])
+      .then(([prData, lcData]) => {
+        setPrs(prData?.items ?? []);
+        setLastCommit(lcData?.item ?? null);
+      })
       .catch(() => setPrs([]))
       .finally(() => setLoading(false));
   }, [handle, repo]);
 
-  const lastActivity = prs?.[0] ?? null;
+  const lastActivity = lastCommit ?? prs?.[0] ?? null;
   const openPR = prs?.find((p) => p.status === "open") ?? null;
-  const closedPR = prs?.find((p) => p.status === "closed" || p.status === "merged") ?? null;
+  const closedPR =
+    prs?.find((p) => p.status === "closed" || p.status === "merged") ?? null;
 
   return (
     <div className="rounded-lg border bg-card p-4">
@@ -60,18 +75,29 @@ export function GitHubSummaryTile({ handle, repo }: Props) {
           ))}
         </div>
       ) : !prs || prs.length === 0 ? (
-        <p className="text-xs text-muted-foreground">No recent pull request activity.</p>
+        <p className="text-xs text-muted-foreground">
+          No recent pull request activity.
+        </p>
       ) : (
         <div className="grid grid-cols-3 gap-4 divide-x">
-          {/* Last activity */}
+          {/* Last commit */}
           <div className="space-y-0.5">
             <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
-              Last active
+              Last commit
             </p>
             {lastActivity ? (
-              <p className="text-sm font-medium">
-                {formatDistanceToNow(parseISO(lastActivity.date), { addSuffix: true })}
-              </p>
+              <>
+                <p className="text-sm font-medium">
+                  {formatDistanceToNow(parseISO(lastActivity.date), {
+                    addSuffix: true,
+                  })}
+                </p>
+                {lastActivity.subtitle && (
+                  <p className="text-[10px] text-muted-foreground truncate">
+                    {lastActivity.subtitle}
+                  </p>
+                )}
+              </>
             ) : (
               <p className="text-xs text-muted-foreground">—</p>
             )}
