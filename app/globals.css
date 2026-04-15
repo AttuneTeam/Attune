@@ -156,6 +156,24 @@
   margin-bottom: 0;
 }
 
+.prose h1,
+.prose h2,
+.prose h3,
+.prose h4,
+.prose h5,
+.prose h6 {
+  margin-bottom: 0.3em;
+}
+
+.prose p {
+  margin-bottom: 0.75em;
+}
+
+.prose ul > li,
+.prose ol > li {
+  margin-top: 0.22rem;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

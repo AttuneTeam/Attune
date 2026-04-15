@@ -64,7 +64,10 @@ export function TeamCoverageCard() {
     return (
       <div className="rounded-lg border bg-card px-5 py-4 flex items-center justify-between">
         <div className="flex items-center gap-2 text-muted-foreground">
-          <Sparkles className="h-4 w-4" />
+          <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+            <Sparkles className="h-4 w-4" />
+            Team Insights
+          </h2>
           <span className="text-sm">No coverage analysis yet</span>
         </div>
         <Button
@@ -83,17 +86,20 @@ export function TeamCoverageCard() {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <Sparkles className="h-3.5 w-3.5" />
+        <div className="gap-2 text-muted-foreground">
+          <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex gap-2">
+            <Sparkles className="h-4 w-4" />
+            Team Insights
+          </h2>
           {generatedAt && (
-            <span className="text-xs">
+            <p className="text-xs ml-6">
               Last run{" "}
               {new Date(generatedAt).toLocaleDateString(undefined, {
                 month: "short",
                 day: "numeric",
                 year: "numeric",
               })}
-            </span>
+            </p>
           )}
         </div>
         <Button
@@ -143,11 +149,16 @@ export function TeamCoverageCard() {
                   <li key={i} className="space-y-1">
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <span className="text-sm font-medium">{g.area}</span>
-                      <Badge variant={SEVERITY_VARIANT[g.severity]} className="text-xs capitalize">
+                      <Badge
+                        variant={SEVERITY_VARIANT[g.severity]}
+                        className="text-xs capitalize"
+                      >
                         {g.severity}
                       </Badge>
                     </div>
-                    <p className="text-xs text-muted-foreground">{g.suggestion}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {g.suggestion}
+                    </p>
                   </li>
                 ))}
               </ul>
@@ -165,7 +176,9 @@ export function TeamCoverageCard() {
                   <li key={i} className="space-y-1">
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <span className="text-sm font-medium">{s.area}</span>
-                      <Badge variant="outline" className="text-xs">{s.member}</Badge>
+                      <Badge variant="outline" className="text-xs">
+                        {s.member}
+                      </Badge>
                     </div>
                     <p className="text-xs text-muted-foreground">{s.risk}</p>
                   </li>
@@ -203,7 +216,9 @@ export function TeamCoverageCard() {
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <span className="text-sm font-medium">{o.area}</span>
                       {o.members.map((m) => (
-                        <Badge key={m} variant="outline" className="text-xs">{m}</Badge>
+                        <Badge key={m} variant="outline" className="text-xs">
+                          {m}
+                        </Badge>
                       ))}
                     </div>
                     <p className="text-xs text-muted-foreground">{o.note}</p>

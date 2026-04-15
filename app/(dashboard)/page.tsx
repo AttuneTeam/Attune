@@ -124,9 +124,6 @@ export default async function DashboardPage() {
             preview={interactionsPreview}
             totalThisMonth={meetingsThisMonth ?? 0}
           />
-          <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-            Team Insights
-          </h2>
           <TeamCoverageCard />
         </div>
       </div>

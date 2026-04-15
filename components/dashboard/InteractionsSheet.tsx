@@ -73,37 +73,6 @@ export function InteractionsSheet({ preview, totalThisMonth }: Props) {
             }
           />
         </div>
-
-        {preview.length > 0 && (
-          <ul className="divide-y">
-            {preview.slice(0, 3).map((item) => (
-              <li
-                key={item.id}
-                className="py-2 first:pt-0 last:pb-0 flex items-center gap-3"
-              >
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm truncate">{item.memberName}</p>
-                  {item.title && (
-                    <p className="text-xs text-muted-foreground truncate">
-                      {item.title}
-                    </p>
-                  )}
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  {item.sentiment_score !== null && (
-                    <Badge
-                      variant={sentimentVariant(item.sentiment_score)}
-                      className="text-xs"
-                    />
-                  )}
-                  <span className="text-xs text-muted-foreground tabular-nums">
-                    {format(parseISO(item.scheduled_at), "MMM d")}
-                  </span>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
       </div>
 
       <SheetContent className="sm:max-w-2xl overflow-y-auto p-0 gap-0">
