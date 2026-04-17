@@ -3,6 +3,7 @@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { PersonalTab } from "./PersonalTab";
 import { PersonalCalendarWidget } from "@/components/calendar/PersonalCalendarWidget";
+import { ManagerProfileInsights } from "@/components/account/ManagerProfileInsights";
 import type { PersonalItem } from "@/lib/supabase/types";
 
 export function DashboardPageTabs({
@@ -21,6 +22,7 @@ export function DashboardPageTabs({
       <TabsList>
         <TabsTrigger value="personal">Personal</TabsTrigger>
         <TabsTrigger value="team">Team</TabsTrigger>
+        <TabsTrigger value="my-profile">My Profile</TabsTrigger>
       </TabsList>
 
       <TabsContent value="personal">
@@ -33,6 +35,10 @@ export function DashboardPageTabs({
       </TabsContent>
 
       <TabsContent value="team">{teamContent}</TabsContent>
+
+      <TabsContent value="my-profile">
+        <ManagerProfileInsights />
+      </TabsContent>
     </Tabs>
   );
 }

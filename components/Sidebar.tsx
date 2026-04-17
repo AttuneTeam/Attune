@@ -218,19 +218,24 @@ export function Sidebar({
 
       {/* User footer */}
       <div className="p-3 flex items-center gap-3">
-        <Avatar className="h-8 w-8">
-          <AvatarFallback className="text-xs bg-secondary text-secondary-foreground">
-            {initials}
-          </AvatarFallback>
-        </Avatar>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium truncate">
-            {profile?.full_name ?? "User"}
-          </p>
-          <p className="text-xs text-muted-foreground truncate">
-            {profile?.role}
-          </p>
-        </div>
+        <Link
+          href="/account"
+          className="flex items-center gap-3 flex-1 min-w-0 hover:opacity-80 transition-opacity"
+        >
+          <Avatar className="h-8 w-8">
+            <AvatarFallback className="text-xs bg-secondary text-secondary-foreground">
+              {initials}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium truncate">
+              {profile?.full_name ?? "User"}
+            </p>
+            <p className="text-xs text-muted-foreground truncate">
+              {profile?.role}
+            </p>
+          </div>
+        </Link>
         <Button
           variant="ghost"
           size="icon"

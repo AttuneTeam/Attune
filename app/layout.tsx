@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { Hanken_Grotesk, JetBrains_Mono } from "next/font/google";
+import { Google_Sans_Flex, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
-const inter = Hanken_Grotesk({
+const inter = Google_Sans_Flex({
   variable: "--font-inter",
   subsets: ["latin"],
 });

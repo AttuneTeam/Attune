@@ -14,18 +14,27 @@ export type Database = {
           id: string
           full_name: string
           role: string
+          linkedin_url: string | null
+          github_handle: string | null
+          role_ids: string[]
           created_at: string
         }
         Insert: {
           id: string
           full_name?: string
           role?: string
+          linkedin_url?: string | null
+          github_handle?: string | null
+          role_ids?: string[]
           created_at?: string
         }
         Update: {
           id?: string
           full_name?: string
           role?: string
+          linkedin_url?: string | null
+          github_handle?: string | null
+          role_ids?: string[]
         }
       }
       teams: {
