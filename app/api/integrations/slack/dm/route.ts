@@ -34,9 +34,9 @@ export async function GET(req: NextRequest) {
 
     const channelId = openData.channel.id as string;
 
-    // Fetch last 5 messages
+    // Fetch last 20 messages
     const histRes = await fetch(
-      `${SLACK_API}/conversations.history?channel=${channelId}&limit=5`,
+      `${SLACK_API}/conversations.history?channel=${channelId}&limit=20`,
       { headers },
     );
     const histData = await histRes.json();
@@ -47,12 +47,14 @@ export async function GET(req: NextRequest) {
 
     const messages = (
       histData.messages as Array<{ ts: string; user: string; text?: string }>
-    ).map((msg) => ({
-      ts: msg.ts,
-      user: msg.user,
-      text: msg.text ?? "",
-      isFromMember: msg.user === memberId,
-    }));
+    )
+      .reverse()
+      .map((msg) => ({
+        ts: msg.ts,
+        user: msg.user,
+        text: msg.text ?? "",
+        isFromMember: msg.user === memberId,
+      }));
 
     return NextResponse.json({ messages });
   } catch {

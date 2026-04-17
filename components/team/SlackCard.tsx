@@ -121,11 +121,11 @@ export function SlackCard({ result }: { result: IntegrationResult }) {
             <MessageSquare className="h-3 w-3" />
             Recent DMs
           </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="sm:max-w-md flex flex-col max-h-[80vh]">
             <DialogHeader>
-              <DialogTitle>Recent DMs — {result.handle}</DialogTitle>
+              <DialogTitle>Recent DMs</DialogTitle>
             </DialogHeader>
-            <div className="space-y-3 mt-1">
+            <div className="space-y-3 mt-1 overflow-y-auto flex-1 min-h-0 pr-1">
               {loading && (
                 <p className="text-xs text-muted-foreground text-center py-4">
                   Loading…
@@ -143,11 +143,13 @@ export function SlackCard({ result }: { result: IntegrationResult }) {
                 messages?.map((msg) => (
                   <div key={msg.ts} className="flex gap-2.5 text-xs">
                     <span
-                      className={
-                        msg.isFromMember
-                          ? "font-medium text-foreground shrink-0"
-                          : "font-medium text-muted-foreground shrink-0"
-                      }
+                      className={`h-8 w-8 rounded-sm font-medium px-2 py-1 flex items-center justify-center 
+                        ${
+                          msg.isFromMember
+                            ? "bg-muted text-foreground"
+                            : "bg-secondary text-muted-foreground "
+                        }
+                      `}
                     >
                       {msg.isFromMember ? "Them" : "You"}
                     </span>

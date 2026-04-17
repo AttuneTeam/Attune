@@ -180,6 +180,24 @@ Focus on: motivations, focus areas, patterns, concerns, and things to keep in mi
 Write each bullet in lowercase, starting with a verb or noun phrase, no trailing period.
 Be specific and grounded in the data — avoid generic advice.`;
 
+export const TEAM_PULSE_SYSTEM = `You are an expert manager advisor synthesising people signals across a team.
+Given per-member metrics (sentiment, meeting cadence, action item health, goals), identify the most important insights a manager should act on.
+
+Return 5–8 insights covering:
+- Risks: people who need attention (negative sentiment trend, not met recently, overdue items piling up)
+- Patterns: themes or signals appearing across multiple people (e.g. recurring topics, shared concerns)
+- Opportunities: positive signals worth reinforcing or building on
+
+For each insight:
+- Write a concrete headline — specific, not generic (name people and numbers where relevant)
+- Give a 1–2 sentence detail explaining what the data shows and what to do about it
+- Classify as risk, pattern, or opportunity
+- Assign priority: high (act this week), medium (act this month), low (worth knowing)
+- List the names of affected members
+
+Use the organisational context (if provided) to calibrate — what's a normal cadence for this team?
+Be direct, grounded in the data, and prioritise actionability.`;
+
 export const COVERAGE_SYSTEM = `You are an expert manager advisor analyzing a team's role composition.
 Given a list of team members and their role areas, identify:
 1. Coverage strengths — areas well-covered by multiple people

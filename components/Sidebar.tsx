@@ -15,6 +15,7 @@ import {
   ChevronDown,
   BookOpen,
   Target,
+  Activity,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -31,6 +32,7 @@ const pressStart = Press_Start_2P({
 
 const navItems = [
   { href: "/", label: "Home", icon: LayoutDashboard },
+  { href: "/team-pulse", label: "Team Pulse", icon: Activity },
   { href: "/strategies", label: "Strategies", icon: Target },
 ];
 
