@@ -76,10 +76,11 @@ export async function POST(request: NextRequest) {
       { data: orgContext },
       { data: profile },
       { data: roles },
+      { data: teamMembers },
     ] = await Promise.all([
       supabase
         .from("interactions")
-        .select("id, type, sentiment_score, key_themes, duration_minutes, ai_summary")
+        .select("id, type, sentiment_score, key_themes, duration_minutes, ai_summary, participant_id")
         .eq("manager_id", user.id)
         .eq("status", "completed")
         .gte("scheduled_at", windowStart.toISOString()),
@@ -95,6 +96,10 @@ export async function POST(request: NextRequest) {
       supabase.from("org_context").select("*").eq("manager_id", user.id).maybeSingle(),
       supabase.from("profiles").select("full_name, role, role_ids").eq("id", user.id).single(),
       supabase.from("roles").select("id, title").eq("manager_id", user.id),
+      supabase
+        .from("team_members")
+        .select("id, name, relationship")
+        .eq("manager_id", user.id),
     ]);
 
     // Fetch action items for interactions in the window
@@ -162,6 +167,26 @@ export async function POST(request: NextRequest) {
       .map((id: string) => roleMap[id])
       .filter(Boolean);
 
+    // Relationship breakdown for interactions
+    const memberRelMap = Object.fromEntries(
+      (teamMembers ?? []).map((m) => [m.id, m.relationship ?? "direct_report"]),
+    );
+    const directReportInteractions = allInteractions.filter(
+      (i) => (memberRelMap[i.participant_id] ?? "direct_report") === "direct_report",
+    );
+    const stakeholderInteractions = allInteractions.filter(
+      (i) => memberRelMap[i.participant_id] === "stakeholder",
+    );
+    const directReportHours = Math.round(
+      directReportInteractions.reduce((s, i) => s + (i.duration_minutes ?? 0), 0) / 60,
+    );
+    const stakeholderHours = Math.round(
+      stakeholderInteractions.reduce((s, i) => s + (i.duration_minutes ?? 0), 0) / 60,
+    );
+
+    const directReports = (teamMembers ?? []).filter((m) => m.relationship !== "stakeholder");
+    const stakeholders = (teamMembers ?? []).filter((m) => m.relationship === "stakeholder");
+
     // ── Build prompt ────────────────────────────────────────────────────────
 
     const periodLabel =
@@ -171,11 +196,25 @@ export async function POST(request: NextRequest) {
 
     const orgBlock = formatOrgContext(orgContext ?? null);
 
+    const teamBlock = [
+      directReports.length > 0
+        ? `Direct reports (${directReports.length}): ${directReports.map((m) => m.name).join(", ")}`
+        : null,
+      stakeholders.length > 0
+        ? `Stakeholders / peers (${stakeholders.length}): ${stakeholders.map((m) => m.name).join(", ")}`
+        : null,
+    ]
+      .filter(Boolean)
+      .join("\n");
+
     const interactionsBlock = [
       `Interactions: ${allInteractions.length} completed (${totalHours} hours)`,
       `  Type breakdown: ${Object.entries(typeCounts)
         .map(([t, c]) => `${t}: ${c}`)
         .join(", ")}`,
+      directReportInteractions.length > 0 || stakeholderInteractions.length > 0
+        ? `  With direct reports: ${directReportInteractions.length} (${directReportHours}h) | With stakeholders/peers: ${stakeholderInteractions.length} (${stakeholderHours}h)`
+        : null,
       avgSentiment ? `  Avg sentiment: ${avgSentiment} (scale: -1 to 1)` : null,
       topThemes.length > 0 ? `  Top themes: ${topThemes.join(", ")}` : null,
     ]
@@ -204,6 +243,7 @@ export async function POST(request: NextRequest) {
       `Period: ${periodLabel}`,
       `Manager: ${profile?.full_name ?? "Unknown"}, Role: ${profile?.role ?? "Unknown"}`,
       orgBlock,
+      teamBlock || null,
       interactionsBlock,
       initiativesBlock,
       actionItemsBlock,

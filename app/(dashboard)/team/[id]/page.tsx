@@ -367,8 +367,8 @@ export default async function MemberProfilePage({
                   </Link>
                 </div>
               )}
-              {(member.level || teamName) && (
-                <div className="flex items-center gap-2 mt-1.5">
+              {(member.level || teamName || member.relationship) && (
+                <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                   {teamName && (
                     <Badge variant="outline" className="text-xs">
                       {teamName}
@@ -380,6 +380,11 @@ export default async function MemberProfilePage({
                       className="text-xs text-primary border-primary/40"
                     >
                       Squad Lead
+                    </Badge>
+                  )}
+                  {member.relationship === "stakeholder" && (
+                    <Badge variant="secondary" className="text-xs">
+                      Stakeholder / Peer
                     </Badge>
                   )}
                 </div>

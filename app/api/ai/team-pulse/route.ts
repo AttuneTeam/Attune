@@ -19,6 +19,7 @@ export async function POST(_request: NextRequest) {
       .from("team_members")
       .select("id, name, level, skills, start_date")
       .eq("manager_id", user.id)
+      .eq("relationship", "direct_report")
       .order("name");
 
     if (!members || members.length === 0) {

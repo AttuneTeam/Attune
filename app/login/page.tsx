@@ -53,7 +53,7 @@ export default function LoginPage() {
       }
     }
 
-    router.push('/')
+    router.push('/dashboard')
     router.refresh()
   }
 

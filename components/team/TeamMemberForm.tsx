@@ -39,6 +39,9 @@ export function TeamMemberForm({ teams, roles, managerId, existing }: Props) {
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
+  const [relationship, setRelationship] = useState<"direct_report" | "stakeholder">(
+    (existing?.relationship as "direct_report" | "stakeholder") ?? "direct_report",
+  );
   const [name, setName] = useState(existing?.name ?? "");
   const [email, setEmail] = useState(existing?.email ?? "");
   const [level, setLevel] = useState(existing?.level ?? "");
@@ -75,6 +78,7 @@ export function TeamMemberForm({ teams, roles, managerId, existing }: Props) {
             skills,
             team_id: teamId || null,
             is_squad_lead: teamId ? isSquadLead : false,
+            relationship,
           })
           .eq("id", existing.id);
         if (error) {
@@ -94,6 +98,7 @@ export function TeamMemberForm({ teams, roles, managerId, existing }: Props) {
           skills,
           team_id: teamId || null,
           is_squad_lead: teamId ? isSquadLead : false,
+          relationship,
         });
         if (error) {
           toast.error(error.message);
@@ -155,6 +160,31 @@ export function TeamMemberForm({ teams, roles, managerId, existing }: Props) {
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 mt-2">
+          {/* Relationship toggle */}
+          <div className="flex rounded-lg border overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setRelationship("direct_report")}
+              className={`flex-1 px-3 py-2 text-sm font-medium transition-colors ${
+                relationship === "direct_report"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-background text-muted-foreground hover:bg-muted"
+              }`}
+            >
+              Direct report
+            </button>
+            <button
+              type="button"
+              onClick={() => setRelationship("stakeholder")}
+              className={`flex-1 px-3 py-2 text-sm font-medium transition-colors ${
+                relationship === "stakeholder"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-background text-muted-foreground hover:bg-muted"
+              }`}
+            >
+              Stakeholder / Peer
+            </button>
+          </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2 space-y-1.5">
               <Label htmlFor="name">Name *</Label>

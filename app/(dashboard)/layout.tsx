@@ -31,7 +31,7 @@ export default async function DashboardLayout({
 
   const { data: members } = await supabase
     .from('team_members')
-    .select('id, name')
+    .select('id, name, relationship')
     .order('name')
 
   return (

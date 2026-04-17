@@ -73,6 +73,7 @@ export type Database = {
           manager_read: string[]
           manager_read_updated_at: string | null
           is_squad_lead: boolean
+          relationship: string
         }
         Insert: {
           id?: string
@@ -88,6 +89,7 @@ export type Database = {
           manager_read?: string[]
           manager_read_updated_at?: string | null
           is_squad_lead?: boolean
+          relationship?: string
         }
         Update: {
           team_id?: string | null
@@ -101,6 +103,7 @@ export type Database = {
           manager_read?: string[]
           manager_read_updated_at?: string | null
           is_squad_lead?: boolean
+          relationship?: string
         }
       }
       roles: {

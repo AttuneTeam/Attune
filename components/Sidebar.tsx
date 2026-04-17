@@ -31,7 +31,7 @@ const pressStart = Press_Start_2P({
 });
 
 const navItems = [
-  { href: "/", label: "Home", icon: LayoutDashboard },
+  { href: "/dashboard", label: "Home", icon: LayoutDashboard },
   { href: "/team-pulse", label: "Team Pulse", icon: Activity },
   { href: "/strategies", label: "Strategies", icon: Target },
 ];
@@ -43,7 +43,7 @@ const settingsItems = [
   { href: "/settings/knowledge", label: "Knowledge", icon: BookOpen },
 ];
 
-type Member = { id: string; name: string };
+type Member = { id: string; name: string; relationship?: string | null };
 
 export function Sidebar({
   profile,
@@ -55,6 +55,7 @@ export function Sidebar({
   const pathname = usePathname();
   const router = useRouter();
   const [peopleOpen, setPeopleOpen] = useState(true);
+  const [stakeholdersOpen, setStakeholdersOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(
     pathname.startsWith("/roles") ||
       pathname.startsWith("/settings") ||
@@ -103,7 +104,7 @@ export function Sidebar({
       <nav className="flex-1 py-4 px-2 space-y-0.5 overflow-y-auto">
         {navItems.map(({ href, label, icon: Icon }) => {
           const active =
-            href === "/" ? pathname === "/" : pathname.startsWith(href);
+            href === "/dashboard" ? pathname === "/dashboard" : pathname.startsWith(href);
           return (
             <Link
               key={href}
@@ -130,45 +131,92 @@ export function Sidebar({
         })}
 
         {/* People quick-access */}
-        {members.length > 0 && (
-          <div className="pt-2">
-            <button
-              type="button"
-              onClick={() => setPeopleOpen((o) => !o)}
-              className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-all"
-            >
-              <Users className="h-4 w-4 shrink-0" />
-              <span className="flex-1 text-left">People</span>
-              <ChevronDown
-                className={cn(
-                  "h-3.5 w-3.5 shrink-0 transition-transform duration-200",
-                  peopleOpen && "rotate-180",
-                )}
-              />
-            </button>
-            {peopleOpen && (
-              <div className="mt-0.5 ml-3 pl-3 border-l border-border/50 space-y-0.5">
-                {members.map((member) => {
-                  const active = pathname === `/team/${member.id}`;
-                  return (
-                    <Link
-                      key={member.id}
-                      href={`/team/${member.id}`}
+        {(() => {
+          const directReports = members.filter((m) => m.relationship !== "stakeholder");
+          const stakeholders = members.filter((m) => m.relationship === "stakeholder");
+          return (
+            <>
+              {directReports.length > 0 && (
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setPeopleOpen((o) => !o)}
+                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-all"
+                  >
+                    <Users className="h-4 w-4 shrink-0" />
+                    <span className="flex-1 text-left">People</span>
+                    <ChevronDown
                       className={cn(
-                        "block px-2 py-1.5 rounded-md text-xs transition-colors truncate",
-                        active
-                          ? "font-medium text-primary"
-                          : "text-muted-foreground hover:text-foreground hover:bg-accent",
+                        "h-3.5 w-3.5 shrink-0 transition-transform duration-200",
+                        peopleOpen && "rotate-180",
                       )}
-                    >
-                      {member.name}
-                    </Link>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        )}
+                    />
+                  </button>
+                  {peopleOpen && (
+                    <div className="mt-0.5 ml-3 pl-3 border-l border-border/50 space-y-0.5">
+                      {directReports.map((member) => {
+                        const active = pathname === `/team/${member.id}`;
+                        return (
+                          <Link
+                            key={member.id}
+                            href={`/team/${member.id}`}
+                            className={cn(
+                              "block px-2 py-1.5 rounded-md text-xs transition-colors truncate",
+                              active
+                                ? "font-medium text-primary"
+                                : "text-muted-foreground hover:text-foreground hover:bg-accent",
+                            )}
+                          >
+                            {member.name}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+              {stakeholders.length > 0 && (
+                <div className="pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setStakeholdersOpen((o) => !o)}
+                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-all"
+                  >
+                    <Network className="h-4 w-4 shrink-0" />
+                    <span className="flex-1 text-left">Stakeholders</span>
+                    <ChevronDown
+                      className={cn(
+                        "h-3.5 w-3.5 shrink-0 transition-transform duration-200",
+                        stakeholdersOpen && "rotate-180",
+                      )}
+                    />
+                  </button>
+                  {stakeholdersOpen && (
+                    <div className="mt-0.5 ml-3 pl-3 border-l border-border/50 space-y-0.5">
+                      {stakeholders.map((member) => {
+                        const active = pathname === `/team/${member.id}`;
+                        return (
+                          <Link
+                            key={member.id}
+                            href={`/team/${member.id}`}
+                            className={cn(
+                              "block px-2 py-1.5 rounded-md text-xs transition-colors truncate",
+                              active
+                                ? "font-medium text-primary"
+                                : "text-muted-foreground hover:text-foreground hover:bg-accent",
+                            )}
+                          >
+                            {member.name}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+            </>
+          );
+        })()}
 
         {/* Settings section */}
         <div className="pt-2">

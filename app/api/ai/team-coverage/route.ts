@@ -23,6 +23,7 @@ export async function POST(request: NextRequest) {
       .from("team_members")
       .select("id, name, level, role_id, role_description")
       .eq("manager_id", user.id)
+      .eq("relationship", "direct_report")
       .order("name");
 
     if (!members || members.length === 0) {
