@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { Press_Start_2P } from "next/font/google";
-import logo from "@/components/logo2.png";
+import logo from "@/components/attune-logo2.svg";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -23,6 +23,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/lib/supabase/types";
+import { AttuneLogo } from "./marketing/MarketingNav";
 
 const pressStart = Press_Start_2P({
   variable: "--font-press-start",
@@ -97,14 +98,16 @@ export function Sidebar({
         <div className="block">ATTUNE</div>
       </div> */}
 
-      <div className={`m-2 px-4 py-2 rounded-lg`}>
-        <Image alt="" src={logo} width="200" />
+      <div className={`mx-2 my-4 px-4 py-2 rounded-lg`}>
+        <AttuneLogo />
       </div>
       {/* Nav */}
       <nav className="flex-1 py-4 px-2 space-y-0.5 overflow-y-auto">
         {navItems.map(({ href, label, icon: Icon }) => {
           const active =
-            href === "/dashboard" ? pathname === "/dashboard" : pathname.startsWith(href);
+            href === "/dashboard"
+              ? pathname === "/dashboard"
+              : pathname.startsWith(href);
           return (
             <Link
               key={href}
@@ -132,8 +135,12 @@ export function Sidebar({
 
         {/* People quick-access */}
         {(() => {
-          const directReports = members.filter((m) => m.relationship !== "stakeholder");
-          const stakeholders = members.filter((m) => m.relationship === "stakeholder");
+          const directReports = members.filter(
+            (m) => m.relationship !== "stakeholder",
+          );
+          const stakeholders = members.filter(
+            (m) => m.relationship === "stakeholder",
+          );
           return (
             <>
               {directReports.length > 0 && (

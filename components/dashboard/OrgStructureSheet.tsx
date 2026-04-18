@@ -82,9 +82,50 @@ function OrgNode({
   );
 }
 
-export function OrgStructureSheet({ teams, members }: Props) {
+export function OrgTreeDisplay({ teams, members }: Props) {
   const unassigned = members.filter((m) => !m.team_id);
 
+  return (
+    <div className="space-y-8">
+      {teams.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          No teams defined yet. Add teams from the Team page.
+        </p>
+      ) : (
+        <OrgNode teams={teams} members={members} />
+      )}
+
+      {unassigned.length > 0 && (
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <div className="h-2 w-2 rounded-full bg-muted-foreground/40 shrink-0" />
+            <span className="text-sm font-semibold text-muted-foreground tracking-tight">
+              Unassigned
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {unassigned.map((m) => (
+              <Link
+                key={m.id}
+                href={`/team/${m.id}`}
+                className="inline-flex items-center gap-1.5 rounded-full border bg-card px-3 py-1 text-xs font-medium hover:bg-accent transition-colors"
+              >
+                <span>{m.name}</span>
+                {m.level && (
+                  <span className="text-muted-foreground capitalize">
+                    · {m.level}
+                  </span>
+                )}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function OrgStructureSheet({ teams, members }: Props) {
   return (
     <Sheet>
       <SheetTrigger
@@ -101,41 +142,8 @@ export function OrgStructureSheet({ teams, members }: Props) {
           <SheetTitle>Org Structure</SheetTitle>
         </SheetHeader>
 
-        <div className="px-6 py-6 space-y-8">
-          {teams.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              No teams defined yet. Add teams from the Team page.
-            </p>
-          ) : (
-            <OrgNode teams={teams} members={members} />
-          )}
-
-          {unassigned.length > 0 && (
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <div className="h-2 w-2 rounded-full bg-muted-foreground/40 shrink-0" />
-                <span className="text-sm font-semibold text-muted-foreground tracking-tight">
-                  Unassigned
-                </span>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {unassigned.map((m) => (
-                  <Link
-                    key={m.id}
-                    href={`/team/${m.id}`}
-                    className="inline-flex items-center gap-1.5 rounded-full border bg-card px-3 py-1 text-xs font-medium hover:bg-accent transition-colors"
-                  >
-                    <span>{m.name}</span>
-                    {m.level && (
-                      <span className="text-muted-foreground capitalize">
-                        · {m.level}
-                      </span>
-                    )}
-                  </Link>
-                ))}
-              </div>
-            </div>
-          )}
+        <div className="px-6 py-6">
+          <OrgTreeDisplay teams={teams} members={members} />
         </div>
       </SheetContent>
     </Sheet>

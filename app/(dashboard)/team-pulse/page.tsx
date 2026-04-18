@@ -12,7 +12,7 @@ export default async function TeamPulsePage() {
   // Team members
   const { data: members } = await supabase
     .from("team_members")
-    .select("id, name, level, start_date")
+    .select("id, name, level, start_date, team_id, is_squad_lead")
     .eq("manager_id", user.id)
     .order("name");
 
@@ -103,6 +103,8 @@ export default async function TeamPulsePage() {
     };
   });
 
+  const { data: teams } = await supabase.from("teams").select("*").order("name");
+
   // Aggregate themes
   const { data: allInteractionsWithThemes } = await supabase
     .from("interactions")
@@ -145,6 +147,8 @@ export default async function TeamPulsePage() {
         sentimentData={sentimentData}
         memberNames={members.map((m) => m.name)}
         initialTeamThemes={teamThemes}
+        teams={teams ?? []}
+        members={members as never}
       />
     </div>
   );

@@ -1,10 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { NewBookingButton } from "@/components/dashboard/NewBookingButton";
-import { UpcomingList } from "@/components/dashboard/UpcomingList";
-import { InteractionsSheet } from "@/components/dashboard/InteractionsSheet";
 import { OrgStructureSheet } from "@/components/dashboard/OrgStructureSheet";
-import { TeamCoverageCard } from "@/components/team/TeamCoverageCard";
-import { DashboardActionItems } from "@/components/dashboard/DashboardActionItems";
 import { DashboardPageTabs } from "@/components/dashboard/DashboardPageTabs";
 import { redirect } from "next/navigation";
 
@@ -139,48 +135,6 @@ export default async function DashboardPage() {
 
   const hasGoogleCalendar = !!googleToken;
 
-  const teamContent = (
-    <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-6 w-full pt-4">
-      {/* ── Col 1: upcoming + insights ── */}
-      <div className="space-y-6">
-        <div className="space-y-4">
-          <InteractionsSheet
-            preview={interactionsPreview}
-            totalThisMonth={meetingsThisMonth ?? 0}
-            totalMinutesThisMonth={totalMinutesThisMonth}
-          />
-          <TeamCoverageCard />
-        </div>
-      </div>
-
-      {/* ── Col 2: action items + direct reports ── */}
-      <div className="space-y-6">
-        <div>
-          {upcomingBookings && upcomingBookings.length > 0 && (
-            <div>
-              <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
-                Upcoming
-              </h2>
-              <UpcomingList bookings={upcomingBookings as never} />
-            </div>
-          )}
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-              Action Items
-            </h2>
-            <a
-              href="/action-items"
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-            >
-              View all
-            </a>
-          </div>
-          <DashboardActionItems items={(actionItemsRaw ?? []) as never} />
-        </div>
-      </div>
-    </div>
-  );
-
   return (
     <div className="p-8">
       {/* Header */}
@@ -193,10 +147,14 @@ export default async function DashboardPage() {
       </div>
 
       <DashboardPageTabs
-        teamContent={teamContent}
         personalItems={(personalItemsRaw ?? []) as never}
         userId={user.id}
         hasGoogleCalendar={hasGoogleCalendar}
+        interactionsPreview={interactionsPreview}
+        totalThisMonth={meetingsThisMonth ?? 0}
+        totalMinutesThisMonth={totalMinutesThisMonth}
+        upcomingBookings={upcomingBookings ?? []}
+        actionItems={(actionItemsRaw ?? []) as never}
       />
     </div>
   );
