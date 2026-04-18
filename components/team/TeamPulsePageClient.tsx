@@ -7,12 +7,7 @@ import { TeamSentimentOverview } from "@/components/team/TeamSentimentOverview";
 import { TeamThemesCard } from "@/components/team/TeamThemesCard";
 import { TeamCoverageCard } from "@/components/team/TeamCoverageCard";
 import { OrgTreeDisplay } from "@/components/dashboard/OrgStructureSheet";
-import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  TabsContent,
-} from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import type { Team, TeamMember } from "@/lib/supabase/types";
 
 interface SentimentPoint {
@@ -68,6 +63,14 @@ export function TeamPulsePageClient({
       </TabsList>
 
       <TabsContent value="pulse">
+        <div className="pt-8">
+          <h1 className="text-lg font-bold">Team Pulse</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Synthesised insights across your team based on 1-on-1s, sentiment,
+            and action items.
+          </p>
+        </div>
+
         <div className="space-y-8 pt-4">
           <TeamPulseCard onResultLoaded={handlePulseResult} />
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -82,9 +85,13 @@ export function TeamPulsePageClient({
       </TabsContent>
 
       <TabsContent value="structure">
-        <div className="space-y-8 pt-4">
-          <OrgTreeDisplay teams={teams} members={members} />
-          <TeamCoverageCard />
+        <div className="flex gap-6 pt-8">
+          <div className="flex-2">
+            <TeamCoverageCard />
+          </div>
+          <div className="flex-1">
+            <OrgTreeDisplay teams={teams} members={members} />
+          </div>
         </div>
       </TabsContent>
     </Tabs>

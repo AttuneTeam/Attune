@@ -44,15 +44,15 @@ export function DashboardPageTabs({
       </TabsList>
 
       <TabsContent value="personal">
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 pt-4">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_1fr] gap-6 pt-4">
           <PersonalTab initialItems={personalItems} userId={userId} />
           <div className="space-y-4">
-            <PersonalCalendarWidget connected={hasGoogleCalendar} />
             <InteractionsSheet
               preview={interactionsPreview}
               totalThisMonth={totalThisMonth}
               totalMinutesThisMonth={totalMinutesThisMonth}
             />
+            <PersonalCalendarWidget connected={hasGoogleCalendar} />
             {upcomingBookings.length > 0 && (
               <div>
                 <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">

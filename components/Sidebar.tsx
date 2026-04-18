@@ -1,8 +1,6 @@
 "use client";
 
-import Image from "next/image";
 import { Press_Start_2P } from "next/font/google";
-import logo from "@/components/attune-logo2.svg";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -25,15 +23,9 @@ import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/lib/supabase/types";
 import { AttuneLogo } from "./marketing/MarketingNav";
 
-const pressStart = Press_Start_2P({
-  variable: "--font-press-start",
-  weight: "400",
-  subsets: ["latin"],
-});
-
 const navItems = [
   { href: "/dashboard", label: "Home", icon: LayoutDashboard },
-  { href: "/team-pulse", label: "Team Pulse", icon: Activity },
+  { href: "/team-pulse", label: "Team", icon: Activity },
   { href: "/strategies", label: "Strategies", icon: Target },
 ];
 
@@ -84,20 +76,6 @@ export function Sidebar({
 
   return (
     <aside className="w-56 flex flex-col bg-sidebar shrink-0">
-      {/* Logo */}
-      {/* <div
-        style={{
-          ...pressStart.style,
-          backgroundColor: "#d6d4cb",
-          fontSize: "26px",
-          color: "#346057",
-          border: "4px solid #346057",
-        }}
-        className={`m-6 px-4 py-2 rounded-lg`}
-      >
-        <div className="block">ATTUNE</div>
-      </div> */}
-
       <div className={`mx-2 my-4 px-4 py-2 rounded-lg`}>
         <AttuneLogo />
       </div>

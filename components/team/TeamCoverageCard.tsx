@@ -64,8 +64,7 @@ export function TeamCoverageCard() {
     return (
       <div className="rounded-lg border bg-card px-5 py-4 flex items-center justify-between">
         <div className="flex items-center gap-2 text-muted-foreground">
-          <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-            <Sparkles className="h-4 w-4" />
+          <h2 className="text-lg text-foreground font-bold flex gap-2">
             Team Insights
           </h2>
           <span className="text-sm">No coverage analysis yet</span>
@@ -77,6 +76,7 @@ export function TeamCoverageCard() {
           disabled={loading}
           className="text-xs h-7"
         >
+          <Sparkles className="h-4 w-4" />
           {loading ? "Analysing…" : "Analyse team"}
         </Button>
       </div>
@@ -87,12 +87,11 @@ export function TeamCoverageCard() {
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <div className="gap-2 text-muted-foreground">
-          <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex gap-2">
-            <Sparkles className="h-4 w-4" />
+          <h2 className="text-lg text-foreground font-bold flex gap-2">
             Team Insights
           </h2>
           {generatedAt && (
-            <p className="text-xs ml-6">
+            <p className="text-xs">
               Last run{" "}
               {new Date(generatedAt).toLocaleDateString(undefined, {
                 month: "short",
@@ -104,11 +103,13 @@ export function TeamCoverageCard() {
         </div>
         <Button
           size="sm"
-          variant="ghost"
+          variant="outline"
           onClick={analyse}
           disabled={loading}
           className="text-xs h-7 text-muted-foreground"
         >
+          <Sparkles className="h-4 w-4" />
+
           {loading ? "Refreshing…" : "Re-analyse"}
         </Button>
       </div>

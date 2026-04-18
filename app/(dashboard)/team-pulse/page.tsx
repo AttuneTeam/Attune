@@ -85,8 +85,7 @@ export default async function TeamPulsePage() {
       memberInteractions.length > 0 ? memberInteractions[0] : null;
     const daysSinceLastMeeting = lastInteraction
       ? Math.floor(
-          (today.getTime() -
-            new Date(lastInteraction.scheduled_at).getTime()) /
+          (today.getTime() - new Date(lastInteraction.scheduled_at).getTime()) /
             (1000 * 60 * 60 * 24),
         )
       : null;
@@ -103,7 +102,10 @@ export default async function TeamPulsePage() {
     };
   });
 
-  const { data: teams } = await supabase.from("teams").select("*").order("name");
+  const { data: teams } = await supabase
+    .from("teams")
+    .select("*")
+    .order("name");
 
   // Aggregate themes
   const { data: allInteractionsWithThemes } = await supabase
@@ -135,13 +137,6 @@ export default async function TeamPulsePage() {
 
   return (
     <div className="p-8">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">Team Pulse</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Synthesised insights across your team based on 1-on-1s, sentiment, and action items.
-        </p>
-      </div>
-
       <TeamPulsePageClient
         attentionMetrics={attentionMetrics}
         sentimentData={sentimentData}

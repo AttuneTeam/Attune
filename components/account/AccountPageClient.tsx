@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
-import { CheckCircle2, XCircle, GitBranch, Link2, Mail, KeyRound, Check } from "lucide-react";
+import { CheckCircle2, XCircle, GitBranch, Link2, Mail, KeyRound, Check, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Profile } from "@/lib/supabase/types";
 
@@ -55,6 +55,8 @@ export function AccountPageClient({
 }) {
   const [saving, setSaving] = useState(false);
   const [resetting, setResetting] = useState(false);
+  const [disconnecting, setDisconnecting] = useState(false);
+  const [googleConnected, setGoogleConnected] = useState(hasGoogleCalendar);
 
   const [fullName, setFullName] = useState(profile?.full_name ?? "");
   const [role, setRole] = useState(profile?.role ?? "");
@@ -89,6 +91,20 @@ export function AccountPageClient({
       toast.error("Failed to save profile");
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleDisconnectGoogle() {
+    setDisconnecting(true);
+    try {
+      const res = await fetch("/api/auth/google", { method: "DELETE" });
+      if (!res.ok) throw new Error();
+      setGoogleConnected(false);
+      toast.success("Google Calendar disconnected");
+    } catch {
+      toast.error("Failed to disconnect");
+    } finally {
+      setDisconnecting(false);
     }
   }
 
@@ -214,16 +230,33 @@ export function AccountPageClient({
               <p className="text-xs text-muted-foreground">Sync upcoming events to the personal tab</p>
             </div>
           </div>
-          {hasGoogleCalendar ? (
-            <Badge variant="secondary" className="gap-1 text-xs">
-              <CheckCircle2 className="h-3 w-3 text-[#6D998F]" />
-              Connected
-            </Badge>
+          {googleConnected ? (
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary" className="gap-1 text-xs">
+                <CheckCircle2 className="h-3 w-3 text-[#6D998F]" />
+                Connected
+              </Badge>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-xs h-7 text-muted-foreground hover:text-destructive"
+                onClick={handleDisconnectGoogle}
+                disabled={disconnecting}
+              >
+                {disconnecting ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  "Disconnect"
+                )}
+              </Button>
+            </div>
           ) : (
-            <Badge variant="outline" className="gap-1 text-xs text-muted-foreground">
-              <XCircle className="h-3 w-3" />
-              Not connected
-            </Badge>
+            <a href="/api/auth/google">
+              <Button variant="outline" size="sm" className="text-xs h-7 gap-1">
+                <CheckCircle2 className="h-3 w-3" />
+                Connect
+              </Button>
+            </a>
           )}
         </div>
       </SectionCard>

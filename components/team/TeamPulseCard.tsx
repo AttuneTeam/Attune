@@ -34,7 +34,10 @@ const TYPE_COLOR: Record<InsightType, string> = {
   opportunity: "text-[#6D998F]",
 };
 
-const PRIORITY_VARIANT: Record<Priority, "destructive" | "default" | "secondary"> = {
+const PRIORITY_VARIANT: Record<
+  Priority,
+  "destructive" | "default" | "secondary"
+> = {
   high: "destructive",
   medium: "default",
   low: "secondary",
@@ -54,12 +57,15 @@ export function TeamPulseCard({ onResultLoaded }: Props) {
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (data) {
-          setResult({ insights: data.insights, generated_at: data.generated_at });
+          setResult({
+            insights: data.insights,
+            generated_at: data.generated_at,
+          });
           onResultLoaded?.(data);
         }
       })
       .catch(() => {});
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function generate() {
@@ -110,12 +116,8 @@ export function TeamPulseCard({ onResultLoaded }: Props) {
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
-            <Sparkles className="h-4 w-4" />
-            Team Pulse
-          </h2>
           {result.generated_at && (
-            <p className="text-xs text-muted-foreground ml-6">
+            <p className="text-xs text-muted-foreground">
               Last run{" "}
               {new Date(result.generated_at).toLocaleDateString(undefined, {
                 month: "short",
@@ -127,11 +129,12 @@ export function TeamPulseCard({ onResultLoaded }: Props) {
         </div>
         <Button
           size="sm"
-          variant="ghost"
+          variant="outline"
           onClick={generate}
           disabled={loading}
           className="text-xs h-7 text-muted-foreground"
         >
+          <Sparkles className="h-4 w-4" />
           {loading ? "Refreshing…" : "Re-generate"}
         </Button>
       </div>
@@ -163,7 +166,11 @@ export function TeamPulseCard({ onResultLoaded }: Props) {
                   {insight.members.length > 0 && (
                     <div className="flex flex-wrap gap-1 pt-0.5">
                       {insight.members.map((m) => (
-                        <Badge key={m} variant="outline" className="text-[10px]">
+                        <Badge
+                          key={m}
+                          variant="outline"
+                          className="text-[10px]"
+                        >
                           {m}
                         </Badge>
                       ))}
