@@ -7,7 +7,7 @@ import { ManagerProfileInsights } from "@/components/account/ManagerProfileInsig
 import { InteractionsSheet } from "@/components/dashboard/InteractionsSheet";
 import { UpcomingList } from "@/components/dashboard/UpcomingList";
 import { DashboardActionItems } from "@/components/dashboard/DashboardActionItems";
-import type { PersonalItem } from "@/lib/supabase/types";
+import type { PersonalItem, TeamMember } from "@/lib/supabase/types";
 
 type PreviewItem = {
   id: string;
@@ -26,6 +26,7 @@ export function DashboardPageTabs({
   totalMinutesThisMonth,
   upcomingBookings,
   actionItems,
+  members,
 }: {
   personalItems: PersonalItem[];
   userId: string;
@@ -35,6 +36,7 @@ export function DashboardPageTabs({
   totalMinutesThisMonth: number;
   upcomingBookings: any[];
   actionItems: any[];
+  members: TeamMember[];
 }) {
   return (
     <Tabs defaultValue="personal">
@@ -52,7 +54,6 @@ export function DashboardPageTabs({
               totalThisMonth={totalThisMonth}
               totalMinutesThisMonth={totalMinutesThisMonth}
             />
-            <PersonalCalendarWidget connected={hasGoogleCalendar} />
             {upcomingBookings.length > 0 && (
               <div>
                 <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
@@ -61,6 +62,11 @@ export function DashboardPageTabs({
                 <UpcomingList bookings={upcomingBookings as never} />
               </div>
             )}
+            <PersonalCalendarWidget
+              connected={hasGoogleCalendar}
+              members={members}
+            />
+
             <div>
               <div className="flex items-center justify-between mb-2">
                 <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">

@@ -155,6 +155,7 @@ export default async function DashboardPage() {
         totalMinutesThisMonth={totalMinutesThisMonth}
         upcomingBookings={upcomingBookings ?? []}
         actionItems={(actionItemsRaw ?? []) as never}
+        members={members}
       />
     </div>
   );

@@ -7,6 +7,7 @@ export interface CalendarEvent {
   end: string;   // ISO datetime
   attendees?: { email: string; displayName?: string }[];
   htmlLink?: string;
+  description?: string;
 }
 
 // ─── Token management ────────────────────────────────────────────────────────
@@ -44,30 +45,38 @@ export async function getValidToken(
 
   if (error || !token) throw new Error("Google Calendar not connected");
 
-  // Refresh if token expires within the next 5 minutes
-  const expiresAt = token.expires_at ? new Date(token.expires_at).getTime() : 0;
+  if (!token.refresh_token) return token.access_token;
+
+  const parsedExpiry = token.expires_at ? new Date(token.expires_at).getTime() : NaN;
+  const expiresAt = Number.isNaN(parsedExpiry) ? 0 : parsedExpiry;
   const fiveMinFromNow = Date.now() + 5 * 60 * 1000;
 
-  if (expiresAt < fiveMinFromNow && token.refresh_token) {
-    const refreshed = await refreshAccessToken(token.refresh_token);
-    const newExpiresAt = new Date(
-      Date.now() + refreshed.expires_in * 1000,
-    ).toISOString();
-
-    await supabase
-      .from("user_oauth_tokens")
-      .update({
-        access_token: refreshed.access_token,
-        expires_at: newExpiresAt,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("user_id", userId)
-      .eq("provider", "google");
-
-    return refreshed.access_token;
+  if (expiresAt < fiveMinFromNow) {
+    return doRefresh(supabase, userId, token.refresh_token);
   }
 
   return token.access_token;
+}
+
+async function doRefresh(
+  supabase: SupabaseClient,
+  userId: string,
+  refreshToken: string,
+): Promise<string> {
+  const refreshed = await refreshAccessToken(refreshToken);
+  const newExpiresAt = new Date(Date.now() + refreshed.expires_in * 1000).toISOString();
+
+  await supabase
+    .from("user_oauth_tokens")
+    .update({
+      access_token: refreshed.access_token,
+      expires_at: newExpiresAt,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("user_id", userId)
+    .eq("provider", "google");
+
+  return refreshed.access_token;
 }
 
 // ─── Calendar API calls ───────────────────────────────────────────────────────
@@ -86,6 +95,7 @@ function mapEvent(raw: Record<string, unknown>): CalendarEvent {
     end: parseEventDateTime(end),
     attendees: raw.attendees as CalendarEvent["attendees"],
     htmlLink: raw.htmlLink as string | undefined,
+    description: raw.description as string | undefined,
   };
 }
 
@@ -105,11 +115,10 @@ export async function fetchUpcomingEvents(
     singleEvents: "true",
   });
 
-  const res = await fetch(
-    `https://www.googleapis.com/calendar/v3/calendars/primary/events?${params}`,
-    { headers: { Authorization: `Bearer ${accessToken}` } },
-  );
+  const url = `https://www.googleapis.com/calendar/v3/calendars/primary/events?${params}`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
 
+  if (res.status === 401) throw new Error("Google token revoked or expired");
   if (!res.ok) throw new Error(`Google Calendar API error: ${await res.text()}`);
   const data = await res.json();
   return ((data.items ?? []) as Record<string, unknown>[]).map(mapEvent);
