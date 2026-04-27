@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { NewBookingButton } from "@/components/dashboard/NewBookingButton";
+import { NewStrategyButton } from "@/components/dashboard/NewStrategyButton";
 import { OrgStructureSheet } from "@/components/dashboard/OrgStructureSheet";
 import { DashboardPageTabs } from "@/components/dashboard/DashboardPageTabs";
 import { redirect } from "next/navigation";
@@ -141,6 +142,7 @@ export default async function DashboardPage() {
       <div className="flex items-center justify-between mb-6">
         <div />
         <div className="flex items-center gap-2">
+          <NewStrategyButton />
           <OrgStructureSheet teams={teams ?? []} members={members} />
           <NewBookingButton members={members} />
         </div>

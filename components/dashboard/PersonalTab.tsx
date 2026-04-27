@@ -1,12 +1,11 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { createClient } from "@/lib/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useRouter } from "next/navigation";
 import { RichTextInput } from "@/components/ui/RichTextInput";
 import {
   Sheet,
@@ -27,14 +26,12 @@ import {
   StickyNote,
   CheckSquare,
   Link2,
-  Bell,
   X,
   ExternalLink,
   Clock,
   Check,
   Plus,
   Pencil,
-  Target,
   RotateCcw,
 } from "lucide-react";
 import { format, isPast, isToday, parseISO } from "date-fns";
@@ -42,13 +39,12 @@ import type { PersonalItem } from "@/lib/supabase/types";
 import type { Json } from "@/lib/supabase/types";
 import { DailyBriefing } from "@/components/dashboard/DailyBriefing";
 
-type ItemType = "note" | "todo" | "link" | "reminder";
+type ItemType = "note" | "todo" | "link";
 
 const TYPES: { value: ItemType; label: string; icon: React.ReactNode }[] = [
   { value: "note", label: "Note", icon: <StickyNote className="h-3 w-3" /> },
   { value: "todo", label: "Todo", icon: <CheckSquare className="h-3 w-3" /> },
   { value: "link", label: "Link", icon: <Link2 className="h-3 w-3" /> },
-  { value: "reminder", label: "Reminder", icon: <Bell className="h-3 w-3" /> },
 ];
 
 function extractText(json: Json): string {
@@ -78,29 +74,11 @@ export function PersonalTab({
   initialItems: PersonalItem[];
   userId: string;
 }) {
-  const router = useRouter();
   const [items, setItems] = useState<PersonalItem[]>(initialItems);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [completedSheetOpen, setCompletedSheetOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<PersonalItem | null>(null);
   const [pendingDelete, setPendingDelete] = useState<PersonalItem | null>(null);
-  const [creatingStrategy, setCreatingStrategy] = useState(false);
-
-  const handleNewStrategy = useCallback(async () => {
-    setCreatingStrategy(true);
-    try {
-      const res = await fetch("/api/strategies", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
-      });
-      if (!res.ok) throw new Error("Failed");
-      const { id } = await res.json();
-      router.push(`/strategies/${id}`);
-    } catch {
-      setCreatingStrategy(false);
-    }
-  }, [router]);
 
   // Form fields
   const [type, setType] = useState<ItemType>("note");
@@ -127,7 +105,7 @@ export function PersonalTab({
 
   const openEdit = (item: PersonalItem) => {
     setEditingItem(item);
-    setType(item.type);
+    setType(item.type === "reminder" ? "todo" : (item.type as ItemType));
     setUrl(item.url ?? "");
     setDueDate(
       item.due_date ? new Date(item.due_date).toISOString().slice(0, 16) : "",
@@ -159,7 +137,7 @@ export function PersonalTab({
       content: contentToSave,
       url: type === "link" ? url.trim() || null : null,
       due_date:
-        type === "reminder" && dueDate ? new Date(dueDate).toISOString() : null,
+        type === "todo" && dueDate ? new Date(dueDate).toISOString() : null,
     };
 
     const supabase = createClient();
@@ -258,15 +236,6 @@ export function PersonalTab({
             : `${activeItems.length} item${activeItems.length === 1 ? "" : "s"}`}
         </p>
         <div className="flex items-center gap-2">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={handleNewStrategy}
-            disabled={creatingStrategy}
-          >
-            <Target className="h-3.5 w-3.5 mr-1.5" />
-            {creatingStrategy ? "Creating…" : "New strategy"}
-          </Button>
           <Button size="sm" onClick={openAdd}>
             <Plus className="h-3.5 w-3.5 mr-1.5" />
             New item
@@ -298,7 +267,8 @@ export function PersonalTab({
           onClick={() => setCompletedSheetOpen(true)}
           className="w-full text-xs text-muted-foreground hover:text-foreground py-1.5 text-center rounded hover:bg-muted transition-colors"
         >
-          See {completedItems.length} completed item{completedItems.length === 1 ? "" : "s"}
+          See {completedItems.length} completed item
+          {completedItems.length === 1 ? "" : "s"}
         </button>
       )}
 
@@ -353,9 +323,7 @@ export function PersonalTab({
                 placeholder={
                   type === "todo"
                     ? "What needs to be done?"
-                    : type === "link"
-                      ? "Description or title"
-                      : "What do you need to remember?"
+                    : "Description or title"
                 }
                 className="text-sm"
                 autoFocus
@@ -372,13 +340,18 @@ export function PersonalTab({
               />
             )}
 
-            {type === "reminder" && (
-              <Input
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-                type="datetime-local"
-                className="text-sm"
-              />
+            {type === "todo" && (
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">
+                  Due date (optional)
+                </label>
+                <Input
+                  value={dueDate}
+                  onChange={(e) => setDueDate(e.target.value)}
+                  type="datetime-local"
+                  className="text-sm"
+                />
+              </div>
             )}
           </div>
 
@@ -401,7 +374,9 @@ export function PersonalTab({
           </SheetHeader>
           <div className="px-4 space-y-2">
             {completedItems.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-4">Nothing here.</p>
+              <p className="text-sm text-muted-foreground py-4">
+                Nothing here.
+              </p>
             ) : (
               completedItems.map((item) => (
                 <CompletedRow key={item.id} item={item} onReopen={toggleTodo} />
@@ -501,9 +476,10 @@ function ItemRow({
 
       {/* Content */}
       <div className="flex-1 min-w-0">
-        {item.type === "reminder" && item.due_date && (
-          <DueBadge date={item.due_date} />
-        )}
+        {item.due_date &&
+          (item.type === "reminder" || item.type === "todo") && (
+            <DueBadge date={item.due_date} />
+          )}
         {item.type === "note" ? (
           <NotePreview content={item.content} />
         ) : item.type === "link" ? (

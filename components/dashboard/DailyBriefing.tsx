@@ -4,7 +4,14 @@ import { useState, useEffect, useCallback } from "react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { RefreshCw, Calendar, AlertCircle, ChevronRight, Users, ListChecks } from "lucide-react";
+import {
+  RefreshCw,
+  Calendar,
+  AlertCircle,
+  ChevronRight,
+  Users,
+  ListChecks,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 
 interface PriorityItem {
@@ -23,9 +30,18 @@ interface SuggestedMeeting {
 
 interface BriefingContent {
   overdue_reminders: { id: string; content: string; due_date: string | null }[];
-  due_today_reminders: { id: string; content: string; due_date: string | null }[];
+  due_today_reminders: {
+    id: string;
+    content: string;
+    due_date: string | null;
+  }[];
   action_items_count: number;
-  meetings_today: { title: string; start: string; end: string; duration_minutes: number }[];
+  meetings_today: {
+    title: string;
+    start: string;
+    end: string;
+    duration_minutes: number;
+  }[];
   total_meeting_hours: number;
   priority_items: PriorityItem[];
   suggested_meetings: SuggestedMeeting[];
@@ -92,15 +108,18 @@ export function DailyBriefing({ userId }: { userId: string }) {
   const hasPriorities = briefing.priority_items.length > 0;
   const hasSuggestions = briefing.suggested_meetings.length > 0;
 
-  if (!hasOverdue && !hasMeetings && !hasPriorities && !hasSuggestions) return null;
+  if (!hasOverdue && !hasMeetings && !hasPriorities && !hasSuggestions)
+    return null;
 
   return (
     <div className="rounded-lg border bg-card mb-4 overflow-hidden text-sm">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-2.5 border-b bg-muted/30">
         <div>
-          <p className="text-xs font-medium">{format(new Date(), "EEEE, d MMMM")}</p>
-          <p className="text-[11px] text-muted-foreground">Daily briefing</p>
+          <p className="text-lg font-bold ">Daily briefing</p>
+          <p className="text-xs font-medium text-muted-foreground">
+            {format(new Date(), "EEEE, d MMMM")}
+          </p>
         </div>
         <Button
           size="sm"
@@ -125,7 +144,8 @@ export function DailyBriefing({ userId }: { userId: string }) {
               </span>
               {briefing.total_meeting_hours > 0 && (
                 <span className="text-muted-foreground">
-                  {" "}· {briefing.total_meeting_hours}h
+                  {" "}
+                  · {briefing.total_meeting_hours}h
                 </span>
               )}
             </span>
@@ -137,7 +157,10 @@ export function DailyBriefing({ userId }: { userId: string }) {
           <div className="px-4 py-2.5 flex items-center gap-2">
             <ListChecks className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
             <span>
-              <span className="font-medium">{briefing.action_items_count} open action item{briefing.action_items_count === 1 ? "" : "s"}</span>
+              <span className="font-medium">
+                {briefing.action_items_count} open action item
+                {briefing.action_items_count === 1 ? "" : "s"}
+              </span>
             </span>
             <Button
               size="sm"
@@ -156,7 +179,9 @@ export function DailyBriefing({ userId }: { userId: string }) {
             {briefing.overdue_reminders.map((r) => (
               <div key={r.id} className="flex items-start gap-2">
                 <AlertCircle className="h-3.5 w-3.5 text-red-500 shrink-0 mt-0.5" />
-                <span className="flex-1 text-red-700 dark:text-red-400">{r.content}</span>
+                <span className="flex-1 text-red-700 dark:text-red-400">
+                  {r.content}
+                </span>
                 <Badge
                   variant="destructive"
                   className="text-[10px] px-1.5 py-0 h-4 shrink-0"
@@ -175,7 +200,10 @@ export function DailyBriefing({ userId }: { userId: string }) {
               Today&apos;s priorities
             </p>
             {briefing.priority_items.map((item, i) => (
-              <div key={`${item.type}-${item.id}`} className="flex items-start gap-2">
+              <div
+                key={`${item.type}-${item.id}`}
+                className="flex items-start gap-2"
+              >
                 <span className="text-xs text-muted-foreground w-4 shrink-0 mt-0.5 tabular-nums">
                   {i + 1}
                 </span>
@@ -211,7 +239,9 @@ export function DailyBriefing({ userId }: { userId: string }) {
                       : " · never met"}
                   </span>
                   {m.reason && (
-                    <p className="text-xs text-muted-foreground truncate">{m.reason}</p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {m.reason}
+                    </p>
                   )}
                 </div>
                 <Button
@@ -234,7 +264,10 @@ export function DailyBriefing({ userId }: { userId: string }) {
 function TypeBadge({ type }: { type: "todo" | "reminder" | "action_item" }) {
   if (type === "todo") {
     return (
-      <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 shrink-0">
+      <Badge
+        variant="secondary"
+        className="text-[10px] px-1.5 py-0 h-4 shrink-0"
+      >
         todo
       </Badge>
     );

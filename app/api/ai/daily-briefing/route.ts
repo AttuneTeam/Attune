@@ -78,7 +78,7 @@ export async function POST() {
   ] = await Promise.all([
     supabase
       .from("personal_items")
-      .select("id, content")
+      .select("id, content, due_date")
       .eq("user_id", user.id)
       .eq("type", "todo")
       .eq("status", "open"),
@@ -101,7 +101,7 @@ export async function POST() {
       .from("interactions")
       .select("participant_id, scheduled_at")
       .eq("manager_id", user.id)
-      .eq("status", "completed")
+      .lt("scheduled_at", now.toISOString())
       .order("scheduled_at", { ascending: false })
       .limit(200),
     supabase
@@ -184,19 +184,40 @@ export async function POST() {
   });
 
   // Build prompt
+  // Split todos: those without a due date are plain todos; those with one are treated as reminders
+  const todosPlain = (todos ?? []).filter((t) => !t.due_date);
+  const todosDated = (todos ?? []).filter((t) => !!t.due_date);
+
   const todosText =
-    (todos ?? []).length > 0
-      ? (todos ?? []).map((t) => `- [id:${t.id}] ${t.content}`).join("\n")
+    todosPlain.length > 0
+      ? todosPlain.map((t) => `- [id:${t.id}] ${t.content}`).join("\n")
       : "None";
 
+  // Merge legacy reminder-type items with dated todos into a single reminders block
+  const allReminderItems = [
+    ...overdueReminders.map((r) => ({
+      id: r.id,
+      content: r.content,
+      label: `OVERDUE: ${r.content}`,
+    })),
+    ...dueTodayReminders.map((r) => ({
+      id: r.id,
+      content: r.content,
+      label: `Due today: ${r.content}`,
+    })),
+    ...todosDated.map((t) => {
+      const due = new Date(t.due_date!);
+      const isOverdue = due < now;
+      const prefix = isOverdue
+        ? `OVERDUE: ${t.content}`
+        : `Due ${t.due_date!.slice(0, 10)}: ${t.content}`;
+      return { id: t.id, content: t.content, label: prefix };
+    }),
+  ];
+
   const remindersText =
-    overdueReminders.length + dueTodayReminders.length > 0
-      ? [
-          ...overdueReminders.map(
-            (r) => `- [id:${r.id}] OVERDUE: ${r.content}`,
-          ),
-          ...dueTodayReminders.map((r) => `- [id:${r.id}] Due today: ${r.content}`),
-        ].join("\n")
+    allReminderItems.length > 0
+      ? allReminderItems.map((r) => `- [id:${r.id}] ${r.label}`).join("\n")
       : "None";
 
   const actionText =
@@ -221,10 +242,10 @@ export async function POST() {
 
   const prompt = `Today is ${today}.
 
-PENDING TODOS (${(todos ?? []).length}):
+PENDING TODOS — no due date (${todosPlain.length}):
 ${todosText}
 
-REMINDERS OVERDUE OR DUE TODAY:
+REMINDERS — overdue or with a due date (${allReminderItems.length}):
 ${remindersText}
 
 OPEN ACTION ITEMS (${actionItemsFlat.length} total):
@@ -236,7 +257,11 @@ TEAM MEMBERS:
 ${membersText}
 
 Return a prioritised list of items to focus on today, and up to 3 team members to connect with.
-For priority_items, use the exact id values from the input (the part after "id:").`;
+Rules for priority_items:
+- Use the exact id values from the input (the part after "id:").
+- Items from the TODOS section → type "todo".
+- Items from the REMINDERS section → type "reminder".
+- Items from the OPEN ACTION ITEMS section → type "action_item".`;
 
   const { object } = await generateObject({
     model: openai("gpt-5.4-mini"),
@@ -246,17 +271,23 @@ For priority_items, use the exact id values from the input (the part after "id:"
     schema: BriefingSchema,
   });
 
+  // Combine legacy reminder-type items with overdue dated todos for the widget
+  const overdueForWidget = [
+    ...overdueReminders.map((r) => ({ id: r.id, content: r.content, due_date: r.due_date })),
+    ...todosDated
+      .filter((t) => new Date(t.due_date!) < now)
+      .map((t) => ({ id: t.id, content: t.content, due_date: t.due_date })),
+  ];
+  const dueTodayForWidget = [
+    ...dueTodayReminders.map((r) => ({ id: r.id, content: r.content, due_date: r.due_date })),
+    ...todosDated
+      .filter((t) => new Date(t.due_date!) >= now)
+      .map((t) => ({ id: t.id, content: t.content, due_date: t.due_date })),
+  ];
+
   const content = {
-    overdue_reminders: overdueReminders.map((r) => ({
-      id: r.id,
-      content: r.content,
-      due_date: r.due_date,
-    })),
-    due_today_reminders: dueTodayReminders.map((r) => ({
-      id: r.id,
-      content: r.content,
-      due_date: r.due_date,
-    })),
+    overdue_reminders: overdueForWidget,
+    due_today_reminders: dueTodayForWidget,
     action_items_count: actionItemsFlat.length,
     meetings_today: meetingsToday,
     total_meeting_hours: totalMeetingHours,
