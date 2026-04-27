@@ -35,10 +35,12 @@ import {
   Plus,
   Pencil,
   Target,
+  RotateCcw,
 } from "lucide-react";
 import { format, isPast, isToday, parseISO } from "date-fns";
 import type { PersonalItem } from "@/lib/supabase/types";
 import type { Json } from "@/lib/supabase/types";
+import { DailyBriefing } from "@/components/dashboard/DailyBriefing";
 
 type ItemType = "note" | "todo" | "link" | "reminder";
 
@@ -54,10 +56,7 @@ function extractText(json: Json): string {
   const node = json as Record<string, Json>;
   if (node.type === "text" && typeof node.text === "string") return node.text;
   if (Array.isArray(node.content)) {
-    return (node.content as Json[])
-      .map(extractText)
-      .filter(Boolean)
-      .join(" ");
+    return (node.content as Json[]).map(extractText).filter(Boolean).join(" ");
   }
   return "";
 }
@@ -82,6 +81,7 @@ export function PersonalTab({
   const router = useRouter();
   const [items, setItems] = useState<PersonalItem[]>(initialItems);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [completedSheetOpen, setCompletedSheetOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<PersonalItem | null>(null);
   const [pendingDelete, setPendingDelete] = useState<PersonalItem | null>(null);
   const [creatingStrategy, setCreatingStrategy] = useState(false);
@@ -130,9 +130,7 @@ export function PersonalTab({
     setType(item.type);
     setUrl(item.url ?? "");
     setDueDate(
-      item.due_date
-        ? new Date(item.due_date).toISOString().slice(0, 16)
-        : "",
+      item.due_date ? new Date(item.due_date).toISOString().slice(0, 16) : "",
     );
     if (item.type === "note") {
       setNoteJson(parseNoteJson(item.content));
@@ -161,9 +159,7 @@ export function PersonalTab({
       content: contentToSave,
       url: type === "link" ? url.trim() || null : null,
       due_date:
-        type === "reminder" && dueDate
-          ? new Date(dueDate).toISOString()
-          : null,
+        type === "reminder" && dueDate ? new Date(dueDate).toISOString() : null,
     };
 
     const supabase = createClient();
@@ -222,9 +218,7 @@ export function PersonalTab({
     if (error) {
       toast.error(error.message);
       setItems((prev) =>
-        prev.map((i) =>
-          i.id === item.id ? { ...i, status: item.status } : i,
-        ),
+        prev.map((i) => (i.id === item.id ? { ...i, status: item.status } : i)),
       );
     }
   };
@@ -245,14 +239,23 @@ export function PersonalTab({
     }
   };
 
+  const activeItems = items.filter(
+    (i) => !(i.type === "todo" && i.status === "done"),
+  );
+  const completedItems = items.filter(
+    (i) => i.type === "todo" && i.status === "done",
+  );
+
   return (
     <div className="max-w-2xl space-y-4 pt-4">
+      <DailyBriefing userId={userId} />
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <p className="text-xs text-muted-foreground">
-          {items.length === 0
+          {activeItems.length === 0
             ? "No items yet"
-            : `${items.length} item${items.length === 1 ? "" : "s"}`}
+            : `${activeItems.length} item${activeItems.length === 1 ? "" : "s"}`}
         </p>
         <div className="flex items-center gap-2">
           <Button
@@ -272,13 +275,13 @@ export function PersonalTab({
       </div>
 
       {/* Feed */}
-      {items.length === 0 ? (
+      {activeItems.length === 0 ? (
         <p className="text-sm text-muted-foreground py-4">
           Notes, todos, links, and reminders will appear here.
         </p>
       ) : (
         <div className="space-y-2">
-          {items.map((item) => (
+          {activeItems.map((item) => (
             <ItemRow
               key={item.id}
               item={item}
@@ -288,6 +291,15 @@ export function PersonalTab({
             />
           ))}
         </div>
+      )}
+
+      {completedItems.length > 0 && (
+        <button
+          onClick={() => setCompletedSheetOpen(true)}
+          className="w-full text-xs text-muted-foreground hover:text-foreground py-1.5 text-center rounded hover:bg-muted transition-colors"
+        >
+          See {completedItems.length} completed item{completedItems.length === 1 ? "" : "s"}
+        </button>
       )}
 
       {/* Add / Edit Sheet */}
@@ -381,6 +393,24 @@ export function PersonalTab({
         </SheetContent>
       </Sheet>
 
+      {/* Completed todos sheet */}
+      <Sheet open={completedSheetOpen} onOpenChange={setCompletedSheetOpen}>
+        <SheetContent side="right" className="overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Completed todos</SheetTitle>
+          </SheetHeader>
+          <div className="px-4 space-y-2">
+            {completedItems.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-4">Nothing here.</p>
+            ) : (
+              completedItems.map((item) => (
+                <CompletedRow key={item.id} item={item} onReopen={toggleTodo} />
+              ))
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
+
       {/* Delete confirmation */}
       <Dialog
         open={!!pendingDelete}
@@ -421,7 +451,9 @@ function NotePreview({ content }: { content: string }) {
   });
 
   if (!json || !editor) {
-    return <span className="text-muted-foreground text-xs italic">Empty note</span>;
+    return (
+      <span className="text-muted-foreground text-xs italic">Empty note</span>
+    );
   }
 
   return (
@@ -444,7 +476,7 @@ function ItemRow({
   onDelete: (item: PersonalItem) => void;
 }) {
   return (
-    <div className="group flex items-start gap-3 rounded-lg border bg-card px-3 py-2.5 text-sm">
+    <div className="group flex items-center gap-3 rounded-lg border bg-card px-3 py-2.5 text-sm">
       {/* Left icon / checkbox */}
       <div className="mt-0.5 shrink-0">
         {item.type === "todo" ? (
@@ -469,6 +501,9 @@ function ItemRow({
 
       {/* Content */}
       <div className="flex-1 min-w-0">
+        {item.type === "reminder" && item.due_date && (
+          <DueBadge date={item.due_date} />
+        )}
         {item.type === "note" ? (
           <NotePreview content={item.content} />
         ) : item.type === "link" ? (
@@ -497,10 +532,6 @@ function ItemRow({
             {item.content}
           </span>
         )}
-
-        {item.type === "reminder" && item.due_date && (
-          <DueBadge date={item.due_date} />
-        )}
       </div>
 
       {/* Row actions */}
@@ -524,6 +555,33 @@ function ItemRow({
   );
 }
 
+function CompletedRow({
+  item,
+  onReopen,
+}: {
+  item: PersonalItem;
+  onReopen: (item: PersonalItem) => void;
+}) {
+  return (
+    <div className="flex items-center gap-3 rounded-lg border bg-card px-3 py-2.5 text-sm">
+      <div className="flex h-4 w-4 shrink-0 items-center justify-center rounded border border-green-500 bg-green-500 text-white">
+        <Check className="h-2.5 w-2.5" />
+      </div>
+      <span className="flex-1 min-w-0 line-through text-muted-foreground truncate">
+        {item.content}
+      </span>
+      <button
+        onClick={() => onReopen(item)}
+        className="shrink-0 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground px-2 py-1 rounded hover:bg-muted transition-colors"
+        title="Reopen"
+      >
+        <RotateCcw className="h-3 w-3" />
+        Reopen
+      </button>
+    </div>
+  );
+}
+
 function DueBadge({ date }: { date: string }) {
   const parsed = parseISO(date);
   const past = isPast(parsed);
@@ -533,13 +591,12 @@ function DueBadge({ date }: { date: string }) {
     ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
     : today
       ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
-      : "bg-muted text-muted-foreground";
+      : "bg-secondary text-muted-foreground";
 
   return (
     <span
-      className={`mt-1 inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-medium ${colorClass}`}
+      className={`mt-1 mr-2 inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-medium ${colorClass}`}
     >
-      <Clock className="h-2.5 w-2.5" />
       {format(parsed, "MMM d, h:mm a")}
     </span>
   );
