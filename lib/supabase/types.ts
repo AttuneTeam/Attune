@@ -545,6 +545,38 @@ export type AgendaItem = Database['public']['Tables']['agenda_items']['Row']
 export type PersonalItem = Database['public']['Tables']['personal_items']['Row']
 export type UserOAuthToken = Database['public']['Tables']['user_oauth_tokens']['Row']
 
+export type WorkshopPersonaAnalysis = {
+  persona_id: string
+  reasoning: string
+  framing: string
+  key_insights: string[]
+  blind_spots: string
+  recommended_actions: { action: string; priority: 'high' | 'medium' | 'low'; timeframe: string; why: string }[]
+  questions_to_explore: string[]
+}
+
+export type WorkshopSynthesis = {
+  summary: string
+  convergence_points: string[]
+  divergence_points: { topic: string; perspectives: string }[]
+  unified_actions: {
+    action: string
+    rationale: string
+    priority: 'high' | 'medium' | 'low'
+    source_personas: string[]
+  }[]
+}
+
+export type WorkshopSession = {
+  id: string
+  user_id: string
+  question: string
+  persona_ids: string[]
+  persona_analyses: WorkshopPersonaAnalysis[]
+  synthesis: WorkshopSynthesis
+  created_at: string
+}
+
 export type StrategicInitiative = {
   id: string
   manager_id: string

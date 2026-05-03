@@ -45,7 +45,11 @@ function sentimentVariant(score: number | null) {
   return "destructive" as const;
 }
 
-export function InteractionsSheet({ preview, totalThisMonth, totalMinutesThisMonth }: Props) {
+export function InteractionsSheet({
+  preview,
+  totalThisMonth,
+  totalMinutesThisMonth,
+}: Props) {
   const [interactions, setInteractions] = useState<any[] | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -79,7 +83,7 @@ export function InteractionsSheet({ preview, totalThisMonth, totalMinutesThisMon
             {totalMinutesThisMonth > 0 && (
               <div>
                 <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">
-                  Hours this month
+                  Time in Meetings
                 </p>
                 <p className="text-3xl font-bold">
                   {formatHours(totalMinutesThisMonth)}

@@ -14,6 +14,8 @@ import {
   BookOpen,
   Target,
   Activity,
+  UserPlus,
+  FlaskConical,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -27,6 +29,7 @@ const navItems = [
   { href: "/dashboard", label: "Home", icon: LayoutDashboard },
   { href: "/team-pulse", label: "Team", icon: Activity },
   { href: "/strategies", label: "Strategies", icon: Target },
+  { href: "/workshop", label: "Workshop", icon: FlaskConical },
 ];
 
 const settingsItems = [
@@ -130,6 +133,14 @@ export function Sidebar({
                   >
                     <Users className="h-4 w-4 shrink-0" />
                     <span className="flex-1 text-left">People</span>
+                    <Link
+                      href="/team"
+                      onClick={(e) => e.stopPropagation()}
+                      className="p-0.5 rounded hover:bg-accent/80 hover:text-foreground text-muted-foreground/60 transition-colors"
+                      title="Add team member"
+                    >
+                      <UserPlus className="h-3.5 w-3.5" />
+                    </Link>
                     <ChevronDown
                       className={cn(
                         "h-3.5 w-3.5 shrink-0 transition-transform duration-200",

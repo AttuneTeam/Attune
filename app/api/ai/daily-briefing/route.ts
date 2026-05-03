@@ -45,14 +45,24 @@ export async function GET() {
   const today = new Date().toISOString().slice(0, 10);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data } = await (supabase as any)
-    .from("daily_briefings")
-    .select("content")
-    .eq("user_id", user.id)
-    .eq("date", today)
-    .maybeSingle();
+  const [{ data }, { data: members }] = await Promise.all([
+    (supabase as any)
+      .from("daily_briefings")
+      .select("content")
+      .eq("user_id", user.id)
+      .eq("date", today)
+      .maybeSingle(),
+    supabase.from("team_members").select("id, name").eq("manager_id", user.id).order("name"),
+  ]);
 
-  return NextResponse.json({ briefing: data?.content ?? null });
+  if (!data?.content) return NextResponse.json({ briefing: null });
+
+  return NextResponse.json({
+    briefing: {
+      ...data.content,
+      team_members: (members ?? []).map((m: { id: string; name: string }) => ({ id: m.id, name: m.name })),
+    },
+  });
 }
 
 export async function POST() {
@@ -293,6 +303,7 @@ Rules for priority_items:
     total_meeting_hours: totalMeetingHours,
     priority_items: object.priority_items,
     suggested_meetings: object.suggested_meetings,
+    team_members: (members ?? []).map((m) => ({ id: m.id, name: m.name })),
   };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
