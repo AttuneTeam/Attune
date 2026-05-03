@@ -16,7 +16,7 @@ export function InitiativeCard({ initiative }: { initiative: StrategicInitiative
 
   return (
     <Link
-      href={`/strategies/${initiative.id}`}
+      href={`/initiatives/${initiative.id}`}
       className="block rounded-lg border bg-card px-5 py-4 hover:bg-accent/30 transition-colors"
     >
       <div className="flex items-start justify-between gap-3">

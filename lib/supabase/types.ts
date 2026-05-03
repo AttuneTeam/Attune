@@ -587,6 +587,8 @@ export type StrategicInitiative = {
   domain: string | null
   horizon: string | null
   source_chat_id: string | null
+  parent_id: string | null
+  depth: number
   created_at: string
   updated_at: string
 }

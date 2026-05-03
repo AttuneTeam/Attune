@@ -11,10 +11,26 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog'
-import { Plus, Trash2 } from 'lucide-react'
+import { Plus, Trash2, Loader2 } from 'lucide-react'
 import type { StrategicInitiative } from '@/lib/supabase/types'
 
 const ALL_STATUSES = ['active', 'paused', 'completed', 'archived'] as const
+
+type InitiativeNode = StrategicInitiative & { children: InitiativeNode[] }
+
+function buildTree(flat: StrategicInitiative[]): InitiativeNode[] {
+  const map = new Map<string, InitiativeNode>()
+  for (const item of flat) map.set(item.id, { ...item, children: [] })
+  const roots: InitiativeNode[] = []
+  for (const node of map.values()) {
+    if (node.parent_id && map.has(node.parent_id)) {
+      map.get(node.parent_id)!.children.push(node)
+    } else {
+      roots.push(node)
+    }
+  }
+  return roots
+}
 
 function getAllTags(initiatives: StrategicInitiative[]): string[] {
   const seen = new Set<string>()
@@ -28,6 +44,7 @@ export function StrategiesListClient({ initiatives: initialInitiatives }: { init
   const router = useRouter()
   const [initiatives, setInitiatives] = useState(initialInitiatives)
   const [creating, setCreating] = useState(false)
+  const [creatingChild, setCreatingChild] = useState<string | null>(null)
   const [activeTag, setActiveTag] = useState<string | null>(null)
   const [activeStatus, setActiveStatus] = useState<string | null>(null)
   const [pendingDelete, setPendingDelete] = useState<StrategicInitiative | null>(null)
@@ -41,12 +58,14 @@ export function StrategiesListClient({ initiatives: initialInitiatives }: { init
     return true
   })
 
+  const tree = buildTree(filtered)
+
   const confirmDelete = useCallback(async () => {
     if (!pendingDelete) return
     setDeleting(true)
-    const res = await fetch(`/api/strategies/${pendingDelete.id}`, { method: 'DELETE' })
+    const res = await fetch(`/api/initiatives/${pendingDelete.id}`, { method: 'DELETE' })
     if (res.ok) {
-      setInitiatives((prev) => prev.filter((i) => i.id !== pendingDelete.id))
+      setInitiatives((prev) => prev.filter((i) => i.id !== pendingDelete.id && i.parent_id !== pendingDelete.id))
       setPendingDelete(null)
     }
     setDeleting(false)
@@ -55,22 +74,76 @@ export function StrategiesListClient({ initiatives: initialInitiatives }: { init
   const handleNew = useCallback(async () => {
     setCreating(true)
     try {
-      const res = await fetch('/api/strategies', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) })
+      const res = await fetch('/api/initiatives', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) })
       if (!res.ok) throw new Error('Failed')
       const { id } = await res.json()
-      router.push(`/strategies/${id}`)
+      router.push(`/initiatives/${id}`)
     } catch {
       setCreating(false)
     }
   }, [router])
 
+  const handleNewChild = useCallback(async (parentId: string) => {
+    setCreatingChild(parentId)
+    try {
+      const res = await fetch('/api/initiatives', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ parent_id: parentId }),
+      })
+      if (!res.ok) throw new Error('Failed')
+      const { id } = await res.json()
+      router.push(`/initiatives/${id}`)
+    } catch {
+      setCreatingChild(null)
+    }
+  }, [router])
+
+  function renderNode(node: InitiativeNode, nestDepth: number): React.ReactNode {
+    return (
+      <div key={node.id} style={{ paddingLeft: nestDepth * 24 }}>
+        <div className="group relative">
+          <InitiativeCard initiative={node} />
+          <div className="absolute top-3 right-3 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            {node.depth < 2 && (
+              <button
+                type="button"
+                onClick={() => handleNewChild(node.id)}
+                disabled={creatingChild === node.id}
+                className="p-1.5 rounded text-muted-foreground hover:text-foreground hover:bg-muted"
+                title="Add sub-initiative"
+              >
+                {creatingChild === node.id
+                  ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  : <Plus className="h-3.5 w-3.5" />}
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setPendingDelete(node)}
+              className="p-1.5 rounded text-muted-foreground hover:text-destructive hover:bg-muted"
+              title="Delete initiative"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
+        {node.children.length > 0 && (
+          <div className="mt-2 space-y-2 border-l border-border ml-3 pl-3">
+            {node.children.map(child => renderNode(child, nestDepth + 1))}
+          </div>
+        )}
+      </div>
+    )
+  }
+
   return (
     <div className="p-8">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Strategies</h1>
+        <h1 className="text-2xl font-bold">Initiatives</h1>
         <Button onClick={handleNew} disabled={creating} size="sm">
           <Plus className="h-3.5 w-3.5 mr-1.5" />
-          {creating ? 'Creating…' : 'New strategy'}
+          {creating ? 'Creating…' : 'New initiative'}
         </Button>
       </div>
 
@@ -107,44 +180,33 @@ export function StrategiesListClient({ initiatives: initialInitiatives }: { init
         </div>
       )}
 
-      {filtered.length === 0 ? (
+      {tree.length === 0 ? (
         <div className="text-center py-16">
           {initiatives.length === 0 ? (
             <>
-              <p className="text-muted-foreground mb-4">No strategies yet.</p>
+              <p className="text-muted-foreground mb-4">No initiatives yet.</p>
               <p className="text-sm text-muted-foreground">
-                Start by creating a new strategy or save one from an AI chat session.
+                Start by creating a new initiative or save one from an AI chat session.
               </p>
             </>
           ) : (
-            <p className="text-muted-foreground">No strategies match the selected filters.</p>
+            <p className="text-muted-foreground">No initiatives match the selected filters.</p>
           )}
         </div>
       ) : (
         <div className="space-y-3 max-w-2xl">
-          {filtered.map((ini) => (
-            <div key={ini.id} className="group relative">
-              <InitiativeCard initiative={ini} />
-              <button
-                type="button"
-                onClick={() => setPendingDelete(ini)}
-                className="absolute top-3 right-3 p-1.5 rounded opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive hover:bg-muted"
-                title="Delete strategy"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          ))}
+          {tree.map(node => renderNode(node, 0))}
         </div>
       )}
 
       <Dialog open={!!pendingDelete} onOpenChange={(open) => { if (!open) setPendingDelete(null) }}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>Delete strategy?</DialogTitle>
+            <DialogTitle>Delete initiative?</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground mt-1">
-            <span className="font-medium text-foreground">{pendingDelete?.title}</span> will be permanently deleted. This cannot be undone.
+            <span className="font-medium text-foreground">{pendingDelete?.title}</span> will be permanently deleted.
+            {(pendingDelete?.depth ?? 0) < 2 && ' Sub-initiatives will also be deleted.'} This cannot be undone.
           </p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setPendingDelete(null)} disabled={deleting}>

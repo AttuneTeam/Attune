@@ -271,7 +271,7 @@ export function ChatPanel({ onClose }: Props) {
         messages: messages.map((m) => ({ role: m.role, text: m.text })),
       };
       if (conversationId) payload.source_chat_id = conversationId;
-      const res = await fetch("/api/strategies", {
+      const res = await fetch("/api/initiatives", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -279,7 +279,7 @@ export function ChatPanel({ onClose }: Props) {
       if (!res.ok) throw new Error("Failed");
       const { id } = await res.json();
       onClose();
-      router.push(`/strategies/${id}`);
+      router.push(`/initiatives/${id}`);
     } catch {
       setSavingStrategy(false);
     }
@@ -344,9 +344,9 @@ export function ChatPanel({ onClose }: Props) {
                     onClick={saveAsStrategy}
                     disabled={savingStrategy || status === "streaming"}
                     className="h-7 px-2 text-xs text-muted-foreground"
-                    title="Save this conversation as a strategic initiative"
+                    title="Save this conversation as an initiative"
                   >
-                    {savingStrategy ? "Saving…" : "Save as strategy"}
+                    {savingStrategy ? "Saving…" : "Save as initiative"}
                   </Button>
                   <Button
                     variant="ghost"

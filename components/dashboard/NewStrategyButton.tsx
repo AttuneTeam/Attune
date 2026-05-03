@@ -12,14 +12,14 @@ export function NewStrategyButton() {
   const handleClick = async () => {
     setCreating(true);
     try {
-      const res = await fetch("/api/strategies", {
+      const res = await fetch("/api/initiatives", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}),
       });
       if (!res.ok) throw new Error("Failed");
       const { id } = await res.json();
-      router.push(`/strategies/${id}`);
+      router.push(`/initiatives/${id}`);
     } catch {
       setCreating(false);
     }
@@ -28,7 +28,7 @@ export function NewStrategyButton() {
   return (
     <Button size="sm" variant="outline" onClick={handleClick} disabled={creating}>
       <Target className="h-3.5 w-3.5 mr-1.5" />
-      {creating ? "Creating…" : "New strategy"}
+      {creating ? "Creating…" : "New initiative"}
     </Button>
   );
 }

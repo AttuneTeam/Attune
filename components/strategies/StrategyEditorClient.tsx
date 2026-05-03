@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { StrategyTiptapEditor } from "./StrategyTiptapEditor";
 import { Badge } from "@/components/ui/badge";
@@ -23,6 +23,7 @@ import Link from "next/link";
 import {
   ChevronLeft,
   ChevronDown,
+  ChevronRight,
   X,
   Plus,
   ExternalLink,
@@ -79,10 +80,92 @@ function CollapsibleSection({
   );
 }
 
+function SubInitiativeList({
+  parentId,
+  parentDepth,
+}: {
+  parentId: string;
+  parentDepth: number;
+}) {
+  const [children, setChildren] = useState<StrategicInitiative[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
+  const router = useRouter();
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase
+      .from("strategic_initiatives")
+      .select("id, title, status, updated_at, depth, parent_id, manager_id, description, tags, domain, horizon, source_chat_id, created_at")
+      .eq("parent_id", parentId)
+      .order("created_at", { ascending: true })
+      .then(({ data }) => {
+        setChildren((data ?? []) as StrategicInitiative[]);
+        setLoading(false);
+      });
+  }, [parentId]);
+
+  const handleCreate = async () => {
+    setCreating(true);
+    const res = await fetch("/api/initiatives", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ parent_id: parentId }),
+    });
+    if (res.ok) {
+      const { id } = await res.json();
+      router.push(`/initiatives/${id}`);
+    }
+    setCreating(false);
+  };
+
+  if (loading)
+    return <p className="text-xs text-muted-foreground">Loading…</p>;
+
+  return (
+    <div className="space-y-1.5">
+      {children.map((child) => (
+        <Link
+          key={child.id}
+          href={`/initiatives/${child.id}`}
+          className="flex items-center justify-between rounded-md px-2 py-1.5 text-xs hover:bg-muted transition-colors"
+        >
+          <span className="truncate">{child.title}</span>
+          <Badge
+            variant={
+              STATUS_COLORS[child.status] as
+                | "default"
+                | "secondary"
+                | "outline"
+                | "destructive"
+            }
+            className="ml-2 shrink-0 text-[10px]"
+          >
+            {child.status}
+          </Badge>
+        </Link>
+      ))}
+      {parentDepth < 2 && (
+        <button
+          type="button"
+          onClick={handleCreate}
+          disabled={creating}
+          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground w-full px-2 py-1.5 rounded-md hover:bg-muted transition-colors"
+        >
+          <Plus className="h-3 w-3" />
+          {creating ? "Creating…" : "Add sub-initiative"}
+        </button>
+      )}
+    </div>
+  );
+}
+
 export function StrategyEditorClient({
   initiative,
+  parent,
 }: {
   initiative: StrategicInitiative;
+  parent: StrategicInitiative | null;
 }) {
   const router = useRouter();
   const [title, setTitle] = useState(initiative.title);
@@ -108,7 +191,7 @@ export function StrategyEditorClient({
 
   const handleTitleBlur = useCallback(
     async (e: React.FocusEvent<HTMLInputElement>) => {
-      const newTitle = e.target.value.trim() || "Untitled Strategy";
+      const newTitle = e.target.value.trim() || "Untitled Initiative";
       await saveField({ title: newTitle });
     },
     [saveField],
@@ -146,16 +229,16 @@ export function StrategyEditorClient({
 
   const handleDelete = useCallback(async () => {
     setDeleting(true);
-    const res = await fetch(`/api/strategies/${initiative.id}`, {
+    const res = await fetch(`/api/initiatives/${initiative.id}`, {
       method: "DELETE",
     });
     if (!res.ok) {
-      toast.error("Failed to delete strategy");
+      toast.error("Failed to delete initiative");
       setDeleting(false);
       return;
     }
-    router.push("/strategies");
-  }, [initiative.id, router]);
+    router.push(parent ? `/initiatives/${parent.id}` : "/initiatives");
+  }, [initiative.id, parent, router]);
 
   const handleDomainBlur = useCallback(
     async (e: React.FocusEvent<HTMLInputElement>) => {
@@ -176,15 +259,28 @@ export function StrategyEditorClient({
 
   return (
     <div className="p-8 max-w-6xl mx-auto">
-      {/* Back link */}
+      {/* Back / breadcrumb */}
       <div className="px-8 mb-4 flex justify-between">
-        <Link
-          href="/strategies"
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <ChevronLeft className="h-4 w-4" />
-          Strategies
-        </Link>
+        <div className="flex items-center gap-1 text-sm text-muted-foreground">
+          <Link
+            href="/initiatives"
+            className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Initiatives
+          </Link>
+          {parent && (
+            <>
+              <ChevronRight className="h-3.5 w-3.5" />
+              <Link
+                href={`/initiatives/${parent.id}`}
+                className="hover:text-foreground transition-colors truncate max-w-[200px]"
+              >
+                {parent.title}
+              </Link>
+            </>
+          )}
+        </div>
         <div className="flex gap-2 items-center">
           <button onClick={cycleStatus} title="Click to cycle status">
             <Badge
@@ -312,6 +408,16 @@ export function StrategyEditorClient({
                   </div>
                 </CollapsibleSection>
 
+                {/* Sub-initiatives */}
+                {initiative.depth < 2 && (
+                  <CollapsibleSection title="Sub-initiatives" defaultOpen={true}>
+                    <SubInitiativeList
+                      parentId={initiative.id}
+                      parentDepth={initiative.depth}
+                    />
+                  </CollapsibleSection>
+                )}
+
                 {/* Source conversation */}
                 {initiative.source_chat_id && (
                   <CollapsibleSection title="Source" defaultOpen={true}>
@@ -336,7 +442,7 @@ export function StrategyEditorClient({
                     className="flex items-center gap-2 text-xs text-muted-foreground hover:text-destructive transition-colors"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
-                    Delete strategy
+                    Delete initiative
                   </button>
                 </div>
               </SheetContent>
@@ -345,18 +451,18 @@ export function StrategyEditorClient({
         </div>
       </div>
 
-      {/* Header: title + status + overflow */}
+      {/* Title */}
       <div className="px-8 flex items-start gap-3 mb-4">
         <input
           className="flex-1 text-xl font-bold bg-transparent border-none outline-none placeholder:text-muted-foreground min-w-0"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           onBlur={handleTitleBlur}
-          placeholder="Strategy title"
+          placeholder="Initiative title"
         />
       </div>
 
-      {/* Full-width editor */}
+      {/* Editor */}
       <div className="bg-card flex flex-col">
         <StrategyTiptapEditor
           initiativeId={initiative.id}
@@ -373,11 +479,13 @@ export function StrategyEditorClient({
       >
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>Delete strategy?</DialogTitle>
+            <DialogTitle>Delete initiative?</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground mt-1">
             <span className="font-medium text-foreground">{title}</span> will be
-            permanently deleted. This cannot be undone.
+            permanently deleted.
+            {initiative.depth < 2 && " Sub-initiatives will also be deleted."}
+            {" "}This cannot be undone.
           </p>
           <DialogFooter>
             <Button

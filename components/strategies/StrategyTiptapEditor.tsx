@@ -46,7 +46,7 @@ export function StrategyTiptapEditor({ initiativeId, initialContent }: Props) {
       }),
       Placeholder.configure({
         placeholder:
-          "Write your strategy here… Use # for headings, ** for bold, - for lists.",
+          "Write your initiative here… Use # for headings, ** for bold, - for lists.",
       }),
       CharacterCount,
       Markdown.configure({
