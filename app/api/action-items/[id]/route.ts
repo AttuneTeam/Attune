@@ -17,6 +17,7 @@ export async function PATCH(
   if ("status" in body) patch.status = body.status;
   if ("description" in body) patch.description = body.description;
   if ("due_date" in body) patch.due_date = body.due_date;
+  if ("assignee_id" in body) patch.assignee_id = body.assignee_id;
 
   const { data, error } = await supabase
     .from("action_items")

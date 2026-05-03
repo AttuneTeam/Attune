@@ -226,26 +226,30 @@ export type Database = {
       action_items: {
         Row: {
           id: string
-          interaction_id: string
+          interaction_id: string | null
           description: string
           status: string
           due_date: string | null
           assignee_id: string | null
+          user_id: string | null
           created_at: string
         }
         Insert: {
           id?: string
-          interaction_id: string
+          interaction_id?: string | null
           description: string
           status?: string
           due_date?: string | null
           assignee_id?: string | null
+          user_id?: string | null
         }
         Update: {
+          interaction_id?: string | null
           description?: string
           status?: string
           due_date?: string | null
           assignee_id?: string | null
+          user_id?: string | null
         }
       }
       agenda_items: {

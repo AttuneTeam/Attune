@@ -2,11 +2,12 @@
 
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { PersonalTab } from "./PersonalTab";
-import { PersonalCalendarWidget } from "@/components/calendar/PersonalCalendarWidget";
+import { CalendarSheet } from "@/components/calendar/CalendarSheet";
 import { ManagerProfileInsights } from "@/components/account/ManagerProfileInsights";
 import { InteractionsSheet } from "@/components/dashboard/InteractionsSheet";
 import { UpcomingList } from "@/components/dashboard/UpcomingList";
 import { DashboardActionItems } from "@/components/dashboard/DashboardActionItems";
+import { NewTaskButton } from "@/components/action-items/NewTaskButton";
 import type { PersonalItem, TeamMember } from "@/lib/supabase/types";
 
 type PreviewItem = {
@@ -48,12 +49,18 @@ export function DashboardPageTabs({
       <TabsContent value="personal">
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_1fr] gap-6 pt-4">
           <PersonalTab initialItems={personalItems} userId={userId} />
+
           <div className="space-y-4">
-            <InteractionsSheet
-              preview={interactionsPreview}
-              totalThisMonth={totalThisMonth}
-              totalMinutesThisMonth={totalMinutesThisMonth}
-            />
+            {/* Stat tiles */}
+            <div className="grid grid-cols-2 gap-4">
+              <InteractionsSheet
+                preview={interactionsPreview}
+                totalThisMonth={totalThisMonth}
+                totalMinutesThisMonth={totalMinutesThisMonth}
+              />
+              <CalendarSheet connected={hasGoogleCalendar} members={members} />
+            </div>
+
             {upcomingBookings.length > 0 && (
               <div>
                 <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
@@ -62,24 +69,24 @@ export function DashboardPageTabs({
                 <UpcomingList bookings={upcomingBookings as never} />
               </div>
             )}
-            <PersonalCalendarWidget
-              connected={hasGoogleCalendar}
-              members={members}
-            />
 
+            {/* Unified action items list */}
             <div>
               <div className="flex items-center justify-between mb-2">
                 <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                  Action Items
+                  Open Action Items
                 </h2>
-                <a
-                  href="/action-items"
-                  className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  View all
-                </a>
+                <div className="flex items-center gap-2">
+                  <NewTaskButton userId={userId} members={members} label="Add Action" />
+                  <a
+                    href="/action-items"
+                    className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    View all
+                  </a>
+                </div>
               </div>
-              <DashboardActionItems items={actionItems as never} />
+              <DashboardActionItems items={actionItems as never} members={members} />
             </div>
           </div>
         </div>

@@ -24,26 +24,22 @@ import {
 import { toast } from "sonner";
 import {
   StickyNote,
-  CheckSquare,
   Link2,
   X,
   ExternalLink,
   Clock,
-  Check,
   Plus,
   Pencil,
-  RotateCcw,
 } from "lucide-react";
 import { format, isPast, isToday, parseISO } from "date-fns";
 import type { PersonalItem } from "@/lib/supabase/types";
 import type { Json } from "@/lib/supabase/types";
 import { DailyBriefing } from "@/components/dashboard/DailyBriefing";
 
-type ItemType = "note" | "todo" | "link";
+type ItemType = "note" | "link";
 
 const TYPES: { value: ItemType; label: string; icon: React.ReactNode }[] = [
   { value: "note", label: "Note", icon: <StickyNote className="h-3 w-3" /> },
-  { value: "todo", label: "Todo", icon: <CheckSquare className="h-3 w-3" /> },
   { value: "link", label: "Link", icon: <Link2 className="h-3 w-3" /> },
 ];
 
@@ -76,7 +72,6 @@ export function PersonalTab({
 }) {
   const [items, setItems] = useState<PersonalItem[]>(initialItems);
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [completedSheetOpen, setCompletedSheetOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<PersonalItem | null>(null);
   const [pendingDelete, setPendingDelete] = useState<PersonalItem | null>(null);
 
@@ -85,7 +80,6 @@ export function PersonalTab({
   const [content, setContent] = useState("");
   const [noteJson, setNoteJson] = useState<Json | null>(null);
   const [url, setUrl] = useState("");
-  const [dueDate, setDueDate] = useState("");
   const [saving, setSaving] = useState(false);
 
   const changeType = (t: ItemType) => {
@@ -99,17 +93,14 @@ export function PersonalTab({
     setContent("");
     setNoteJson(null);
     setUrl("");
-    setDueDate("");
     setSheetOpen(true);
   };
 
   const openEdit = (item: PersonalItem) => {
+    if (item.type === "reminder") return;
     setEditingItem(item);
-    setType(item.type === "reminder" ? "todo" : (item.type as ItemType));
+    setType(item.type as ItemType);
     setUrl(item.url ?? "");
-    setDueDate(
-      item.due_date ? new Date(item.due_date).toISOString().slice(0, 16) : "",
-    );
     if (item.type === "note") {
       setNoteJson(parseNoteJson(item.content));
       setContent("");
@@ -136,8 +127,7 @@ export function PersonalTab({
       type,
       content: contentToSave,
       url: type === "link" ? url.trim() || null : null,
-      due_date:
-        type === "todo" && dueDate ? new Date(dueDate).toISOString() : null,
+      due_date: null as string | null,
     };
 
     const supabase = createClient();
@@ -183,24 +173,6 @@ export function PersonalTab({
     setSaving(false);
   };
 
-  const toggleTodo = async (item: PersonalItem) => {
-    const newStatus = item.status === "done" ? "open" : "done";
-    setItems((prev) =>
-      prev.map((i) => (i.id === item.id ? { ...i, status: newStatus } : i)),
-    );
-    const supabase = createClient();
-    const { error } = await supabase
-      .from("personal_items")
-      .update({ status: newStatus })
-      .eq("id", item.id);
-    if (error) {
-      toast.error(error.message);
-      setItems((prev) =>
-        prev.map((i) => (i.id === item.id ? { ...i, status: item.status } : i)),
-      );
-    }
-  };
-
   const confirmDelete = async () => {
     if (!pendingDelete) return;
     const item = pendingDelete;
@@ -217,24 +189,14 @@ export function PersonalTab({
     }
   };
 
-  const activeItems = items.filter(
-    (i) => !(i.type === "todo" && i.status === "done"),
-  );
-  const completedItems = items.filter(
-    (i) => i.type === "todo" && i.status === "done",
-  );
+  const activeItems = items.filter((i) => i.type !== "todo");
 
   return (
-    <div className="max-w-2xl space-y-4 pt-4">
+    <div className="max-w-2xl space-y-4">
       <DailyBriefing userId={userId} />
 
       {/* Header */}
       <div className="flex items-center justify-between">
-        <p className="text-xs text-muted-foreground">
-          {activeItems.length === 0
-            ? "No items yet"
-            : `${activeItems.length} item${activeItems.length === 1 ? "" : "s"}`}
-        </p>
         <div className="flex items-center gap-2">
           <Button size="sm" onClick={openAdd}>
             <Plus className="h-3.5 w-3.5 mr-1.5" />
@@ -246,7 +208,7 @@ export function PersonalTab({
       {/* Feed */}
       {activeItems.length === 0 ? (
         <p className="text-sm text-muted-foreground py-4">
-          Notes, todos, links, and reminders will appear here.
+          Notes, links, and reminders will appear here.
         </p>
       ) : (
         <div className="space-y-2">
@@ -254,22 +216,11 @@ export function PersonalTab({
             <ItemRow
               key={item.id}
               item={item}
-              onToggle={toggleTodo}
               onEdit={openEdit}
               onDelete={setPendingDelete}
             />
           ))}
         </div>
-      )}
-
-      {completedItems.length > 0 && (
-        <button
-          onClick={() => setCompletedSheetOpen(true)}
-          className="w-full text-xs text-muted-foreground hover:text-foreground py-1.5 text-center rounded hover:bg-muted transition-colors"
-        >
-          See {completedItems.length} completed item
-          {completedItems.length === 1 ? "" : "s"}
-        </button>
       )}
 
       {/* Add / Edit Sheet */}
@@ -320,11 +271,7 @@ export function PersonalTab({
                     handleSave();
                   }
                 }}
-                placeholder={
-                  type === "todo"
-                    ? "What needs to be done?"
-                    : "Description or title"
-                }
+                placeholder="Description or title"
                 className="text-sm"
                 autoFocus
               />
@@ -339,20 +286,6 @@ export function PersonalTab({
                 className="text-sm"
               />
             )}
-
-            {type === "todo" && (
-              <div className="space-y-1">
-                <label className="text-xs text-muted-foreground">
-                  Due date (optional)
-                </label>
-                <Input
-                  value={dueDate}
-                  onChange={(e) => setDueDate(e.target.value)}
-                  type="datetime-local"
-                  className="text-sm"
-                />
-              </div>
-            )}
           </div>
 
           <SheetFooter>
@@ -363,26 +296,6 @@ export function PersonalTab({
               {editingItem ? "Save" : "Add"}
             </Button>
           </SheetFooter>
-        </SheetContent>
-      </Sheet>
-
-      {/* Completed todos sheet */}
-      <Sheet open={completedSheetOpen} onOpenChange={setCompletedSheetOpen}>
-        <SheetContent side="right" className="overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle>Completed todos</SheetTitle>
-          </SheetHeader>
-          <div className="px-4 space-y-2">
-            {completedItems.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-4">
-                Nothing here.
-              </p>
-            ) : (
-              completedItems.map((item) => (
-                <CompletedRow key={item.id} item={item} onReopen={toggleTodo} />
-              ))
-            )}
-          </div>
         </SheetContent>
       </Sheet>
 
@@ -441,31 +354,18 @@ function NotePreview({ content }: { content: string }) {
 
 function ItemRow({
   item,
-  onToggle,
   onEdit,
   onDelete,
 }: {
   item: PersonalItem;
-  onToggle: (item: PersonalItem) => void;
   onEdit: (item: PersonalItem) => void;
   onDelete: (item: PersonalItem) => void;
 }) {
   return (
     <div className="group flex items-center gap-3 rounded-lg border bg-card px-3 py-2.5 text-sm">
-      {/* Left icon / checkbox */}
+      {/* Left icon */}
       <div className="mt-0.5 shrink-0">
-        {item.type === "todo" ? (
-          <button
-            onClick={() => onToggle(item)}
-            className={`flex h-4 w-4 items-center justify-center rounded border transition-colors ${
-              item.status === "done"
-                ? "border-green-500 bg-green-500 text-white"
-                : "border-muted-foreground hover:border-foreground"
-            }`}
-          >
-            {item.status === "done" && <Check className="h-2.5 w-2.5" />}
-          </button>
-        ) : item.type === "note" ? (
+        {item.type === "note" ? (
           <StickyNote className="h-3.5 w-3.5 text-muted-foreground" />
         ) : item.type === "link" ? (
           <Link2 className="h-3.5 w-3.5 text-muted-foreground" />
@@ -476,10 +376,9 @@ function ItemRow({
 
       {/* Content */}
       <div className="flex-1 min-w-0">
-        {item.due_date &&
-          (item.type === "reminder" || item.type === "todo") && (
-            <DueBadge date={item.due_date} />
-          )}
+        {item.due_date && item.type === "reminder" && (
+          <DueBadge date={item.due_date} />
+        )}
         {item.type === "note" ? (
           <NotePreview content={item.content} />
         ) : item.type === "link" ? (
@@ -498,15 +397,7 @@ function ItemRow({
             )}
           </>
         ) : (
-          <span
-            className={
-              item.type === "todo" && item.status === "done"
-                ? "line-through text-muted-foreground"
-                : ""
-            }
-          >
-            {item.content}
-          </span>
+          <span>{item.content}</span>
         )}
       </div>
 
@@ -527,33 +418,6 @@ function ItemRow({
           <X className="h-3.5 w-3.5" />
         </button>
       </div>
-    </div>
-  );
-}
-
-function CompletedRow({
-  item,
-  onReopen,
-}: {
-  item: PersonalItem;
-  onReopen: (item: PersonalItem) => void;
-}) {
-  return (
-    <div className="flex items-center gap-3 rounded-lg border bg-card px-3 py-2.5 text-sm">
-      <div className="flex h-4 w-4 shrink-0 items-center justify-center rounded border border-green-500 bg-green-500 text-white">
-        <Check className="h-2.5 w-2.5" />
-      </div>
-      <span className="flex-1 min-w-0 line-through text-muted-foreground truncate">
-        {item.content}
-      </span>
-      <button
-        onClick={() => onReopen(item)}
-        className="shrink-0 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground px-2 py-1 rounded hover:bg-muted transition-colors"
-        title="Reopen"
-      >
-        <RotateCcw className="h-3 w-3" />
-        Reopen
-      </button>
     </div>
   );
 }

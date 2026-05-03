@@ -41,11 +41,17 @@ export interface DashboardActionItem {
   description: string;
   status: string;
   due_date: string | null;
+  assignee_id: string | null;
   created_at: string;
   interactions: {
     id: string;
     team_members: { id: string; name: string } | null;
   } | null;
+}
+
+interface Member {
+  id: string;
+  name: string;
 }
 
 const StatusIcon = ({ status }: { status: string }) => {
@@ -58,8 +64,10 @@ const StatusIcon = ({ status }: { status: string }) => {
 
 export function DashboardActionItems({
   items: initialItems,
+  members = [],
 }: {
   items: DashboardActionItem[];
+  members?: Member[];
 }) {
   const [items, setItems] = useState(initialItems);
   const [pendingDelete, setPendingDelete] =
@@ -70,6 +78,7 @@ export function DashboardActionItems({
   const [editDescription, setEditDescription] = useState("");
   const [editDueDate, setEditDueDate] = useState("");
   const [editStatus, setEditStatus] = useState("");
+  const [editAssigneeId, setEditAssigneeId] = useState<string>("");
   const [saving, setSaving] = useState(false);
   const router = useRouter();
 
@@ -78,6 +87,7 @@ export function DashboardActionItems({
     setEditDescription(item.description);
     setEditDueDate(item.due_date ?? "");
     setEditStatus(item.status);
+    setEditAssigneeId(item.assignee_id ?? "");
   };
 
   const saveEdit = async () => {
@@ -87,6 +97,7 @@ export function DashboardActionItems({
       description: editDescription.trim(),
       due_date: editDueDate || null,
       status: editStatus,
+      assignee_id: editAssigneeId || null,
     };
     setItems((prev) =>
       prev.map((i) => (i.id === editingItem.id ? { ...i, ...updates } : i)),
@@ -199,7 +210,9 @@ export function DashboardActionItems({
                     <span className="block truncate">{item.description}</span>
                   </td>
                   <td className="px-2 py-1.5 text-muted-foreground whitespace-nowrap hidden sm:table-cell">
-                    {`${item.interactions?.team_members?.name ?? "—"}`}
+                    {item.assignee_id
+                      ? (members.find((m) => m.id === item.assignee_id)?.name ?? "—")
+                      : (item.interactions?.team_members?.name ?? "—")}
                   </td>
 
                   <td className="px-2 py-1.5">
@@ -268,6 +281,23 @@ export function DashboardActionItems({
                 onChange={(e) => setEditDueDate(e.target.value)}
               />
             </div>
+            {members.length > 0 && (
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  Person
+                </label>
+                <select
+                  value={editAssigneeId}
+                  onChange={(e) => setEditAssigneeId(e.target.value)}
+                  className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring"
+                >
+                  <option value="">No one</option>
+                  {members.map((m) => (
+                    <option key={m.id} value={m.id}>{m.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                 Status

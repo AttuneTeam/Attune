@@ -29,7 +29,8 @@ interface Props {
 }
 
 const StatusIcon = ({ status }: { status: string }) => {
-  if (status === "done") return <Check className="h-3.5 w-3.5 text-green-500" />;
+  if (status === "done")
+    return <Check className="h-3.5 w-3.5 text-green-500" />;
   if (status === "in_progress")
     return <Clock className="h-3.5 w-3.5 text-amber-500" />;
   return <Circle className="h-3.5 w-3.5 text-muted-foreground" />;
@@ -42,12 +43,13 @@ export function ActionItemsSheet({ preview, totalOpen }: Props) {
   async function loadItems() {
     if (items !== null) return;
     setLoading(true);
+
     const supabase = createClient();
     const { data } = await supabase
       .from("action_items")
       .select(
         `id, description, status, due_date, created_at, assignee_id,
-         interactions!inner(id, scheduled_at, manager_id, team_members(id, name))`,
+         interactions!left(id, scheduled_at, manager_id, team_members(id, name))`,
       )
       .order("due_date", { ascending: true, nullsFirst: false })
       .limit(100);
@@ -76,7 +78,7 @@ export function ActionItemsSheet({ preview, totalOpen }: Props) {
 
         {preview.length > 0 && (
           <ul className="divide-y">
-            {preview.slice(0, 3).map((item) => {
+            {preview.map((item) => {
               const overdue =
                 item.due_date &&
                 item.status !== "done" &&
@@ -119,7 +121,9 @@ export function ActionItemsSheet({ preview, totalOpen }: Props) {
               ))}
             </div>
           ) : !items || items.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No action items yet.</p>
+            <p className="text-sm text-muted-foreground">
+              No action items yet.
+            </p>
           ) : (
             <ActionItemsTable items={items as never} />
           )}

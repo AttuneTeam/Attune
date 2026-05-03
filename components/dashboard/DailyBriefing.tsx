@@ -21,7 +21,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 interface PriorityItem {
-  type: "todo" | "reminder" | "action_item";
+  type: "reminder" | "action_item";
   id: string;
   description: string;
   urgency_reason: string;
@@ -499,17 +499,7 @@ export function DailyBriefing({ userId }: { userId: string }) {
   );
 }
 
-function TypeBadge({ type }: { type: "todo" | "reminder" | "action_item" }) {
-  if (type === "todo") {
-    return (
-      <Badge
-        variant="secondary"
-        className="text-[10px] px-1.5 py-0 h-4 shrink-0"
-      >
-        todo
-      </Badge>
-    );
-  }
+function TypeBadge({ type }: { type: "reminder" | "action_item" }) {
   if (type === "reminder") {
     return (
       <span className="inline-flex items-center rounded px-1.5 py-0 h-4 text-[10px] font-medium shrink-0 bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">

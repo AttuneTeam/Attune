@@ -216,21 +216,22 @@ export default async function MemberProfilePage({
   const interactions = (interactionsRaw ?? []) as InteractionRow[];
   const interactionIds = interactions.map((m) => m.id);
 
-  const { data: actionItems } =
-    interactionIds.length > 0
-      ? await supabase
-          .from("action_items")
-          .select("*")
-          .in("interaction_id", interactionIds)
-          .order("created_at", { ascending: false })
-      : { data: [] as Awaited<ReturnType<typeof supabase.from>>["data"] };
+  const orFilter = interactionIds.length > 0
+    ? `interaction_id.in.(${interactionIds.join(",")}),assignee_id.eq.${id}`
+    : `assignee_id.eq.${id}`;
+
+  const { data: actionItems } = await supabase
+    .from("action_items")
+    .select("*")
+    .or(orFilter)
+    .order("created_at", { ascending: false });
 
   const items = (actionItems ?? []) as Array<{
     id: string;
     description: string;
     status: string;
     due_date: string | null;
-    interaction_id: string;
+    interaction_id: string | null;
   }>;
 
   // Derived

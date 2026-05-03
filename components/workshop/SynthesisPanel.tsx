@@ -33,22 +33,21 @@ export function SynthesisPanel({
     });
   }
 
-  async function saveAsTodos() {
+  async function saveAsTasks() {
     if (selected.size === 0) return;
     setSaving(true);
     const supabase = createClient();
     const rows = Array.from(selected).map((i) => ({
       user_id: userId,
-      type: "todo" as const,
-      content: synthesis.unified_actions[i].action,
+      description: synthesis.unified_actions[i].action,
       status: "open" as const,
     }));
-    const { error } = await supabase.from("personal_items").insert(rows);
+    const { error } = await supabase.from("action_items").insert(rows);
     setSaving(false);
     if (error) {
-      toast.error("Failed to save todos");
+      toast.error("Failed to save tasks");
     } else {
-      toast.success(`Saved ${rows.length} todo${rows.length > 1 ? "s" : ""}`);
+      toast.success(`Saved ${rows.length} task${rows.length > 1 ? "s" : ""}`);
       setSelected(new Set());
     }
   }
@@ -104,10 +103,10 @@ export function SynthesisPanel({
           {selected.size > 0 && (
             <Button
               size="sm"
-              onClick={saveAsTodos}
+              onClick={saveAsTasks}
               disabled={saving}
             >
-              {saving ? "Saving…" : `Save ${selected.size} as todo${selected.size > 1 ? "s" : ""}`}
+              {saving ? "Saving…" : `Save ${selected.size} as task${selected.size > 1 ? "s" : ""}`}
             </Button>
           )}
         </div>

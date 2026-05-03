@@ -110,7 +110,7 @@ export default async function DashboardPage() {
   const { data: actionItemsRaw } = await supabase
     .from("action_items")
     .select(
-      "id, description, status, due_date, created_at, interactions!inner(id, team_members(id, name))",
+      "id, description, status, due_date, created_at, assignee_id, interactions!left(id, team_members(id, name))",
     )
     .in("status", ["open", "in_progress"])
     .order("due_date", { ascending: true, nullsFirst: false })

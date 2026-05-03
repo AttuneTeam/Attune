@@ -35,6 +35,7 @@ interface ActionItemRow {
   description: string
   status: string
   due_date: string | null
+  assignee_id: string | null
   created_at: string
   interactions: {
     id: string
@@ -43,19 +44,25 @@ interface ActionItemRow {
   } | null
 }
 
+interface Member {
+  id: string
+  name: string
+}
+
 const StatusIcon = ({ status }: { status: string }) => {
   if (status === 'done') return <Check className="h-4 w-4 text-green-500" />
   if (status === 'in_progress') return <Clock className="h-4 w-4 text-amber-500" />
   return <Circle className="h-4 w-4 text-muted-foreground" />
 }
 
-export function ActionItemsTable({ items }: { items: ActionItemRow[] }) {
+export function ActionItemsTable({ items, members = [] }: { items: ActionItemRow[]; members?: Member[] }) {
   const [localItems, setLocalItems] = useState(items)
   const [pendingDelete, setPendingDelete] = useState<ActionItemRow | null>(null)
   const [editingItem, setEditingItem] = useState<ActionItemRow | null>(null)
   const [editDescription, setEditDescription] = useState('')
   const [editDueDate, setEditDueDate] = useState('')
   const [editStatus, setEditStatus] = useState('')
+  const [editAssigneeId, setEditAssigneeId] = useState<string>('')
   const [saving, setSaving] = useState(false)
   const router = useRouter()
 
@@ -64,6 +71,7 @@ export function ActionItemsTable({ items }: { items: ActionItemRow[] }) {
     setEditDescription(item.description)
     setEditDueDate(item.due_date ?? '')
     setEditStatus(item.status)
+    setEditAssigneeId(item.assignee_id ?? '')
   }
 
   const saveEdit = async () => {
@@ -73,6 +81,7 @@ export function ActionItemsTable({ items }: { items: ActionItemRow[] }) {
       description: editDescription.trim(),
       due_date: editDueDate || null,
       status: editStatus,
+      assignee_id: editAssigneeId || null,
     }
     setLocalItems((prev) =>
       prev.map((i) => i.id === editingItem.id ? { ...i, ...updates } : i)
@@ -159,9 +168,13 @@ export function ActionItemsTable({ items }: { items: ActionItemRow[] }) {
                   {item.description}
                 </p>
                 <div className="flex items-center gap-3 mt-1 flex-wrap">
-                  {item.interactions?.team_members?.name && (
+                  {(item.assignee_id
+                    ? members.find((m) => m.id === item.assignee_id)?.name
+                    : item.interactions?.team_members?.name) && (
                     <span className="text-xs text-muted-foreground">
-                      {item.interactions.team_members.name}
+                      {item.assignee_id
+                        ? members.find((m) => m.id === item.assignee_id)?.name
+                        : item.interactions?.team_members?.name}
                     </span>
                   )}
                   {item.due_date && (
@@ -235,6 +248,21 @@ export function ActionItemsTable({ items }: { items: ActionItemRow[] }) {
                 onChange={(e) => setEditDueDate(e.target.value)}
               />
             </div>
+            {members.length > 0 && (
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Person</label>
+                <select
+                  value={editAssigneeId}
+                  onChange={(e) => setEditAssigneeId(e.target.value)}
+                  className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring"
+                >
+                  <option value="">No one</option>
+                  {members.map((m) => (
+                    <option key={m.id} value={m.id}>{m.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Status</label>
               <div className="flex gap-2">

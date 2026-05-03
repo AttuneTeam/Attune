@@ -73,23 +73,11 @@ export function InteractionsSheet({
     <Sheet onOpenChange={(open) => open && loadInteractions()}>
       <div className="rounded-lg border bg-card p-5 space-y-4">
         <div className="flex items-start justify-between gap-2">
-          <div className="flex items-start gap-6">
-            <div>
-              <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">
-                Interactions this month
-              </p>
-              <p className="text-3xl font-bold">{totalThisMonth}</p>
-            </div>
-            {totalMinutesThisMonth > 0 && (
-              <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">
-                  Time in Meetings
-                </p>
-                <p className="text-3xl font-bold">
-                  {formatHours(totalMinutesThisMonth)}
-                </p>
-              </div>
-            )}
+          <div>
+            <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">
+              Interactions this month
+            </p>
+            <p className="text-3xl font-bold">{totalThisMonth}</p>
           </div>
           <SheetTrigger
             render={
@@ -99,6 +87,11 @@ export function InteractionsSheet({
             }
           />
         </div>
+        {totalMinutesThisMonth > 0 && (
+          <p className="text-xs text-muted-foreground">
+            {formatHours(totalMinutesThisMonth)} in meetings
+          </p>
+        )}
       </div>
 
       <SheetContent className="sm:max-w-2xl overflow-y-auto p-0 gap-0">

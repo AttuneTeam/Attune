@@ -32,7 +32,7 @@ type ActionItem = {
   description: string;
   status: string;
   due_date: string | null;
-  interaction_id: string;
+  interaction_id: string | null;
 };
 
 function sentimentBadge(score: number): {

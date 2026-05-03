@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { ActionItemsTable } from '@/components/ActionItemsTable'
+import { NewTaskButton } from '@/components/action-items/NewTaskButton'
 
 export default async function ActionItemsPage({
   searchParams,
@@ -14,28 +15,34 @@ export default async function ActionItemsPage({
   const params = await searchParams
   const statusFilter = params.status
 
-  let query = supabase
-    .from('action_items')
-    .select(`
-      id, description, status, due_date, created_at, assignee_id,
-      interactions!inner (
-        id, scheduled_at, manager_id,
-        team_members (id, name)
-      )
-    `)
-    .eq('interactions.manager_id', user.id)
-    .order('due_date', { ascending: true, nullsFirst: false })
+  const [itemsResult, membersResult] = await Promise.all([
+    (() => {
+      let q = supabase
+        .from('action_items')
+        .select(`
+          id, description, status, due_date, created_at, assignee_id,
+          interactions!left (
+            id, scheduled_at, manager_id,
+            team_members (id, name)
+          )
+        `)
+        .order('due_date', { ascending: true, nullsFirst: false })
+      if (statusFilter && ['open', 'in_progress', 'done'].includes(statusFilter)) {
+        q = q.eq('status', statusFilter)
+      }
+      return q.limit(100)
+    })(),
+    supabase.from('team_members').select('id, name').order('name'),
+  ])
 
-  if (statusFilter && ['open', 'in_progress', 'done'].includes(statusFilter)) {
-    query = query.eq('status', statusFilter)
-  }
-
-  const { data: items } = await query.limit(100)
+  const items = itemsResult.data ?? []
+  const members = membersResult.data ?? []
 
   return (
     <div className="p-8">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Action Items</h1>
+        <NewTaskButton userId={user.id} members={members} label="Add Action" />
       </div>
 
       {/* Status filter */}
@@ -60,7 +67,7 @@ export default async function ActionItemsPage({
         ))}
       </div>
 
-      <ActionItemsTable items={(items ?? []) as never} />
+      <ActionItemsTable items={items as never} members={members} />
     </div>
   )
 }
