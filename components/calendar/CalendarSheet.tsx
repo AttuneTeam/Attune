@@ -2,7 +2,14 @@
 
 import { useState } from "react";
 import { format, isToday, isTomorrow, parseISO } from "date-fns";
-import { CalendarDays, Clock, ExternalLink, Link2, RefreshCw, ArrowRight } from "lucide-react";
+import {
+  CalendarDays,
+  Clock,
+  ExternalLink,
+  Link2,
+  RefreshCw,
+  ArrowRight,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -23,7 +30,9 @@ function formatEventTime(start: string, end: string): string {
   if (start.length === 10) return "All day";
   const mins = Math.round((e.getTime() - s.getTime()) / 60000);
   const duration =
-    mins < 60 ? `${mins}m` : `${Math.floor(mins / 60)}h${mins % 60 ? ` ${mins % 60}m` : ""}`;
+    mins < 60
+      ? `${mins}m`
+      : `${Math.floor(mins / 60)}h${mins % 60 ? ` ${mins % 60}m` : ""}`;
   return `${format(s, "h:mm a")} · ${duration}`;
 }
 
@@ -93,7 +102,9 @@ export function CalendarSheet({
     setSyncing(event.id);
     setSyncedEventIds((prev) => [...prev, event.id]);
     const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) {
       setSyncedEventIds((prev) => prev.filter((id) => id !== event.id));
       setSyncing(null);
@@ -121,20 +132,34 @@ export function CalendarSheet({
   }
 
   const grouped = events ? groupByDay(events) : [];
-  const todayCount = grouped.find(([day]) => isToday(parseISO(day)))?.[1].length ?? 0;
+  const todayCount =
+    grouped.find(([day]) => isToday(parseISO(day)))?.[1].length ?? 0;
 
   return (
     <>
       <div className="rounded-lg border bg-card p-5 space-y-4">
         <div className="flex items-start justify-between gap-2">
           <div>
-            <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">
-              Upcoming Events
-            </p>
-            {isConnected ? (
-              <p className="text-3xl font-bold">
-                {events === null ? "—" : todayCount}
+            <div className="flex items-center gap-2">
+              <p className="flex gap-1 text-xs text-muted-foreground uppercase tracking-wide">
+                <CalendarDays className="h-3 w-3" />
+                Upcoming Events
               </p>
+              {isConnected && (
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <span>(Google)</span>
+                </div>
+              )}
+            </div>
+
+            {isConnected ? (
+              <>
+                <p className="text-3xl font-bold mb-2">
+                  {events === null ? "—" : todayCount}
+                </p>
+                <p className="text-xs text-muted-foreground">Next Meeting</p>
+                {events?.[0].summary}
+              </>
             ) : (
               <p className="text-sm text-muted-foreground">Not connected</p>
             )}
@@ -149,18 +174,16 @@ export function CalendarSheet({
             }}
           >
             {isConnected ? (
-              <>View <ArrowRight className="h-3 w-3" /></>
+              <>
+                View <ArrowRight className="h-3 w-3" />
+              </>
             ) : (
-              <>Connect <ArrowRight className="h-3 w-3" /></>
+              <>
+                Connect <ArrowRight className="h-3 w-3" />
+              </>
             )}
           </Button>
         </div>
-        {isConnected && (
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <CalendarDays className="h-3 w-3" />
-            <span>Google Calendar</span>
-          </div>
-        )}
       </div>
 
       <Sheet open={open} onOpenChange={setOpen}>
@@ -208,7 +231,9 @@ export function CalendarSheet({
                           >
                             <div className="w-1 rounded-full bg-primary/60 self-stretch mt-0.5 shrink-0" />
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium truncate">{event.summary}</p>
+                              <p className="text-sm font-medium truncate">
+                                {event.summary}
+                              </p>
                               <p className="text-xs text-muted-foreground flex items-center gap-1">
                                 <Clock className="h-2.5 w-2.5" />
                                 {formatEventTime(event.start, event.end)}
@@ -225,7 +250,9 @@ export function CalendarSheet({
                                 </span>
                               ) : matchedMember ? (
                                 <button
-                                  onClick={() => handleSync(event, matchedMember)}
+                                  onClick={() =>
+                                    handleSync(event, matchedMember)
+                                  }
                                   disabled={isSyncing}
                                   className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground px-1.5 py-0.5 rounded hover:bg-muted"
                                   title={`Sync with ${matchedMember.name}`}

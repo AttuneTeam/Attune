@@ -7,11 +7,10 @@ import { Badge } from "@/components/ui/badge";
 import {
   RefreshCw,
   Calendar,
-  AlertCircle,
+  ListChecks,
   ChevronRight,
   ChevronDown,
   Users,
-  ListChecks,
   CheckCircle,
   X,
   Check,
@@ -41,6 +40,7 @@ interface BriefingContent {
     content: string;
     due_date: string | null;
   }[];
+  due_today_action_items?: { id: string; description: string; member_name: string | null }[];
   action_items_count: number;
   meetings_today: {
     title: string;
@@ -299,15 +299,13 @@ export function DailyBriefing({ userId }: { userId: string }) {
           </div>
         )}
 
-        {/* Action items count */}
-        {briefing.action_items_count > 0 && (
+        {/* Action items due today — count */}
+        {(briefing.due_today_action_items ?? []).length > 0 && (
           <div className="px-4 py-2.5 flex items-center gap-2">
             <ListChecks className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-            <span>
-              <span className="font-medium">
-                {briefing.action_items_count} open action item
-                {briefing.action_items_count === 1 ? "" : "s"}
-              </span>
+            <span className="font-medium">
+              {(briefing.due_today_action_items ?? []).length} action item
+              {(briefing.due_today_action_items ?? []).length === 1 ? "" : "s"} due today
             </span>
             <Button
               size="sm"

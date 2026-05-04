@@ -40,7 +40,8 @@ export async function GET() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!user)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const today = new Date().toISOString().slice(0, 10);
 
@@ -52,7 +53,11 @@ export async function GET() {
       .eq("user_id", user.id)
       .eq("date", today)
       .maybeSingle(),
-    supabase.from("team_members").select("id, name").eq("manager_id", user.id).order("name"),
+    supabase
+      .from("team_members")
+      .select("id, name")
+      .eq("manager_id", user.id)
+      .order("name"),
   ]);
 
   if (!data?.content) return NextResponse.json({ briefing: null });
@@ -60,7 +65,10 @@ export async function GET() {
   return NextResponse.json({
     briefing: {
       ...data.content,
-      team_members: (members ?? []).map((m: { id: string; name: string }) => ({ id: m.id, name: m.name })),
+      team_members: (members ?? []).map((m: { id: string; name: string }) => ({
+        id: m.id,
+        name: m.name,
+      })),
     },
   });
 }
@@ -70,7 +78,8 @@ export async function POST() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!user)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const now = new Date();
   const today = now.toISOString().slice(0, 10);
@@ -86,12 +95,12 @@ export async function POST() {
     { data: members },
   ] = await Promise.all([
     supabase
-      .from("personal_items")
-      .select("id, content, due_date")
+      .from("action_items")
+      .select("id, description, due_date")
       .eq("user_id", user.id)
-      .eq("type", "reminder")
-      .eq("status", "open")
-      .lte("due_date", todayEnd.toISOString()),
+      .in("status", ["open", "in_progress"])
+      .lte("due_date", today)
+      .order("due_date", { ascending: true }),
     supabase
       .from("action_items")
       .select(
@@ -145,12 +154,12 @@ export async function POST() {
     // Calendar not connected — skip silently
   }
 
-  // Categorise reminders
+  // Categorise by due date (string comparison is reliable for date-only fields)
   const overdueReminders = (reminders ?? []).filter(
-    (r) => r.due_date && new Date(r.due_date) < now,
+    (r) => r.due_date && r.due_date.slice(0, 10) < today,
   );
   const dueTodayReminders = (reminders ?? []).filter(
-    (r) => r.due_date && new Date(r.due_date) >= now,
+    (r) => r.due_date && r.due_date.slice(0, 10) === today,
   );
 
   // Last interaction per member
@@ -173,10 +182,14 @@ export async function POST() {
 
   // Flatten action items with member names
   const actionItemsFlat = (actionItems ?? []).map((a) => {
-    const interaction = a.interactions as unknown as Record<string, unknown> | null;
-    const member = interaction?.team_members as
-      | { id: string; name: string }
-      | null;
+    const interaction = a.interactions as unknown as Record<
+      string,
+      unknown
+    > | null;
+    const member = interaction?.team_members as {
+      id: string;
+      name: string;
+    } | null;
     return {
       id: a.id,
       description: a.description,
@@ -190,13 +203,13 @@ export async function POST() {
   const allReminderItems = [
     ...overdueReminders.map((r) => ({
       id: r.id,
-      content: r.content,
-      label: `OVERDUE: ${r.content}`,
+      content: r.description,
+      label: `OVERDUE: ${r.description}`,
     })),
     ...dueTodayReminders.map((r) => ({
       id: r.id,
-      content: r.content,
-      label: `Due today: ${r.content}`,
+      content: r.description,
+      label: `Due today: ${r.description}`,
     })),
   ];
 
@@ -252,12 +265,28 @@ Rules for priority_items:
     schema: BriefingSchema,
   });
 
-  const overdueForWidget = overdueReminders.map((r) => ({ id: r.id, content: r.content, due_date: r.due_date }));
-  const dueTodayForWidget = dueTodayReminders.map((r) => ({ id: r.id, content: r.content, due_date: r.due_date }));
+  const overdueForWidget = overdueReminders.map((r) => ({
+    id: r.id,
+    content: r.description,
+    due_date: r.due_date,
+  }));
+  const dueTodayForWidget = dueTodayReminders.map((r) => ({
+    id: r.id,
+    content: r.description,
+    due_date: r.due_date,
+  }));
+  const dueTodayActionItems = actionItemsFlat.filter(
+    (a) => a.due_date && a.due_date.slice(0, 10) === today,
+  );
 
   const content = {
     overdue_reminders: overdueForWidget,
     due_today_reminders: dueTodayForWidget,
+    due_today_action_items: dueTodayActionItems.map((a) => ({
+      id: a.id,
+      description: a.description,
+      member_name: a.member_name,
+    })),
     action_items_count: actionItemsFlat.length,
     meetings_today: meetingsToday,
     total_meeting_hours: totalMeetingHours,

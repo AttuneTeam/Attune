@@ -47,7 +47,7 @@ export function DashboardPageTabs({
       </TabsList>
 
       <TabsContent value="personal">
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_1fr] gap-6 pt-4">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-6 pt-4">
           <PersonalTab initialItems={personalItems} userId={userId} />
 
           <div className="space-y-4">
@@ -77,7 +77,11 @@ export function DashboardPageTabs({
                   Open Action Items
                 </h2>
                 <div className="flex items-center gap-2">
-                  <NewTaskButton userId={userId} members={members} label="Add Action" />
+                  <NewTaskButton
+                    userId={userId}
+                    members={members}
+                    label="Add Action"
+                  />
                   <a
                     href="/action-items"
                     className="text-xs text-muted-foreground hover:text-foreground transition-colors"
@@ -86,7 +90,10 @@ export function DashboardPageTabs({
                   </a>
                 </div>
               </div>
-              <DashboardActionItems items={actionItems as never} members={members} />
+              <DashboardActionItems
+                items={actionItems as never}
+                members={members}
+              />
             </div>
           </div>
         </div>
