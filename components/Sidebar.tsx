@@ -1,6 +1,5 @@
 "use client";
 
-import { Press_Start_2P } from "next/font/google";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -16,6 +15,8 @@ import {
   Activity,
   UserPlus,
   FlaskConical,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -50,6 +51,7 @@ export function Sidebar({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const [collapsed, setCollapsed] = useState(false);
   const [peopleOpen, setPeopleOpen] = useState(true);
   const [stakeholdersOpen, setStakeholdersOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(
@@ -77,13 +79,48 @@ export function Sidebar({
     pathname.startsWith("/settings") ||
     pathname.startsWith("/team");
 
+  const directReports = members.filter((m) => m.relationship !== "stakeholder");
+  const stakeholders = members.filter((m) => m.relationship === "stakeholder");
+
   return (
-    <aside className="w-56 flex flex-col bg-sidebar shrink-0">
-      <div className={`mx-2 my-4 px-4 py-2 rounded-lg`}>
-        <AttuneLogo />
+    <aside
+      className={cn(
+        "flex flex-col bg-sidebar shrink-0 transition-[width] duration-300 ease-in-out",
+        collapsed ? "w-16" : "w-56",
+      )}
+    >
+      {/* Logo + collapse toggle */}
+      <div
+        className={cn(
+          "mx-2 my-4 rounded-lg flex items-center gap-2 justify-between",
+          collapsed ? "px-2 py-2 justify-center" : "px-2 py-2 ",
+        )}
+      >
+        {!collapsed && <AttuneLogo />}
+        <button
+          type="button"
+          onClick={() => setCollapsed((o) => !o)}
+          className={cn(
+            "p-1.5 rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors",
+            !collapsed && "ml-auto",
+          )}
+          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+        >
+          {collapsed ? (
+            <PanelLeftOpen className="h-4 w-4" />
+          ) : (
+            <PanelLeftClose className="h-4 w-4" />
+          )}
+        </button>
       </div>
+
       {/* Nav */}
-      <nav className="flex-1 py-4 px-2 space-y-0.5 overflow-y-auto">
+      <nav
+        className={cn(
+          "flex-1 py-4 px-2 space-y-0.5",
+          collapsed ? "overflow-visible" : "overflow-y-auto",
+        )}
+      >
         {navItems.map(({ href, label, icon: Icon }) => {
           const active =
             href === "/dashboard"
@@ -95,6 +132,7 @@ export function Sidebar({
               href={href}
               className={cn(
                 "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all",
+                collapsed && "justify-center px-0",
                 active
                   ? "text-primary-foreground shadow-sm"
                   : "text-muted-foreground hover:bg-accent hover:text-foreground",
@@ -107,135 +145,212 @@ export function Sidebar({
                     }
                   : undefined
               }
+              title={collapsed ? label : undefined}
             >
               <Icon className="h-4 w-4 shrink-0" />
-              {label}
+              {!collapsed && label}
             </Link>
           );
         })}
 
         {/* People quick-access */}
-        {(() => {
-          const directReports = members.filter(
-            (m) => m.relationship !== "stakeholder",
-          );
-          const stakeholders = members.filter(
-            (m) => m.relationship === "stakeholder",
-          );
-          return (
-            <>
-              {directReports.length > 0 && (
-                <div className="pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setPeopleOpen((o) => !o)}
-                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-all"
+        {directReports.length > 0 && (
+          <div className={cn("pt-2", collapsed && "relative group/people")}>
+            <button
+              type="button"
+              onClick={() => !collapsed && setPeopleOpen((o) => !o)}
+              className={cn(
+                "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-all",
+                collapsed && "justify-center px-0",
+              )}
+              title={collapsed ? "People" : undefined}
+            >
+              <Users className="h-4 w-4 shrink-0" />
+              {!collapsed && (
+                <>
+                  <span className="flex-1 text-left">People</span>
+                  <Link
+                    href="/team"
+                    onClick={(e) => e.stopPropagation()}
+                    className="p-0.5 rounded hover:bg-accent/80 hover:text-foreground text-muted-foreground/60 transition-colors"
+                    title="Add team member"
                   >
-                    <Users className="h-4 w-4 shrink-0" />
-                    <span className="flex-1 text-left">People</span>
+                    <UserPlus className="h-3.5 w-3.5" />
+                  </Link>
+                  <ChevronDown
+                    className={cn(
+                      "h-3.5 w-3.5 shrink-0 transition-transform duration-200",
+                      peopleOpen && "rotate-180",
+                    )}
+                  />
+                </>
+              )}
+            </button>
+
+            {/* Expanded sub-items */}
+            {!collapsed && peopleOpen && (
+              <div className="mt-0.5 ml-3 pl-3 border-l border-border/50 space-y-0.5">
+                {directReports.map((member) => {
+                  const active = pathname === `/team/${member.id}`;
+                  return (
                     <Link
-                      href="/team"
-                      onClick={(e) => e.stopPropagation()}
-                      className="p-0.5 rounded hover:bg-accent/80 hover:text-foreground text-muted-foreground/60 transition-colors"
-                      title="Add team member"
+                      key={member.id}
+                      href={`/team/${member.id}`}
+                      className={cn(
+                        "block px-2 py-1.5 rounded-md text-xs transition-colors truncate",
+                        active
+                          ? "font-medium text-primary"
+                          : "text-muted-foreground hover:text-foreground hover:bg-accent",
+                      )}
                     >
-                      <UserPlus className="h-3.5 w-3.5" />
+                      {member.name}
                     </Link>
-                    <ChevronDown
-                      className={cn(
-                        "h-3.5 w-3.5 shrink-0 transition-transform duration-200",
-                        peopleOpen && "rotate-180",
-                      )}
-                    />
-                  </button>
-                  {peopleOpen && (
-                    <div className="mt-0.5 ml-3 pl-3 border-l border-border/50 space-y-0.5">
-                      {directReports.map((member) => {
-                        const active = pathname === `/team/${member.id}`;
-                        return (
-                          <Link
-                            key={member.id}
-                            href={`/team/${member.id}`}
-                            className={cn(
-                              "block px-2 py-1.5 rounded-md text-xs transition-colors truncate",
-                              active
-                                ? "font-medium text-primary"
-                                : "text-muted-foreground hover:text-foreground hover:bg-accent",
-                            )}
-                          >
-                            {member.name}
-                          </Link>
-                        );
-                      })}
-                    </div>
-                  )}
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Collapsed flyout */}
+            {collapsed && (
+              <div className="absolute left-full top-0 pl-2 z-50 invisible group-hover/people:visible opacity-0 group-hover/people:opacity-100 transition-opacity duration-150 pointer-events-none group-hover/people:pointer-events-auto">
+                <div className="bg-sidebar border border-border rounded-lg shadow-lg p-2 min-w-[160px] space-y-0.5">
+                  <p className="px-2 py-1 text-xs font-medium text-muted-foreground">
+                    People
+                  </p>
+                  {directReports.map((member) => {
+                    const active = pathname === `/team/${member.id}`;
+                    return (
+                      <Link
+                        key={member.id}
+                        href={`/team/${member.id}`}
+                        className={cn(
+                          "block px-2 py-1.5 rounded-md text-xs transition-colors truncate",
+                          active
+                            ? "font-medium text-primary"
+                            : "text-muted-foreground hover:text-foreground hover:bg-accent",
+                        )}
+                      >
+                        {member.name}
+                      </Link>
+                    );
+                  })}
                 </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Stakeholders */}
+        {stakeholders.length > 0 && (
+          <div
+            className={cn("pt-1", collapsed && "relative group/stakeholders")}
+          >
+            <button
+              type="button"
+              onClick={() => !collapsed && setStakeholdersOpen((o) => !o)}
+              className={cn(
+                "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-all",
+                collapsed && "justify-center px-0",
               )}
-              {stakeholders.length > 0 && (
-                <div className="pt-1">
-                  <button
-                    type="button"
-                    onClick={() => setStakeholdersOpen((o) => !o)}
-                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-all"
-                  >
-                    <Network className="h-4 w-4 shrink-0" />
-                    <span className="flex-1 text-left">Stakeholders</span>
-                    <ChevronDown
+              title={collapsed ? "Stakeholders" : undefined}
+            >
+              <Network className="h-4 w-4 shrink-0" />
+              {!collapsed && (
+                <>
+                  <span className="flex-1 text-left">Stakeholders</span>
+                  <ChevronDown
+                    className={cn(
+                      "h-3.5 w-3.5 shrink-0 transition-transform duration-200",
+                      stakeholdersOpen && "rotate-180",
+                    )}
+                  />
+                </>
+              )}
+            </button>
+
+            {/* Expanded sub-items */}
+            {!collapsed && stakeholdersOpen && (
+              <div className="mt-0.5 ml-3 pl-3 border-l border-border/50 space-y-0.5">
+                {stakeholders.map((member) => {
+                  const active = pathname === `/team/${member.id}`;
+                  return (
+                    <Link
+                      key={member.id}
+                      href={`/team/${member.id}`}
                       className={cn(
-                        "h-3.5 w-3.5 shrink-0 transition-transform duration-200",
-                        stakeholdersOpen && "rotate-180",
+                        "block px-2 py-1.5 rounded-md text-xs transition-colors truncate",
+                        active
+                          ? "font-medium text-primary"
+                          : "text-muted-foreground hover:text-foreground hover:bg-accent",
                       )}
-                    />
-                  </button>
-                  {stakeholdersOpen && (
-                    <div className="mt-0.5 ml-3 pl-3 border-l border-border/50 space-y-0.5">
-                      {stakeholders.map((member) => {
-                        const active = pathname === `/team/${member.id}`;
-                        return (
-                          <Link
-                            key={member.id}
-                            href={`/team/${member.id}`}
-                            className={cn(
-                              "block px-2 py-1.5 rounded-md text-xs transition-colors truncate",
-                              active
-                                ? "font-medium text-primary"
-                                : "text-muted-foreground hover:text-foreground hover:bg-accent",
-                            )}
-                          >
-                            {member.name}
-                          </Link>
-                        );
-                      })}
-                    </div>
-                  )}
+                    >
+                      {member.name}
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Collapsed flyout */}
+            {collapsed && (
+              <div className="absolute left-full top-0 pl-2 z-50 invisible group-hover/stakeholders:visible opacity-0 group-hover/stakeholders:opacity-100 transition-opacity duration-150 pointer-events-none group-hover/stakeholders:pointer-events-auto">
+                <div className="bg-sidebar border border-border rounded-lg shadow-lg p-2 min-w-[160px] space-y-0.5">
+                  <p className="px-2 py-1 text-xs font-medium text-muted-foreground">
+                    Stakeholders
+                  </p>
+                  {stakeholders.map((member) => {
+                    const active = pathname === `/team/${member.id}`;
+                    return (
+                      <Link
+                        key={member.id}
+                        href={`/team/${member.id}`}
+                        className={cn(
+                          "block px-2 py-1.5 rounded-md text-xs transition-colors truncate",
+                          active
+                            ? "font-medium text-primary"
+                            : "text-muted-foreground hover:text-foreground hover:bg-accent",
+                        )}
+                      >
+                        {member.name}
+                      </Link>
+                    );
+                  })}
                 </div>
-              )}
-            </>
-          );
-        })()}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Settings section */}
-        <div className="pt-2">
+        <div className={cn("pt-2", collapsed && "relative group/settings")}>
           <button
             type="button"
-            onClick={() => setSettingsOpen((o) => !o)}
+            onClick={() => !collapsed && setSettingsOpen((o) => !o)}
             className={cn(
               "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all",
+              collapsed && "justify-center px-0",
               isSettingsActive
                 ? "text-foreground"
                 : "text-muted-foreground hover:bg-accent hover:text-foreground",
             )}
+            title={collapsed ? "Settings" : undefined}
           >
             <Settings className="h-4 w-4 shrink-0" />
-            <span className="flex-1 text-left">Settings</span>
-            <ChevronDown
-              className={cn(
-                "h-3.5 w-3.5 shrink-0 transition-transform duration-200",
-                settingsOpen && "rotate-180",
-              )}
-            />
+            {!collapsed && (
+              <>
+                <span className="flex-1 text-left">Settings</span>
+                <ChevronDown
+                  className={cn(
+                    "h-3.5 w-3.5 shrink-0 transition-transform duration-200",
+                    settingsOpen && "rotate-180",
+                  )}
+                />
+              </>
+            )}
           </button>
-          {settingsOpen && (
+
+          {/* Expanded sub-items */}
+          {!collapsed && settingsOpen && (
             <div className="mt-0.5 ml-3 pl-3 border-l border-border/50 space-y-0.5">
               {settingsItems.map(({ href, label, icon: Icon }) => {
                 const active = pathname.startsWith(href);
@@ -257,38 +372,79 @@ export function Sidebar({
               })}
             </div>
           )}
+
+          {/* Collapsed flyout */}
+          {collapsed && (
+            <div className="absolute left-full top-0 ml-2 z-50 invisible group-hover/settings:visible opacity-0 group-hover/settings:opacity-100 transition-opacity duration-150 pointer-events-none group-hover/settings:pointer-events-auto">
+              <div className="bg-sidebar border border-border rounded-lg shadow-lg p-2 min-w-[160px] space-y-0.5">
+                <p className="px-2 py-1 text-xs font-medium text-muted-foreground">
+                  Settings
+                </p>
+                {settingsItems.map(({ href, label, icon: Icon }) => {
+                  const active = pathname.startsWith(href);
+                  return (
+                    <Link
+                      key={href}
+                      href={href}
+                      className={cn(
+                        "flex items-center gap-2 px-2 py-1.5 rounded-md text-xs transition-colors",
+                        active
+                          ? "font-medium text-primary"
+                          : "text-muted-foreground hover:text-foreground hover:bg-accent",
+                      )}
+                    >
+                      <Icon className="h-3.5 w-3.5 shrink-0" />
+                      {label}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       </nav>
 
       {/* User footer */}
-      <div className="p-3 flex items-center gap-3">
+      <div
+        className={cn(
+          "p-3 flex items-center gap-3",
+          collapsed && "justify-center",
+        )}
+      >
         <Link
           href="/account"
-          className="flex items-center gap-3 flex-1 min-w-0 hover:opacity-80 transition-opacity"
+          className={cn(
+            "flex items-center gap-3 hover:opacity-80 transition-opacity",
+            collapsed ? "" : "flex-1 min-w-0",
+          )}
         >
           <Avatar className="h-8 w-8">
             <AvatarFallback className="text-xs bg-secondary text-secondary-foreground">
               {initials}
             </AvatarFallback>
           </Avatar>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate">
-              {profile?.full_name ?? "User"}
-            </p>
-            <p className="text-xs text-muted-foreground truncate">
-              {profile?.role}
-            </p>
-          </div>
+          {!collapsed && (
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium truncate">
+                {profile?.full_name ?? "User"}
+              </p>
+              <p className="text-xs text-muted-foreground truncate">
+                {profile?.role}
+              </p>
+            </div>
+          )}
         </Link>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7 shrink-0"
-          onClick={handleSignOut}
-          title="Sign out"
-        >
-          <LogOut className="h-4 w-4" />
-        </Button>
+        {!collapsed && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 shrink-0"
+            onClick={handleSignOut}
+            title="Sign out"
+          >
+            <LogOut className="h-4 w-4" />
+          </Button>
+        )}
       </div>
     </aside>
   );
