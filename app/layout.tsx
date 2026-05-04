@@ -13,7 +13,7 @@ const mono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "TeamLeader",
+  title: "Attune",
   description: "See the real org behind the chart",
 };
 

@@ -27,6 +27,8 @@ import {
   List,
   HelpCircle,
   Loader2,
+  MoreHorizontal,
+  Trash2,
 } from "lucide-react";
 import { CalendarEventPicker } from "@/components/calendar/CalendarEventPicker";
 import { format, parseISO } from "date-fns";
@@ -34,12 +36,23 @@ import type { ActionItem, AgendaItem } from "@/lib/supabase/types";
 import type { Json } from "@/lib/supabase/types";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 const INTERACTION_TYPES = [
-  { value: "scheduled", label: "Scheduled meeting" },
+  { value: "scheduled", label: "Meeting" },
   { value: "incidental", label: "Incidental chat" },
   { value: "note", label: "Quick note" },
-  { value: "slack", label: "Slack interaction" },
+  { value: "slack", label: "Slack" },
 ] as const;
 
 interface InteractionWithMember {
@@ -150,6 +163,8 @@ export function InteractionEditorClient({
   const [aiLoading, setAiLoading] = useState<
     "summarize" | "action-items" | "coaching" | null
   >(null);
+  const [editorWordCount, setEditorWordCount] = useState(0);
+  const [editorSaving, setEditorSaving] = useState(false);
   const dateInputRef = useRef<HTMLInputElement>(null);
 
   const handleTitleBlur = useCallback(
@@ -295,86 +310,97 @@ export function InteractionEditorClient({
     }
   }, [interaction.id]);
 
+  const router = useRouter();
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDelete = useCallback(async () => {
+    setIsDeleting(true);
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("interactions")
+      .delete()
+      .eq("id", interaction.id);
+    setIsDeleting(false);
+    if (error) {
+      toast.error("Failed to delete interaction");
+      return;
+    }
+    toast.success("Interaction deleted");
+    router.push(`/team/${interaction.team_members?.id}`);
+  }, [interaction.id, interaction.team_members?.id, router]);
+
   const member = interaction.team_members;
 
   return (
     <div className="p-2 sm:p-6 max-w-6xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center justify-end gap-3 mb-6">
-        <div className="flex items-center gap-2 flex-wrap min-w-0">
-          <Select
-            value={type}
-            onValueChange={(type) => type && handleTypeChange(type)}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {INTERACTION_TYPES.map((t) => (
-                <SelectItem key={t.value} value={t.value} className="text-xs">
-                  {t.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {isEditingDate ? (
-            <input
-              ref={dateInputRef}
-              type="date"
-              defaultValue={scheduledAt.slice(0, 10)}
-              className="text-sm text-muted-foreground bg-transparent border-b border-border focus:outline-none"
-              onBlur={handleDateBlur}
-              autoFocus
-            />
-          ) : (
-            <button
-              type="button"
-              onClick={() => setIsEditingDate(true)}
-              className="text-sm text-muted-foreground hover:text-foreground hover:underline underline-offset-2 transition-colors"
-              title="Click to change date"
-            >
-              {format(parseISO(scheduledAt), "MMM d, yyyy")}
-            </button>
-          )}
-          <div className="flex items-center gap-1">
-            <input
-              key={durationMinutes}
-              type="number"
-              min={0}
-              max={999}
-              defaultValue={durationMinutes ?? ""}
-              placeholder="—"
-              onBlur={handleDurationBlur}
-              className="w-12 text-sm text-muted-foreground bg-transparent border-b border-border focus:outline-none text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              title="Duration in minutes"
-            />
-            <span className="text-sm text-muted-foreground">min</span>
-          </div>
-          {hasGoogleCalendar && (
-            <CalendarEventPicker
-              interactionId={interaction.id}
-              linkedEventId={linkedEventId}
-              linkedEventTitle={linkedEventTitle}
-              onLinked={(mins, eventId, eventTitle) => {
-                setDurationMinutes(mins > 0 ? mins : null);
-                setLinkedEventId(eventId);
-                setLinkedEventTitle(eventTitle);
-              }}
-              onUnlinked={() => {
-                setLinkedEventId(null);
-                setLinkedEventTitle(null);
-              }}
-            />
-          )}
+      <div className="flex items-center justify-end mb-2 gap-2">
+        <div className="flex items-center gap-3 shrink-0 text-xs text-muted-foreground/60">
+          <span>{editorSaving ? "Saving…" : "Saved"}</span>
+          <span>{editorWordCount} words</span>
         </div>
+        <Select
+          value={INTERACTION_TYPES.find((i) => i.value === type)?.label}
+          onValueChange={(type) => type && handleTypeChange(type)}
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {INTERACTION_TYPES.map((t) => (
+              <SelectItem key={t.value} value={t.value} className="text-xs">
+                {t.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <DropdownMenu>
+          <DropdownMenuTrigger className="inline-flex items-center justify-center h-8 w-8 rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors">
+            <MoreHorizontal className="h-4 w-4" />
+            <span className="sr-only">More options</span>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem
+              className="text-destructive focus:text-destructive"
+              onClick={() => setDeleteOpen(true)}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              Delete interaction
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
+      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <DialogContent showCloseButton={false}>
+          <DialogHeader>
+            <DialogTitle>Delete interaction?</DialogTitle>
+            <DialogDescription>
+              This will permanently delete the notes, action items, and all
+              other data for this interaction. This cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose render={<Button variant="outline" />}>
+              Cancel
+            </DialogClose>
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={isDeleting}
+            >
+              {isDeleting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       {/* Content grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         {/* Left column */}
         <div className="space-y-4">
           {/* Member name block */}
-          <div className="rounded-lg bg-card px-0 pt-4 pb-5">
+          <div className="rounded-lg bg-card px-0 pb-5">
             <div>
               <Link href={`/team/${member?.id}`}>
                 <h2 className="text-xl font-bold tracking-tight leading-tight">
@@ -416,6 +442,57 @@ export function InteractionEditorClient({
             </div>
           </div>
 
+          <div className="flex items-center gap-2 flex-wrap min-w-0">
+            {isEditingDate ? (
+              <input
+                ref={dateInputRef}
+                type="date"
+                defaultValue={scheduledAt.slice(0, 10)}
+                className="text-sm text-muted-foreground bg-transparent border-b border-border focus:outline-none"
+                onBlur={handleDateBlur}
+                autoFocus
+              />
+            ) : (
+              <button
+                type="button"
+                onClick={() => setIsEditingDate(true)}
+                className="text-sm text-muted-foreground hover:text-foreground hover:underline underline-offset-2 transition-colors"
+                title="Click to change date"
+              >
+                {format(parseISO(scheduledAt), "MMM d, yyyy")}
+              </button>
+            )}
+            <div className="flex items-center gap-1">
+              <input
+                key={durationMinutes}
+                type="number"
+                min={0}
+                max={999}
+                defaultValue={durationMinutes ?? ""}
+                placeholder="—"
+                onBlur={handleDurationBlur}
+                className="w-12 text-sm text-muted-foreground bg-transparent border-b border-border focus:outline-none text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                title="Duration in minutes"
+              />
+              <span className="text-sm text-muted-foreground">min</span>
+            </div>
+            {hasGoogleCalendar && (
+              <CalendarEventPicker
+                interactionId={interaction.id}
+                linkedEventId={linkedEventId}
+                linkedEventTitle={linkedEventTitle}
+                onLinked={(mins, eventId, eventTitle) => {
+                  setDurationMinutes(mins > 0 ? mins : null);
+                  setLinkedEventId(eventId);
+                  setLinkedEventTitle(eventTitle);
+                }}
+                onUnlinked={() => {
+                  setLinkedEventId(null);
+                  setLinkedEventTitle(null);
+                }}
+              />
+            )}
+          </div>
           {/* Agenda + My read on + AI actions + Tabs */}
           <div className="rounded-lg border overflow-hidden">
             <CollapsibleSection
@@ -544,7 +621,7 @@ export function InteractionEditorClient({
 
         {/* Right column — title + editor */}
         <div className="lg:col-span-2">
-          <div className="mb-2 px-1 flex items-center gap-2">
+          <div className="mb-2 flex items-center gap-2">
             <input
               type="text"
               value={title}
@@ -557,6 +634,10 @@ export function InteractionEditorClient({
           <TiptapEditor
             interactionId={interaction.id}
             initialContent={interaction.raw_json_notes}
+            onStatsChange={({ wordCount, saving }) => {
+              setEditorWordCount(wordCount);
+              setEditorSaving(saving);
+            }}
           />
         </div>
       </div>
