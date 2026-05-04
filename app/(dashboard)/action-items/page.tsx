@@ -1,5 +1,4 @@
 import Link from "next/link";
-
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { ActionItemsTable } from "@/components/ActionItemsTable";
@@ -54,8 +53,7 @@ export default async function ActionItemsPage({
         <NewTaskButton userId={user.id} members={members} label="Add Action" />
       </div>
 
-      {/* Status filter */}
-      <div className="flex gap-2 mb-6">
+      <div className="flex gap-2 mb-4">
         {[
           { label: "All", value: undefined },
           { label: "Open", value: "open" },
