@@ -18,7 +18,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -45,13 +45,19 @@ type Member = { id: string; name: string; relationship?: string | null };
 export function Sidebar({
   profile,
   members,
+  defaultCollapsed = false,
 }: {
   profile: Profile | null;
   members: Member[];
+  defaultCollapsed?: boolean;
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(defaultCollapsed);
+
+  useEffect(() => {
+    document.cookie = `sidebar-collapsed=${collapsed}; path=/; max-age=31536000; SameSite=Lax`;
+  }, [collapsed]);
   const [peopleOpen, setPeopleOpen] = useState(true);
   const [stakeholdersOpen, setStakeholdersOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(

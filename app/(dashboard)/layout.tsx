@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation'
+import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { Sidebar } from '@/components/Sidebar'
 import { Toaster } from '@/components/ui/sonner'
@@ -34,9 +35,12 @@ export default async function DashboardLayout({
     .select('id, name, relationship')
     .order('name')
 
+  const cookieStore = await cookies()
+  const sidebarCollapsed = cookieStore.get('sidebar-collapsed')?.value === 'true'
+
   return (
     <>
-      <DashboardShell sidebar={<Sidebar profile={profile} members={members ?? []} />}>
+      <DashboardShell sidebar={<Sidebar profile={profile} members={members ?? []} defaultCollapsed={sidebarCollapsed} />}>
         {children}
       </DashboardShell>
       <Toaster />
