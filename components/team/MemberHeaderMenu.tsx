@@ -39,13 +39,10 @@ export function MemberHeaderMenu({
   return (
     <>
       <DropdownMenu>
-        <DropdownMenuTrigger
-          render={
-            <Button variant="outline" size="sm">
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          }
-        />
+        <DropdownMenuTrigger className="inline-flex items-center justify-center h-8 w-8 rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors">
+          <MoreHorizontal className="h-4 w-4" />
+          <span className="sr-only">More options</span>
+        </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuItem onClick={() => setIntegrationsOpen(true)}>
             <Plug className="h-3 w-3" />
