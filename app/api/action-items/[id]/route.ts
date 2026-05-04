@@ -14,6 +14,7 @@ export async function PATCH(
 
   const body = await req.json();
   const patch: Record<string, unknown> = {};
+  if ("title" in body) patch.title = body.title;
   if ("status" in body) patch.status = body.status;
   if ("description" in body) patch.description = body.description;
   if ("due_date" in body) patch.due_date = body.due_date;

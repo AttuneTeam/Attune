@@ -227,6 +227,7 @@ export type Database = {
         Row: {
           id: string
           interaction_id: string | null
+          title: string | null
           description: string
           status: string
           due_date: string | null
@@ -237,6 +238,7 @@ export type Database = {
         Insert: {
           id?: string
           interaction_id?: string | null
+          title?: string | null
           description: string
           status?: string
           due_date?: string | null
@@ -245,6 +247,7 @@ export type Database = {
         }
         Update: {
           interaction_id?: string | null
+          title?: string | null
           description?: string
           status?: string
           due_date?: string | null

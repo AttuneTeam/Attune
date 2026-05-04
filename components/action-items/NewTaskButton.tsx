@@ -14,6 +14,7 @@ import {
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
+import { DescriptionEditor } from '@/components/action-items/DescriptionEditor'
 
 interface Member {
   id: string
@@ -30,20 +31,29 @@ export function NewTaskButton({
   label?: string
 }) {
   const [open, setOpen] = useState(false)
+  const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [dueDate, setDueDate] = useState('')
   const [assigneeId, setAssigneeId] = useState('')
   const [saving, setSaving] = useState(false)
   const router = useRouter()
 
+  const resetForm = () => {
+    setTitle('')
+    setDescription('')
+    setDueDate('')
+    setAssigneeId('')
+  }
+
   const handleSave = async () => {
-    const trimmed = description.trim()
-    if (!trimmed) return
+    const trimmedDesc = description.trim()
+    if (!trimmedDesc) return
     setSaving(true)
     const supabase = createClient()
     const { error } = await supabase.from('action_items').insert({
       user_id: userId,
-      description: trimmed,
+      title: title.trim() || null,
+      description: trimmedDesc,
       status: 'open',
       due_date: dueDate || null,
       assignee_id: assigneeId || null,
@@ -54,9 +64,7 @@ export function NewTaskButton({
     } else {
       toast.success('Action created')
       setOpen(false)
-      setDescription('')
-      setDueDate('')
-      setAssigneeId('')
+      resetForm()
       router.refresh()
     }
   }
@@ -68,7 +76,10 @@ export function NewTaskButton({
         {label}
       </Button>
 
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={open} onOpenChange={(isOpen) => {
+        setOpen(isOpen)
+        if (!isOpen) resetForm()
+      }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>New action</DialogTitle>
@@ -76,20 +87,27 @@ export function NewTaskButton({
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                Description
+                Title (optional)
               </label>
               <Input
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault()
-                    handleSave()
-                  }
-                }}
-                placeholder="What needs to be done?"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Short title…"
                 autoFocus
               />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                Description
+              </label>
+              {open && (
+                <DescriptionEditor
+                  key="new-task"
+                  initialValue={description}
+                  onChange={setDescription}
+                  placeholder="What needs to be done?"
+                />
+              )}
             </div>
             {members.length > 0 && (
               <div className="space-y-1.5">

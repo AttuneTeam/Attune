@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
@@ -18,6 +17,7 @@ import { Plus, Check, Clock, Circle, Pencil, Trash2 } from "lucide-react";
 import { format, isPast, parseISO } from "date-fns";
 import { toast } from "sonner";
 import type { ActionItem } from "@/lib/supabase/types";
+import { DescriptionEditor } from "@/components/action-items/DescriptionEditor";
 
 const STATUS_CYCLE: Record<string, string> = {
   open: "in_progress",
@@ -53,6 +53,7 @@ export function ActionItemsSidebar({
   const [newDesc, setNewDesc] = useState("");
   const [adding, setAdding] = useState(false);
   const [editingItem, setEditingItem] = useState<ActionItem | null>(null);
+  const [editTitle, setEditTitle] = useState("");
   const [editingText, setEditingText] = useState("");
   const [deletingItem, setDeletingItem] = useState<ActionItem | null>(null);
 
@@ -90,6 +91,7 @@ export function ActionItemsSidebar({
 
   const startEdit = (item: ActionItem) => {
     setEditingItem(item);
+    setEditTitle(item.title ?? "");
     setEditingText(item.description);
   };
 
@@ -100,12 +102,13 @@ export function ActionItemsSidebar({
     const supabase = createClient();
     const { error } = await supabase
       .from("action_items")
-      .update({ description: trimmed })
+      .update({ title: editTitle.trim() || null, description: trimmed })
       .eq("id", editingItem.id);
     if (error) {
       toast.error(error.message);
     } else {
       setEditingItem(null);
+      setEditTitle("");
       setEditingText("");
       onUpdate();
     }
@@ -161,11 +164,20 @@ export function ActionItemsSidebar({
                   <StatusIcon status={item.status} />
                 </button>
                 <div className="flex-1 min-w-0">
-                  <p
-                    className={`text-xs leading-relaxed ${item.status === "done" ? "line-through" : ""}`}
-                  >
-                    {item.description}
-                  </p>
+                  {item.title ? (
+                    <>
+                      <p className={`text-xs font-medium leading-relaxed ${item.status === "done" ? "line-through" : ""}`}>
+                        {item.title}
+                      </p>
+                      <p className="text-xs text-muted-foreground leading-relaxed truncate">
+                        {item.description}
+                      </p>
+                    </>
+                  ) : (
+                    <p className={`text-xs leading-relaxed ${item.status === "done" ? "line-through" : ""}`}>
+                      {item.description}
+                    </p>
+                  )}
                   {item.due_date && (
                     <p
                       className={`text-xs mt-0.5 ${overdue ? "text-destructive" : "text-muted-foreground"}`}
@@ -235,6 +247,7 @@ export function ActionItemsSidebar({
         onOpenChange={(open) => {
           if (!open) {
             setEditingItem(null);
+            setEditTitle("");
             setEditingText("");
           }
         }}
@@ -243,15 +256,27 @@ export function ActionItemsSidebar({
           <DialogHeader>
             <DialogTitle>Edit action item</DialogTitle>
           </DialogHeader>
-          <Textarea
-            autoFocus
-            value={editingText}
-            onChange={(e) => setEditingText(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) saveEdit();
-            }}
-            rows={3}
-          />
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Title (optional)</label>
+              <Input
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                placeholder="Short title…"
+                autoFocus
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Description</label>
+              {editingItem && (
+                <DescriptionEditor
+                  key={editingItem.id}
+                  initialValue={editingText}
+                  onChange={setEditingText}
+                />
+              )}
+            </div>
+          </div>
           <DialogFooter>
             <DialogClose render={<Button variant="outline" />}>
               Cancel
@@ -275,7 +300,7 @@ export function ActionItemsSidebar({
             <DialogTitle>Delete action item?</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            {deletingItem?.description}
+            {deletingItem?.title ?? deletingItem?.description}
           </p>
           <DialogFooter>
             <DialogClose render={<Button variant="outline" />}>
