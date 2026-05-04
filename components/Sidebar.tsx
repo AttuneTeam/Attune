@@ -93,7 +93,7 @@ export function Sidebar({
       <div
         className={cn(
           "mx-2 my-4 rounded-lg flex items-center gap-2 justify-between",
-          collapsed ? "px-2 py-2 justify-center" : "px-2 py-2 ",
+          collapsed ? "px-2 py-2 justify-center" : "px-2 py-2 pr-0",
         )}
       >
         {!collapsed && <AttuneLogo />}

@@ -196,17 +196,17 @@ export function PersonalTab({
       <DailyBriefing userId={userId} />
 
       {/* Header */}
-      <div className="flex items-center justify-between">
+      {/* <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Button size="sm" onClick={openAdd}>
             <Plus className="h-3.5 w-3.5 mr-1.5" />
             New item
           </Button>
         </div>
-      </div>
+      </div> */}
 
       {/* Feed */}
-      {activeItems.length === 0 ? (
+      {/* {activeItems.length === 0 ? (
         <p className="text-sm text-muted-foreground py-4">
           Notes, links, and reminders will appear here.
         </p>
@@ -221,7 +221,7 @@ export function PersonalTab({
             />
           ))}
         </div>
-      )}
+      )} */}
 
       {/* Add / Edit Sheet */}
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
