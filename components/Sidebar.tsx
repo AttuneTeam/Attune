@@ -65,6 +65,11 @@ export function Sidebar({
       pathname.startsWith("/settings") ||
       pathname.startsWith("/team"),
   );
+  const [openFlyout, setOpenFlyout] = useState<"people" | "stakeholders" | "settings" | null>(null);
+
+  useEffect(() => {
+    setOpenFlyout(null);
+  }, [pathname]);
 
   const handleSignOut = async () => {
     const supabase = createClient();
@@ -164,7 +169,7 @@ export function Sidebar({
           <div className={cn("pt-2", collapsed && "relative group/people")}>
             <button
               type="button"
-              onClick={() => !collapsed && setPeopleOpen((o) => !o)}
+              onClick={() => collapsed ? setOpenFlyout((o) => o === "people" ? null : "people") : setPeopleOpen((o) => !o)}
               className={cn(
                 "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-all",
                 collapsed && "justify-center px-0",
@@ -218,7 +223,12 @@ export function Sidebar({
 
             {/* Collapsed flyout */}
             {collapsed && (
-              <div className="absolute left-full top-0 pl-2 z-50 invisible group-hover/people:visible opacity-0 group-hover/people:opacity-100 transition-opacity duration-150 pointer-events-none group-hover/people:pointer-events-auto">
+              <div className={cn(
+                "absolute left-full top-0 pl-2 z-50 transition-opacity duration-150",
+                openFlyout === "people"
+                  ? "visible opacity-100 pointer-events-auto"
+                  : "invisible group-hover/people:visible opacity-0 group-hover/people:opacity-100 pointer-events-none group-hover/people:pointer-events-auto",
+              )}>
                 <div className="bg-sidebar border border-border rounded-lg shadow-lg p-2 min-w-[160px] space-y-0.5">
                   <p className="px-2 py-1 text-xs font-medium text-muted-foreground">
                     People
@@ -253,7 +263,7 @@ export function Sidebar({
           >
             <button
               type="button"
-              onClick={() => !collapsed && setStakeholdersOpen((o) => !o)}
+              onClick={() => collapsed ? setOpenFlyout((o) => o === "stakeholders" ? null : "stakeholders") : setStakeholdersOpen((o) => !o)}
               className={cn(
                 "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-all",
                 collapsed && "justify-center px-0",
@@ -299,7 +309,12 @@ export function Sidebar({
 
             {/* Collapsed flyout */}
             {collapsed && (
-              <div className="absolute left-full top-0 pl-2 z-50 invisible group-hover/stakeholders:visible opacity-0 group-hover/stakeholders:opacity-100 transition-opacity duration-150 pointer-events-none group-hover/stakeholders:pointer-events-auto">
+              <div className={cn(
+                "absolute left-full top-0 pl-2 z-50 transition-opacity duration-150",
+                openFlyout === "stakeholders"
+                  ? "visible opacity-100 pointer-events-auto"
+                  : "invisible group-hover/stakeholders:visible opacity-0 group-hover/stakeholders:opacity-100 pointer-events-none group-hover/stakeholders:pointer-events-auto",
+              )}>
                 <div className="bg-sidebar border border-border rounded-lg shadow-lg p-2 min-w-[160px] space-y-0.5">
                   <p className="px-2 py-1 text-xs font-medium text-muted-foreground">
                     Stakeholders
@@ -331,7 +346,7 @@ export function Sidebar({
         <div className={cn("pt-2", collapsed && "relative group/settings")}>
           <button
             type="button"
-            onClick={() => !collapsed && setSettingsOpen((o) => !o)}
+            onClick={() => collapsed ? setOpenFlyout((o) => o === "settings" ? null : "settings") : setSettingsOpen((o) => !o)}
             className={cn(
               "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all",
               collapsed && "justify-center px-0",
@@ -381,7 +396,12 @@ export function Sidebar({
 
           {/* Collapsed flyout */}
           {collapsed && (
-            <div className="absolute left-full top-0 ml-2 z-50 invisible group-hover/settings:visible opacity-0 group-hover/settings:opacity-100 transition-opacity duration-150 pointer-events-none group-hover/settings:pointer-events-auto">
+            <div className={cn(
+              "absolute left-full top-0 ml-2 z-50 transition-opacity duration-150",
+              openFlyout === "settings"
+                ? "visible opacity-100 pointer-events-auto"
+                : "invisible group-hover/settings:visible opacity-0 group-hover/settings:opacity-100 pointer-events-none group-hover/settings:pointer-events-auto",
+            )}>
               <div className="bg-sidebar border border-border rounded-lg shadow-lg p-2 min-w-[160px] space-y-0.5">
                 <p className="px-2 py-1 text-xs font-medium text-muted-foreground">
                   Settings
@@ -409,6 +429,14 @@ export function Sidebar({
           )}
         </div>
       </nav>
+
+      {/* Dismiss backdrop for touch flyouts */}
+      {openFlyout && (
+        <div
+          className="fixed inset-0 z-40"
+          onClick={() => setOpenFlyout(null)}
+        />
+      )}
 
       {/* User footer */}
       <div
