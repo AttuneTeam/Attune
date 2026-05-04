@@ -4,6 +4,7 @@ import { useState, useCallback, useRef } from "react";
 import { TiptapEditor } from "@/components/editor/TiptapEditor";
 import { ActionItemsSidebar } from "./ActionItemsSidebar";
 import { AgendaItemsSidebar } from "./AgendaItemsSidebar";
+import { SentimentBadge } from "./SentimentBadge";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
@@ -93,12 +94,6 @@ interface Props {
   hasGoogleCalendar: boolean;
 }
 
-function sentimentColor(score: number | null) {
-  if (score === null) return "secondary";
-  if (score >= 0.3) return "default";
-  if (score >= -0.3) return "secondary";
-  return "destructive";
-}
 
 function CollapsibleSection({
   title,
@@ -511,8 +506,9 @@ export function InteractionEditorClient({
             {/* Tabs: Summary | Action Items | Coaching */}
             <div className="border-t">
               <div className="flex justify-between px-4 pt-4">
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-2">
                   <h2 className="text-sm font-semibold">Insights</h2>
+                  <SentimentBadge score={sentiment} />
                 </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger
