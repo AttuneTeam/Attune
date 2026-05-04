@@ -31,6 +31,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useMobileNav } from "@/components/layout/MobileNavContext";
 
 const navItems = [
   { href: "/dashboard", label: "Home", icon: LayoutDashboard },
@@ -59,11 +60,26 @@ export function Sidebar({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [collapsed, setCollapsed] = useState(defaultCollapsed);
+  const { close: closeMobileNav } = useMobileNav();
+  const [userCollapsed, setUserCollapsed] = useState(defaultCollapsed);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
-    document.cookie = `sidebar-collapsed=${collapsed}; path=/; max-age=31536000; SameSite=Lax`;
-  }, [collapsed]);
+    const mq = window.matchMedia("(max-width: 479px)");
+    setIsMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+
+  const collapsed = userCollapsed && !isMobile;
+
+  useEffect(() => {
+    if (!isMobile) {
+      document.cookie = `sidebar-collapsed=${userCollapsed}; path=/; max-age=31536000; SameSite=Lax`;
+    }
+  }, [userCollapsed, isMobile]);
+
   const [peopleOpen, setPeopleOpen] = useState(true);
   const [stakeholdersOpen, setStakeholdersOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(
@@ -105,7 +121,7 @@ export function Sidebar({
     <TooltipProvider>
       <aside
         className={cn(
-          "flex flex-col bg-sidebar shrink-0 transition-[width] duration-300 ease-in-out",
+          "h-full flex flex-col bg-sidebar shrink-0 transition-[width] duration-300 ease-in-out",
           collapsed ? "w-16" : "w-56",
         )}
       >
@@ -117,21 +133,31 @@ export function Sidebar({
           )}
         >
           {!collapsed && <AttuneLogo />}
-          <button
-            type="button"
-            onClick={() => setCollapsed((o) => !o)}
-            className={cn(
-              "p-1.5 rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors",
-              !collapsed && "ml-auto",
-            )}
-            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          >
-            {collapsed ? (
-              <PanelLeftOpen className="h-4 w-4" />
-            ) : (
-              <PanelLeftClose className="h-4 w-4" />
-            )}
-          </button>
+          {!isMobile ? (
+            <button
+              type="button"
+              onClick={() => setUserCollapsed((o) => !o)}
+              className={cn(
+                "p-1.5 rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors",
+                !collapsed && "ml-auto",
+              )}
+              title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            >
+              {collapsed ? (
+                <PanelLeftOpen className="h-4 w-4" />
+              ) : (
+                <PanelLeftClose className="h-4 w-4" />
+              )}
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={closeMobileNav}
+              className="text-xs p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+            >
+              Close
+            </button>
+          )}
         </div>
 
         {/* Nav */}
@@ -431,7 +457,7 @@ export function Sidebar({
             {collapsed && (
               <div
                 className={cn(
-                  "absolute left-full top-0 ml-2 z-50 transition-opacity duration-150",
+                  "absolute left-full top-0 pl-2 z-50 transition-opacity duration-150",
                   openFlyout === "settings"
                     ? "visible opacity-100 pointer-events-auto"
                     : "invisible group-hover/settings:visible opacity-0 group-hover/settings:opacity-100 pointer-events-none group-hover/settings:pointer-events-auto",

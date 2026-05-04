@@ -1,38 +1,78 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { ChatPanel } from '@/components/chat/ChatSheet'
+import { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
+import { Menu } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { ChatPanel } from "@/components/chat/ChatSheet";
+import { MobileNavContext } from "@/components/layout/MobileNavContext";
 
 type Props = {
-  sidebar: React.ReactNode
-  children: React.ReactNode
-}
+  sidebar: React.ReactNode;
+  children: React.ReactNode;
+};
 
 export function DashboardShell({ sidebar, children }: Props) {
-  const [chatOpen, setChatOpen] = useState(false)
+  const [chatOpen, setChatOpen] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const pathname = usePathname();
+
+  useEffect(() => {
+    setMobileNavOpen(false);
+  }, [pathname]);
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
-      {sidebar}
+      {/* Sidebar — static flex item on desktop, fixed overlay on mobile */}
+      <MobileNavContext.Provider
+        value={{ close: () => setMobileNavOpen(false) }}
+      >
+        <div
+          className={cn(
+            "max-[479px]:fixed max-[479px]:inset-y-0 max-[479px]:left-0 max-[479px]:z-50 max-[479px]:transition-transform max-[479px]:duration-300",
+            !mobileNavOpen && "max-[479px]:-translate-x-full",
+          )}
+        >
+          {sidebar}
+        </div>
+      </MobileNavContext.Provider>
+
+      {/* Mobile backdrop */}
+      {mobileNavOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 min-[480px]:hidden"
+          onClick={() => setMobileNavOpen(false)}
+        />
+      )}
+
       <div className="flex flex-1 min-w-0 overflow-hidden">
-        <main className="flex-1 overflow-y-auto min-w-0">
+        <main className="p-4 sm:p-6 flex-1 overflow-y-auto min-w-0">
           {children}
         </main>
-        {chatOpen && (
-          <ChatPanel onClose={() => setChatOpen(false)} />
-        )}
+        {chatOpen && <ChatPanel onClose={() => setChatOpen(false)} />}
       </div>
+
+      {/* Mobile menu button */}
+      <button
+        type="button"
+        onClick={() => setMobileNavOpen(true)}
+        className="min-[480px]:hidden fixed top-3 left-3 z-30 p-2 rounded-md bg-background/80 backdrop-blur-sm border border-border text-muted-foreground hover:text-foreground transition-colors"
+        aria-label="Open navigation"
+      >
+        <Menu className="h-4 w-4" />
+      </button>
+
       {!chatOpen && (
         <button
           type="button"
           onClick={() => setChatOpen(true)}
           className="fixed bottom-6 right-6 z-40 flex items-center gap-2 px-4 py-2.5 rounded-full transition-shadow hover:shadow-lg"
           style={{
-            background: 'rgba(255, 255, 255, 0.70)',
-            backdropFilter: 'blur(20px)',
-            boxShadow: '0px 24px 48px rgba(56, 56, 49, 0.10)',
-            color: 'var(--color-primary)',
-            border: '1px solid rgba(65, 108, 99, 0.15)',
+            background: "rgba(255, 255, 255, 0.70)",
+            backdropFilter: "blur(20px)",
+            boxShadow: "0px 24px 48px rgba(56, 56, 49, 0.10)",
+            color: "var(--color-primary)",
+            border: "1px solid rgba(65, 108, 99, 0.15)",
           }}
           title="Ask Team AI"
         >
@@ -53,5 +93,5 @@ export function DashboardShell({ sidebar, children }: Props) {
         </button>
       )}
     </div>
-  )
+  );
 }

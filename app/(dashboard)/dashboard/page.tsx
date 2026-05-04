@@ -127,7 +127,7 @@ export default async function DashboardPage() {
   const hasGoogleCalendar = !!googleToken;
 
   return (
-    <div className="p-8">
+    <div>
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div />
