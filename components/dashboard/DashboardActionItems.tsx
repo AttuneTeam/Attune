@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { DescriptionEditor } from "@/components/action-items/DescriptionEditor";
 import {
   Dialog,
   DialogContent,
@@ -38,6 +39,7 @@ const STATUS_OPTIONS = [
 
 export interface DashboardActionItem {
   id: string;
+  title: string | null;
   description: string;
   status: string;
   due_date: string | null;
@@ -75,6 +77,7 @@ export function DashboardActionItems({
   const [editingItem, setEditingItem] = useState<DashboardActionItem | null>(
     null,
   );
+  const [editTitle, setEditTitle] = useState("");
   const [editDescription, setEditDescription] = useState("");
   const [editDueDate, setEditDueDate] = useState("");
   const [editStatus, setEditStatus] = useState("");
@@ -84,6 +87,7 @@ export function DashboardActionItems({
 
   const openEdit = (item: DashboardActionItem) => {
     setEditingItem(item);
+    setEditTitle(item.title ?? "");
     setEditDescription(item.description);
     setEditDueDate(item.due_date ?? "");
     setEditStatus(item.status);
@@ -94,6 +98,7 @@ export function DashboardActionItems({
     if (!editingItem) return;
     setSaving(true);
     const updates = {
+      title: editTitle.trim() || null,
       description: editDescription.trim(),
       due_date: editDueDate || null,
       status: editStatus,
@@ -207,7 +212,7 @@ export function DashboardActionItems({
                   <td
                     className={`px-2 py-1.5 max-w-0 ${item.status === "done" ? "line-through text-muted-foreground" : ""}`}
                   >
-                    <span className="block truncate">{item.description}</span>
+                    <span className="block truncate">{item.title ?? item.description}</span>
                   </td>
                   <td className="px-2 py-1.5 text-muted-foreground whitespace-nowrap hidden sm:table-cell">
                     {item.assignee_id
@@ -263,13 +268,26 @@ export function DashboardActionItems({
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                Description
+                Title (optional)
               </label>
               <Input
-                value={editDescription}
-                onChange={(e) => setEditDescription(e.target.value)}
-                placeholder="Description"
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                placeholder="Short title…"
               />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                Description
+              </label>
+              {editingItem && (
+                <DescriptionEditor
+                  key={editingItem.id}
+                  initialValue={editDescription}
+                  onChange={setEditDescription}
+                  placeholder="What needs to be done?"
+                />
+              )}
             </div>
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
@@ -326,7 +344,7 @@ export function DashboardActionItems({
             <Button
               onClick={saveEdit}
               disabled={saving || !editDescription.trim()}
-            >
+              >
               Save
             </Button>
           </DialogFooter>
@@ -345,7 +363,7 @@ export function DashboardActionItems({
             <DialogTitle>Delete action item?</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground mt-1">
-            {pendingDelete?.description}
+            {pendingDelete?.title ?? pendingDelete?.description}
           </p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setPendingDelete(null)}>

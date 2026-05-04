@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -17,6 +19,7 @@ import { format, isPast, parseISO } from 'date-fns'
 import { toast } from 'sonner'
 import { Check, Clock, Circle, ExternalLink, Trash2, Pencil } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { DescriptionEditor } from '@/components/action-items/DescriptionEditor'
 
 const STATUS_CYCLE: Record<string, string> = {
   open: 'in_progress',
@@ -32,6 +35,7 @@ const STATUS_OPTIONS = [
 
 interface ActionItemRow {
   id: string
+  title: string | null
   description: string
   status: string
   due_date: string | null
@@ -59,6 +63,7 @@ export function ActionItemsTable({ items, members = [] }: { items: ActionItemRow
   const [localItems, setLocalItems] = useState(items)
   const [pendingDelete, setPendingDelete] = useState<ActionItemRow | null>(null)
   const [editingItem, setEditingItem] = useState<ActionItemRow | null>(null)
+  const [editTitle, setEditTitle] = useState('')
   const [editDescription, setEditDescription] = useState('')
   const [editDueDate, setEditDueDate] = useState('')
   const [editStatus, setEditStatus] = useState('')
@@ -68,6 +73,7 @@ export function ActionItemsTable({ items, members = [] }: { items: ActionItemRow
 
   const openEdit = (item: ActionItemRow) => {
     setEditingItem(item)
+    setEditTitle(item.title ?? '')
     setEditDescription(item.description)
     setEditDueDate(item.due_date ?? '')
     setEditStatus(item.status)
@@ -78,6 +84,7 @@ export function ActionItemsTable({ items, members = [] }: { items: ActionItemRow
     if (!editingItem) return
     setSaving(true)
     const updates = {
+      title: editTitle.trim() || null,
       description: editDescription.trim(),
       due_date: editDueDate || null,
       status: editStatus,
@@ -149,11 +156,12 @@ export function ActionItemsTable({ items, members = [] }: { items: ActionItemRow
     <>
       <ul className="space-y-2">
         {localItems.map((item) => {
-          const overdue = item.status !== 'done' && item.due_date && isPast(parseISO(item.due_date))
+          const done = item.status === 'done'
+          const overdue = !done && item.due_date && isPast(parseISO(item.due_date))
           return (
             <li
               key={item.id}
-              className={`rounded-lg border bg-card p-4 flex items-start gap-3 transition-opacity ${item.status === 'done' ? 'opacity-50' : ''}`}
+              className={`rounded-lg border bg-card p-4 flex items-start gap-3 transition-opacity ${done ? 'opacity-50' : ''}`}
             >
               <button
                 onClick={() => cycleStatus(item)}
@@ -164,9 +172,20 @@ export function ActionItemsTable({ items, members = [] }: { items: ActionItemRow
               </button>
 
               <div className="flex-1 min-w-0">
-                <p className={`text-sm font-medium ${item.status === 'done' ? 'line-through text-muted-foreground' : ''}`}>
-                  {item.description}
-                </p>
+                {item.title ? (
+                  <>
+                    <p className={`text-sm font-medium ${done ? 'line-through text-muted-foreground' : ''}`}>
+                      {item.title}
+                    </p>
+                    <div className={`mt-0.5 text-xs text-muted-foreground prose prose-neutral dark:prose-invert max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 prose-p:text-xs prose-p:text-muted-foreground prose-p:my-0 ${done ? 'line-through' : ''}`}>
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{item.description}</ReactMarkdown>
+                    </div>
+                  </>
+                ) : (
+                  <p className={`text-sm font-medium ${done ? 'line-through text-muted-foreground' : ''}`}>
+                    {item.description}
+                  </p>
+                )}
                 <div className="flex items-center gap-3 mt-1 flex-wrap">
                   {(item.assignee_id
                     ? members.find((m) => m.id === item.assignee_id)?.name
@@ -233,12 +252,23 @@ export function ActionItemsTable({ items, members = [] }: { items: ActionItemRow
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Description</label>
+              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Title (optional)</label>
               <Input
-                value={editDescription}
-                onChange={(e) => setEditDescription(e.target.value)}
-                placeholder="Description"
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                placeholder="Short title…"
               />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Description</label>
+              {editingItem && (
+                <DescriptionEditor
+                  key={editingItem.id}
+                  initialValue={editDescription}
+                  onChange={setEditDescription}
+                  placeholder="What needs to be done?"
+                />
+              )}
             </div>
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Due date</label>
@@ -300,7 +330,7 @@ export function ActionItemsTable({ items, members = [] }: { items: ActionItemRow
             <DialogTitle>Delete action item?</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground mt-1">
-            {pendingDelete?.description}
+            {pendingDelete?.title ?? pendingDelete?.description}
           </p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setPendingDelete(null)}>
