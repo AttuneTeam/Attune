@@ -1,12 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import {
   Dialog,
   DialogContent,
@@ -19,19 +18,16 @@ import { format, isPast, parseISO } from 'date-fns'
 import { toast } from 'sonner'
 import { Check, Clock, Circle, ExternalLink, Trash2, Pencil } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { DescriptionEditor } from '@/components/action-items/DescriptionEditor'
+import {
+  ActionItemEditDialog,
+  type ActionItemUpdates,
+} from '@/components/action-items/ActionItemEditDialog'
 
 const STATUS_CYCLE: Record<string, string> = {
   open: 'in_progress',
   in_progress: 'done',
   done: 'open',
 }
-
-const STATUS_OPTIONS = [
-  { value: 'open', label: 'Open' },
-  { value: 'in_progress', label: 'In progress' },
-  { value: 'done', label: 'Done' },
-]
 
 interface ActionItemRow {
   id: string
@@ -61,49 +57,30 @@ const StatusIcon = ({ status }: { status: string }) => {
 
 export function ActionItemsTable({ items, members = [] }: { items: ActionItemRow[]; members?: Member[] }) {
   const [localItems, setLocalItems] = useState(items)
-  const [pendingDelete, setPendingDelete] = useState<ActionItemRow | null>(null)
   const [editingItem, setEditingItem] = useState<ActionItemRow | null>(null)
-  const [editTitle, setEditTitle] = useState('')
-  const [editDescription, setEditDescription] = useState('')
-  const [editDueDate, setEditDueDate] = useState('')
-  const [editStatus, setEditStatus] = useState('')
-  const [editAssigneeId, setEditAssigneeId] = useState<string>('')
-  const [saving, setSaving] = useState(false)
+  const [pendingDelete, setPendingDelete] = useState<ActionItemRow | null>(null)
   const router = useRouter()
 
-  const openEdit = (item: ActionItemRow) => {
-    setEditingItem(item)
-    setEditTitle(item.title ?? '')
-    setEditDescription(item.description)
-    setEditDueDate(item.due_date ?? '')
-    setEditStatus(item.status)
-    setEditAssigneeId(item.assignee_id ?? '')
-  }
+  useEffect(() => {
+    setLocalItems(items)
+  }, [items])
 
-  const saveEdit = async () => {
+  const handleSaveEdit = async (updates: ActionItemUpdates) => {
     if (!editingItem) return
-    setSaving(true)
-    const updates = {
-      title: editTitle.trim() || null,
-      description: editDescription.trim(),
-      due_date: editDueDate || null,
-      status: editStatus,
-      assignee_id: editAssigneeId || null,
-    }
+    const id = editingItem.id
     setLocalItems((prev) =>
-      prev.map((i) => i.id === editingItem.id ? { ...i, ...updates } : i)
+      prev.map((i) => (i.id === id ? { ...i, ...updates } : i))
     )
-    setEditingItem(null)
     const supabase = createClient()
     const { error } = await supabase
       .from('action_items')
       .update(updates)
-      .eq('id', editingItem.id)
-    setSaving(false)
+      .eq('id', id)
     if (error) {
       toast.error(error.message)
       setLocalItems(items)
     } else {
+      setEditingItem(null)
       router.refresh()
     }
   }
@@ -129,7 +106,7 @@ export function ActionItemsTable({ items, members = [] }: { items: ActionItemRow
   const cycleStatus = async (item: ActionItemRow) => {
     const newStatus = STATUS_CYCLE[item.status] ?? 'open'
     setLocalItems((prev) =>
-      prev.map((i) => i.id === item.id ? { ...i, status: newStatus } : i)
+      prev.map((i) => (i.id === item.id ? { ...i, status: newStatus } : i))
     )
     const supabase = createClient()
     const { error } = await supabase
@@ -225,7 +202,7 @@ export function ActionItemsTable({ items, members = [] }: { items: ActionItemRow
                   </Link>
                 )}
                 <button
-                  onClick={() => openEdit(item)}
+                  onClick={() => setEditingItem(item)}
                   className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
                   title="Edit action item"
                 >
@@ -244,86 +221,14 @@ export function ActionItemsTable({ items, members = [] }: { items: ActionItemRow
         })}
       </ul>
 
-      {/* Edit dialog */}
-      <Dialog open={!!editingItem} onOpenChange={(open) => { if (!open) setEditingItem(null) }}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Edit action item</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Title (optional)</label>
-              <Input
-                value={editTitle}
-                onChange={(e) => setEditTitle(e.target.value)}
-                placeholder="Short title…"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Description</label>
-              {editingItem && (
-                <DescriptionEditor
-                  key={editingItem.id}
-                  initialValue={editDescription}
-                  onChange={setEditDescription}
-                  placeholder="What needs to be done?"
-                />
-              )}
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Due date</label>
-              <Input
-                type="date"
-                value={editDueDate}
-                onChange={(e) => setEditDueDate(e.target.value)}
-              />
-            </div>
-            {members.length > 0 && (
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Person</label>
-                <select
-                  value={editAssigneeId}
-                  onChange={(e) => setEditAssigneeId(e.target.value)}
-                  className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring"
-                >
-                  <option value="">No one</option>
-                  {members.map((m) => (
-                    <option key={m.id} value={m.id}>{m.name}</option>
-                  ))}
-                </select>
-              </div>
-            )}
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Status</label>
-              <div className="flex gap-2">
-                {STATUS_OPTIONS.map((opt) => (
-                  <button
-                    key={opt.value}
-                    onClick={() => setEditStatus(opt.value)}
-                    className={`flex-1 py-1.5 px-3 rounded border text-xs font-medium transition-colors ${
-                      editStatus === opt.value
-                        ? 'bg-primary text-primary-foreground border-primary'
-                        : 'hover:bg-accent border-border'
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditingItem(null)}>
-              Cancel
-            </Button>
-            <Button onClick={saveEdit} disabled={saving || !editDescription.trim()}>
-              Save
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ActionItemEditDialog
+        key={editingItem?.id ?? 'none'}
+        item={editingItem}
+        members={members}
+        onClose={() => setEditingItem(null)}
+        onSave={handleSaveEdit}
+      />
 
-      {/* Delete confirmation dialog */}
       <Dialog open={!!pendingDelete} onOpenChange={(open) => { if (!open) setPendingDelete(null) }}>
         <DialogContent className="max-w-sm">
           <DialogHeader>

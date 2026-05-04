@@ -51,11 +51,6 @@ export default async function DashboardPage() {
   }
 
   // Global stats
-  const { count: openItemsCount } = await supabase
-    .from("action_items")
-    .select("*", { count: "exact", head: true })
-    .eq("status", "open");
-
   const thisMonthStart = new Date();
   thisMonthStart.setDate(1);
   thisMonthStart.setHours(0, 0, 0, 0);
@@ -110,29 +105,25 @@ export default async function DashboardPage() {
   const { data: actionItemsRaw } = await supabase
     .from("action_items")
     .select(
-      "id, description, status, due_date, created_at, assignee_id, interactions!left(id, team_members(id, name))",
+      "id, title, description, status, due_date, created_at, assignee_id, interactions!left(id, team_members(id, name))",
     )
     .in("status", ["open", "in_progress"])
-    .order("due_date", { ascending: true, nullsFirst: false })
+    .order("due_date", {
+      ascending: true,
+      nullsFirst: false,
+    })
     .limit(50);
 
   // Teams + team values for org chart + Google Calendar token status
-  const [{ data: teams }, { data: teamValues }, { data: personalItemsRaw }, { data: googleToken }] =
-    await Promise.all([
-      supabase.from("teams").select("*").order("name"),
-      supabase.from("team_values").select("*"),
-      supabase
-        .from("personal_items")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false }),
-      supabase
-        .from("user_oauth_tokens")
-        .select("id")
-        .eq("user_id", user.id)
-        .eq("provider", "google")
-        .maybeSingle(),
-    ]);
+  const [{ data: teams }, { data: googleToken }] = await Promise.all([
+    supabase.from("teams").select("*").order("name"),
+    supabase
+      .from("user_oauth_tokens")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("provider", "google")
+      .maybeSingle(),
+  ]);
 
   const hasGoogleCalendar = !!googleToken;
 
@@ -149,7 +140,6 @@ export default async function DashboardPage() {
       </div>
 
       <DashboardPageTabs
-        personalItems={(personalItemsRaw ?? []) as never}
         userId={user.id}
         hasGoogleCalendar={hasGoogleCalendar}
         interactionsPreview={interactionsPreview}
