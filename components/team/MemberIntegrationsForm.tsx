@@ -70,10 +70,13 @@ interface Props {
   memberId: string
   managerId: string
   integrations: MemberIntegration[]
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
-export function MemberIntegrationsForm({ memberId, managerId, integrations }: Props) {
-  const [open, setOpen] = useState(false)
+export function MemberIntegrationsForm({ memberId, managerId, integrations, open: controlledOpen, onOpenChange: controlledOnOpenChange }: Props) {
+  const isControlled = controlledOpen !== undefined
+  const [internalOpen, setInternalOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
   const router = useRouter()
 
@@ -91,13 +94,16 @@ export function MemberIntegrationsForm({ memberId, managerId, integrations }: Pr
   const [handles, setHandles] = useState<Record<string, string>>(buildInitialState().handles)
   const [configs, setConfigs] = useState<Record<string, Record<string, string>>>(buildInitialState().configs)
 
+  const open = isControlled ? controlledOpen! : internalOpen
+
   const handleOpenChange = (next: boolean) => {
     if (next) {
       const init = buildInitialState()
       setHandles(init.handles)
       setConfigs(init.configs)
     }
-    setOpen(next)
+    if (isControlled) controlledOnOpenChange!(next)
+    else setInternalOpen(next)
   }
 
   const setConfigField = (provider: string, field: string, value: string) => {
@@ -148,12 +154,14 @@ export function MemberIntegrationsForm({ memberId, managerId, integrations }: Pr
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger render={
-        <Button variant="outline" size="sm">
-          <Plug className="h-3.5 w-3.5 mr-1.5" />
-          Integrations
-        </Button>
-      } />
+      {!isControlled && (
+        <DialogTrigger render={
+          <Button variant="outline" size="sm">
+            <Plug className="h-3.5 w-3.5 mr-1.5" />
+            Integrations
+          </Button>
+        } />
+      )}
       <DialogContent className="max-w-sm flex flex-col max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>Manage integrations</DialogTitle>

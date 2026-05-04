@@ -3,7 +3,6 @@
 import { useState } from "react";
 import Link from "next/link";
 import { format, parseISO } from "date-fns";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
@@ -14,8 +13,15 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Check, Clock, Circle, Pencil } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { DeleteInteractionButton } from "@/components/team/DeleteInteractionButton";
 import { toast } from "sonner";
+import { Badge } from "../ui/badge";
 
 type InteractionRow = {
   id: string;
@@ -44,7 +50,28 @@ function sentimentBadge(score: number): {
   return { label: "Concerning", variant: "destructive" };
 }
 
-const STATUS_OPTIONS = ["open", "in_progress", "done"] as const;
+const STATUS_OPTIONS = [
+  {
+    value: "open",
+    label: "Open",
+    icon: Circle,
+    className: "text-muted-foreground",
+  },
+  {
+    value: "in_progress",
+    label: "In progress",
+    icon: Clock,
+    className: "text-amber-500",
+  },
+  { value: "done", label: "Done", icon: Check, className: "text-green-500" },
+] as const;
+
+function StatusIcon({ status }: { status: string }) {
+  const opt =
+    STATUS_OPTIONS.find((o) => o.value === status) ?? STATUS_OPTIONS[0];
+  const Icon = opt.icon;
+  return <Icon className={`h-3.5 w-3.5 ${opt.className}`} />;
+}
 
 function EditActionItemDialog({
   item,
@@ -114,8 +141,8 @@ function EditActionItemDialog({
               onChange={(e) => setStatus(e.target.value)}
             >
               {STATUS_OPTIONS.map((s) => (
-                <option key={s} value={s}>
-                  {s.replace("_", " ")}
+                <option key={s.value} value={s.value}>
+                  {s.label}
                 </option>
               ))}
             </select>
@@ -166,6 +193,27 @@ export function InteractionsTabs({ interactions, items: initialItems }: Props) {
 
   function handleSave(updated: ActionItem) {
     setItems((prev) => prev.map((i) => (i.id === updated.id ? updated : i)));
+  }
+
+  async function changeStatus(item: ActionItem, newStatus: string) {
+    setItems((prev) =>
+      prev.map((i) => (i.id === item.id ? { ...i, status: newStatus } : i)),
+    );
+    try {
+      const res = await fetch(`/api/action-items/${item.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        toast.error(err.error ?? "Failed to update status");
+        setItems((prev) => prev.map((i) => (i.id === item.id ? item : i)));
+      }
+    } catch {
+      toast.error("Something went wrong");
+      setItems((prev) => prev.map((i) => (i.id === item.id ? item : i)));
+    }
   }
 
   return (
@@ -266,89 +314,109 @@ export function InteractionsTabs({ interactions, items: initialItems }: Props) {
 
         {/* Action items tab */}
         <TabsContent value="action-items">
-          <div className="bg-card mt-2">
-            {items.length === 0 ? (
-              <div className="px-5 py-12 text-center">
-                <p className="text-sm text-muted-foreground">
-                  No action items yet.
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Use "Extract items" in an interaction to generate them
-                  automatically.
-                </p>
-              </div>
-            ) : (
+          {items.length === 0 ? (
+            <div className="px-5 py-12 text-center">
+              <p className="text-sm text-muted-foreground">
+                No action items yet.
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Use "Extract items" in an interaction to generate them
+                automatically.
+              </p>
+            </div>
+          ) : (
+            <div className="rounded-lg border overflow-hidden mt-2">
               <table className="w-full text-sm">
-                <thead className="bg-muted">
-                  <tr>
-                    <th className="text-left px-4 py-2 font-medium text-muted-foreground text-xs uppercase tracking-wide w-3" />
-                    <th className="text-left px-4 py-2 font-medium text-muted-foreground text-xs uppercase tracking-wide">
-                      Description
+                <thead>
+                  <tr className="bg-muted border-b">
+                    <th className="w-8 px-3 py-2" />
+                    <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                      Task
                     </th>
-                    <th className="text-left px-4 py-2 font-medium text-muted-foreground text-xs uppercase tracking-wide w-28">
-                      Status
-                    </th>
-                    <th className="text-left px-4 py-2 font-medium text-muted-foreground text-xs uppercase tracking-wide w-24">
+                    <th className="w-24 px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wide hidden sm:table-cell">
                       Due
                     </th>
-                    <th className="px-4 py-2 w-8" />
+                    <th className="px-3 py-2 w-12" />
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-border/50">
-                  {sorted.map((item) => (
-                    <tr
-                      key={item.id}
-                      className={`group hover:bg-muted/30 transition-colors ${item.status === "done" ? "opacity-50" : ""}`}
-                    >
-                      <td className="px-4 py-1">
-                        {item.status === "done" ? (
-                          <Check className="h-3.5 w-3.5 text-green-500" />
-                        ) : item.status === "in_progress" ? (
-                          <Clock className="h-3.5 w-3.5 text-amber-500" />
-                        ) : (
-                          <Circle className="h-3.5 w-3.5 text-muted-foreground" />
-                        )}
-                      </td>
-                      <td
-                        className={`px-4 py-1 leading-snug ${item.status === "done" ? "line-through text-muted-foreground" : ""}`}
+                <tbody className="divide-y divide-border/50 bg-card">
+                  {sorted.map((item) => {
+                    const done = item.status === "done";
+                    return (
+                      <tr
+                        key={item.id}
+                        className={`hover:bg-muted/30 transition-colors ${done ? "opacity-50" : ""}`}
                       >
-                        {item.description}
-                      </td>
-                      <td className="px-4 py-1">
-                        <Badge
-                          variant={
-                            item.status === "done"
-                              ? "secondary"
-                              : item.status === "in_progress"
-                                ? "default"
-                                : "outline"
-                          }
-                          className="text-xs capitalize"
-                        >
-                          {item.status.replace("_", " ")}
-                        </Badge>
-                      </td>
-                      <td className="px-4 py-1 text-xs text-muted-foreground tabular-nums">
-                        {item.due_date
-                          ? format(parseISO(item.due_date), "MMM d")
-                          : "—"}
-                      </td>
-                      <td className="px-4 py-1 text-right">
-                        <button
-                          type="button"
-                          onClick={() => setEditingItem(item)}
-                          className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
-                          title="Edit"
-                        >
-                          <Pencil className="h-3.5 w-3.5" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                        {/* Status dropdown */}
+                        <td className="px-3 py-2">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger
+                              render={
+                                <button
+                                  className="p-0.5 rounded hover:bg-muted flex items-center justify-center"
+                                  title="Change status"
+                                >
+                                  <StatusIcon status={item.status} />
+                                </button>
+                              }
+                            />
+                            <DropdownMenuContent>
+                              {STATUS_OPTIONS.map(
+                                ({ value, label, icon: Icon, className }) => (
+                                  <DropdownMenuItem
+                                    key={value}
+                                    onClick={() => changeStatus(item, value)}
+                                    className={
+                                      item.status === value ? "font-medium" : ""
+                                    }
+                                  >
+                                    <Icon
+                                      className={`h-3.5 w-3.5 ${className}`}
+                                    />
+                                    {label}
+                                  </DropdownMenuItem>
+                                ),
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </td>
+
+                        {/* Description */}
+                        <td className="px-3 py-2 max-w-0">
+                          <p
+                            className={`truncate ${done ? "line-through text-muted-foreground" : ""}`}
+                          >
+                            {item.description}
+                          </p>
+                        </td>
+
+                        {/* Due date — hidden on mobile */}
+                        <td className="px-3 py-2 text-xs text-muted-foreground whitespace-nowrap hidden sm:table-cell">
+                          {item.due_date
+                            ? format(parseISO(item.due_date), "MMM d")
+                            : "—"}
+                        </td>
+
+                        {/* Edit */}
+                        <td className="px-3 py-2">
+                          <div className="flex justify-end">
+                            <button
+                              type="button"
+                              onClick={() => setEditingItem(item)}
+                              className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
+                              title="Edit"
+                            >
+                              <Pencil className="h-3 w-3" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
-            )}
-          </div>
+            </div>
+          )}
         </TabsContent>
       </Tabs>
 
