@@ -41,7 +41,7 @@ function buildGCalUrl(title: string, scheduledAt: string, agenda: string) {
 export function NewBookingButton({ members }: { members: TeamMember[] }) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [memberId, setMemberId] = useState("");
+  const [memberId, setMemberId] = useState<string | null>("");
   const [title, setTitle] = useState("");
   const [scheduledAt, setScheduledAt] = useState("");
   const [agenda, setAgenda] = useState("");
@@ -118,7 +118,11 @@ export function NewBookingButton({ members }: { members: TeamMember[] }) {
           <form onSubmit={handleSubmit} className="space-y-4 mt-2">
             <div className="space-y-1.5">
               <Label htmlFor="nb-member">Person *</Label>
-              <Select value={memberId} onValueChange={setMemberId} required>
+              <Select
+                value={memberId}
+                onValueChange={(value) => setMemberId(value)}
+                required
+              >
                 <SelectTrigger id="nb-member">
                   <SelectValue placeholder="Select team member" />
                 </SelectTrigger>

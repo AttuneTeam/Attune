@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useEditor, EditorContent } from "@tiptap/react";
+import { useEditor, EditorContent, Content } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { createClient } from "@/lib/supabase/client";
 import { Input } from "@/components/ui/input";
@@ -53,11 +53,11 @@ function extractText(json: Json): string {
   return "";
 }
 
-function parseNoteJson(content: string): Json | null {
+function parseNoteJson(content: string): Content | null {
   try {
     const parsed = JSON.parse(content);
     if (parsed && typeof parsed === "object" && parsed.type === "doc") {
-      return parsed as Json;
+      return parsed;
     }
   } catch {}
   return null;
@@ -335,7 +335,7 @@ function NotePreview({ content }: { content: string }) {
     immediatelyRender: false,
     editable: false,
     extensions: [StarterKit],
-    content: json ?? undefined,
+    content: json ?? null,
   });
 
   if (!json || !editor) {

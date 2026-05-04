@@ -8,6 +8,7 @@ import {
   formatOrgContext,
   COVERAGE_SYSTEM,
 } from "@/lib/ai/prompts";
+import { RoleArea } from "@/lib/supabase/types";
 
 export async function POST(request: NextRequest) {
   try {
@@ -51,7 +52,10 @@ export async function POST(request: NextRequest) {
     const roleMap = Object.fromEntries(
       (roles ?? []).map((r) => [r.id, r.title]),
     );
-    const areasByRole: Record<string, typeof roleAreas> = {};
+    const areasByRole: Record<
+      string,
+      Omit<RoleArea, "id" | "display_order" | "created_at" | "updated_at">[]
+    > = {};
     for (const area of roleAreas ?? []) {
       if (!areasByRole[area.role_id]) areasByRole[area.role_id] = [];
       areasByRole[area.role_id]!.push(area);
