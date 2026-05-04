@@ -16,8 +16,8 @@ jobs:
 
       - name: Run migrations
         run: |
-          supabase link --project-ref ${{ secrets.SUPABASE_PROJECT_ID }}
-          supabase db push
+          supabase link --project-ref $SUPABASE_PROJECT_ID --password $SUPABASE_DB_PASSWORD
+          supabase db push --password $SUPABASE_DB_PASSWORD
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
