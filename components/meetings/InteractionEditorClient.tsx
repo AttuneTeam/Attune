@@ -94,7 +94,6 @@ interface Props {
   hasGoogleCalendar: boolean;
 }
 
-
 function CollapsibleSection({
   title,
   children,
@@ -354,7 +353,7 @@ export function InteractionEditorClient({
             <MoreHorizontal className="h-4 w-4" />
             <span className="sr-only">More options</span>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
+          <DropdownMenuContent align="end" className="w-40">
             <DropdownMenuItem
               className="text-destructive focus:text-destructive"
               onClick={() => setDeleteOpen(true)}

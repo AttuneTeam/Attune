@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { format, parseISO } from "date-fns";
 import { Button } from "@/components/ui/button";
@@ -10,9 +11,11 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
+  DialogClose,
 } from "@/components/ui/dialog";
-import { Check, Clock, Circle, Pencil } from "lucide-react";
+import { Check, Clock, Circle, Pencil, Trash2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -193,6 +196,9 @@ export function InteractionsTabs({ interactions, items: initialItems, memberId }
   const [items, setItems] = useState<ActionItem[]>(initialItems);
   const [editingItem, setEditingItem] = useState<ActionItem | null>(null);
   const [addActionOpen, setAddActionOpen] = useState(false);
+  const [deletingItem, setDeletingItem] = useState<ActionItem | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const router = useRouter();
 
   const openCount = items.filter(
     (i) => i.status === "open" || i.status === "in_progress",
@@ -208,6 +214,24 @@ export function InteractionsTabs({ interactions, items: initialItems, memberId }
     setItems((prev) => prev.map((i) => (i.id === updated.id ? updated : i)));
   }
 
+  async function handleDeleteActionItem() {
+    if (!deletingItem) return;
+    setIsDeleting(true);
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("action_items")
+      .delete()
+      .eq("id", deletingItem.id);
+    setIsDeleting(false);
+    if (error) {
+      toast.error("Failed to delete action item");
+      return;
+    }
+    setItems((prev) => prev.filter((i) => i.id !== deletingItem.id));
+    setDeletingItem(null);
+    router.refresh();
+  }
+
   async function handleAddActionItem(updates: {
     title: string | null;
     description: string;
@@ -216,6 +240,7 @@ export function InteractionsTabs({ interactions, items: initialItems, memberId }
     assignee_id: string | null;
   }) {
     const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
     const { data, error } = await supabase
       .from("action_items")
       .insert({
@@ -224,6 +249,7 @@ export function InteractionsTabs({ interactions, items: initialItems, memberId }
         due_date: updates.due_date,
         status: updates.status,
         assignee_id: memberId,
+        user_id: user?.id,
       })
       .select()
       .single();
@@ -233,6 +259,7 @@ export function InteractionsTabs({ interactions, items: initialItems, memberId }
     }
     setItems((prev) => [data as ActionItem, ...prev]);
     setAddActionOpen(false);
+    router.refresh();
   }
 
   async function changeStatus(item: ActionItem, newStatus: string) {
@@ -444,9 +471,9 @@ export function InteractionsTabs({ interactions, items: initialItems, memberId }
                             : "—"}
                         </td>
 
-                        {/* Edit */}
+                        {/* Edit / Delete */}
                         <td className="px-3 py-2">
-                          <div className="flex justify-end">
+                          <div className="flex justify-end gap-0.5">
                             <button
                               type="button"
                               onClick={() => setEditingItem(item)}
@@ -454,6 +481,14 @@ export function InteractionsTabs({ interactions, items: initialItems, memberId }
                               title="Edit"
                             >
                               <Pencil className="h-3 w-3" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setDeletingItem(item)}
+                              className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-destructive"
+                              title="Delete"
+                            >
+                              <Trash2 className="h-3 w-3" />
                             </button>
                           </div>
                         </td>
@@ -478,6 +513,32 @@ export function InteractionsTabs({ interactions, items: initialItems, memberId }
             onClose={() => setEditingItem(null)}
           />
         )}
+      </Dialog>
+
+      <Dialog
+        open={!!deletingItem}
+        onOpenChange={(open) => !open && setDeletingItem(null)}
+      >
+        <DialogContent showCloseButton={false}>
+          <DialogHeader>
+            <DialogTitle>Delete action item?</DialogTitle>
+            <DialogDescription>
+              This cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose render={<Button variant="outline" />}>
+              Cancel
+            </DialogClose>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteActionItem}
+              disabled={isDeleting}
+            >
+              {isDeleting ? "Deleting…" : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
       </Dialog>
 
       <ActionItemEditDialog

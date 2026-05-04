@@ -57,12 +57,16 @@ export function MemberHeaderMenu({
     assignee_id: string | null;
   }) => {
     const supabase = createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     const { error } = await supabase.from("action_items").insert({
       description: updates.description,
       title: updates.title,
       due_date: updates.due_date,
       status: updates.status,
       assignee_id: member.id,
+      user_id: user?.id,
     });
     if (error) {
       toast.error("Failed to create action item");
@@ -79,7 +83,7 @@ export function MemberHeaderMenu({
           <MoreHorizontal className="h-4 w-4" />
           <span className="sr-only">More options</span>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
+        <DropdownMenuContent align="end" className="w-40">
           <DropdownMenuItem onClick={() => setAddActionOpen(true)}>
             <ListPlus className="h-3 w-3" />
             Add action item
@@ -97,7 +101,11 @@ export function MemberHeaderMenu({
 
       <ActionItemEditDialog
         key={addActionOpen ? "open" : "closed"}
-        item={addActionOpen ? { ...EMPTY_ACTION_ITEM, assignee_id: member.id } : null}
+        item={
+          addActionOpen
+            ? { ...EMPTY_ACTION_ITEM, assignee_id: member.id }
+            : null
+        }
         hideAssignee
         onClose={() => setAddActionOpen(false)}
         onSave={handleAddActionItem}
