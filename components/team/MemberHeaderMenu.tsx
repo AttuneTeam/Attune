@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { MoreHorizontal, Plug, Pencil } from "lucide-react";
+import { MoreHorizontal, Plug, Pencil, ListPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -11,6 +11,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { MemberEditButton } from "@/components/team/MemberEditButton";
 import { MemberIntegrationsForm } from "@/components/team/MemberIntegrationsForm";
+import { ActionItemEditDialog } from "@/components/action-items/ActionItemEditDialog";
+import { createClient } from "@/lib/supabase/client";
+import { toast } from "sonner";
 import type {
   Team,
   TeamMember,
@@ -26,6 +29,15 @@ interface Props {
   integrations: MemberIntegration[];
 }
 
+const EMPTY_ACTION_ITEM = {
+  id: "new",
+  title: null,
+  description: "",
+  status: "open",
+  due_date: null,
+  assignee_id: null,
+} as const;
+
 export function MemberHeaderMenu({
   member,
   teams,
@@ -35,6 +47,30 @@ export function MemberHeaderMenu({
 }: Props) {
   const [editOpen, setEditOpen] = useState(false);
   const [integrationsOpen, setIntegrationsOpen] = useState(false);
+  const [addActionOpen, setAddActionOpen] = useState(false);
+
+  const handleAddActionItem = async (updates: {
+    title: string | null;
+    description: string;
+    due_date: string | null;
+    status: string;
+    assignee_id: string | null;
+  }) => {
+    const supabase = createClient();
+    const { error } = await supabase.from("action_items").insert({
+      description: updates.description,
+      title: updates.title,
+      due_date: updates.due_date,
+      status: updates.status,
+      assignee_id: member.id,
+    });
+    if (error) {
+      toast.error("Failed to create action item");
+      return;
+    }
+    toast.success("Action item added");
+    setAddActionOpen(false);
+  };
 
   return (
     <>
@@ -44,6 +80,10 @@ export function MemberHeaderMenu({
           <span className="sr-only">More options</span>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={() => setAddActionOpen(true)}>
+            <ListPlus className="h-3 w-3" />
+            Add action item
+          </DropdownMenuItem>
           <DropdownMenuItem onClick={() => setIntegrationsOpen(true)}>
             <Plug className="h-3 w-3" />
             Integrations
@@ -54,6 +94,14 @@ export function MemberHeaderMenu({
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+
+      <ActionItemEditDialog
+        key={addActionOpen ? "open" : "closed"}
+        item={addActionOpen ? { ...EMPTY_ACTION_ITEM, assignee_id: member.id } : null}
+        hideAssignee
+        onClose={() => setAddActionOpen(false)}
+        onSave={handleAddActionItem}
+      />
 
       <MemberIntegrationsForm
         memberId={member.id}
