@@ -20,6 +20,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { DeleteInteractionButton } from "@/components/team/DeleteInteractionButton";
+import { ActionItemEditDialog } from "@/components/action-items/ActionItemEditDialog";
+import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import { Badge } from "../ui/badge";
 
@@ -175,11 +177,22 @@ function EditActionItemDialog({
 interface Props {
   interactions: InteractionRow[];
   items: ActionItem[];
+  memberId: string;
 }
 
-export function InteractionsTabs({ interactions, items: initialItems }: Props) {
+const EMPTY_ACTION_ITEM = {
+  id: "new",
+  title: null,
+  description: "",
+  status: "open",
+  due_date: null,
+  assignee_id: null,
+} as const;
+
+export function InteractionsTabs({ interactions, items: initialItems, memberId }: Props) {
   const [items, setItems] = useState<ActionItem[]>(initialItems);
   const [editingItem, setEditingItem] = useState<ActionItem | null>(null);
+  const [addActionOpen, setAddActionOpen] = useState(false);
 
   const openCount = items.filter(
     (i) => i.status === "open" || i.status === "in_progress",
@@ -193,6 +206,33 @@ export function InteractionsTabs({ interactions, items: initialItems }: Props) {
 
   function handleSave(updated: ActionItem) {
     setItems((prev) => prev.map((i) => (i.id === updated.id ? updated : i)));
+  }
+
+  async function handleAddActionItem(updates: {
+    title: string | null;
+    description: string;
+    due_date: string | null;
+    status: string;
+    assignee_id: string | null;
+  }) {
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from("action_items")
+      .insert({
+        description: updates.description,
+        title: updates.title,
+        due_date: updates.due_date,
+        status: updates.status,
+        assignee_id: memberId,
+      })
+      .select()
+      .single();
+    if (error) {
+      toast.error("Failed to create action item");
+      return;
+    }
+    setItems((prev) => [data as ActionItem, ...prev]);
+    setAddActionOpen(false);
   }
 
   async function changeStatus(item: ActionItem, newStatus: string) {
@@ -320,9 +360,16 @@ export function InteractionsTabs({ interactions, items: initialItems }: Props) {
                 No action items yet.
               </p>
               <p className="text-xs text-muted-foreground mt-1">
-                Use "Extract items" in an interaction to generate them
-                automatically.
+                Use "Extract items" in an interaction, or add one manually.
               </p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-4"
+                onClick={() => setAddActionOpen(true)}
+              >
+                Add action item
+              </Button>
             </div>
           ) : (
             <div className="rounded-lg border overflow-hidden mt-2">
@@ -432,6 +479,14 @@ export function InteractionsTabs({ interactions, items: initialItems }: Props) {
           />
         )}
       </Dialog>
+
+      <ActionItemEditDialog
+        key={addActionOpen ? "open" : "closed"}
+        item={addActionOpen ? { ...EMPTY_ACTION_ITEM, assignee_id: memberId } : null}
+        hideAssignee
+        onClose={() => setAddActionOpen(false)}
+        onSave={handleAddActionItem}
+      />
     </>
   );
 }

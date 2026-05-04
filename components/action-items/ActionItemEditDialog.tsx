@@ -43,13 +43,14 @@ interface Member {
 interface Props {
   item: EditableActionItem | null
   members?: Member[]
+  hideAssignee?: boolean
   onClose: () => void
   // onSave resolves when the DB operation completes (success or error handled by parent)
   onSave: (updates: ActionItemUpdates) => Promise<void>
 }
 
 // Mount this component with key={item?.id ?? 'none'} so state resets when the item changes.
-export function ActionItemEditDialog({ item, members = [], onClose, onSave }: Props) {
+export function ActionItemEditDialog({ item, members = [], hideAssignee = false, onClose, onSave }: Props) {
   const [title, setTitle] = useState(item?.title ?? '')
   const [description, setDescription] = useState(item?.description ?? '')
   const [dueDate, setDueDate] = useState(item?.due_date ?? '')
@@ -110,7 +111,7 @@ export function ActionItemEditDialog({ item, members = [], onClose, onSave }: Pr
               onChange={(e) => setDueDate(e.target.value)}
             />
           </div>
-          {members.length > 0 && (
+          {members.length > 0 && !hideAssignee && (
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                 Person

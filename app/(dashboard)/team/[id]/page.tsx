@@ -489,7 +489,7 @@ export default async function MemberProfilePage({
                 ))}
             </div>
           )}
-          <InteractionsTabs interactions={interactions} items={items} />
+          <InteractionsTabs interactions={interactions} items={items} memberId={member.id} />
         </div>
       </div>
     </div>
