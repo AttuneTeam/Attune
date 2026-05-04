@@ -12,9 +12,8 @@ import {
   Zap,
 } from "lucide-react";
 import { SentimentInsightsCard } from "@/components/team/SentimentInsightsCard";
-import { MemberEditButton } from "@/components/team/MemberEditButton";
 import { NewInteractionButton } from "@/components/dashboard/NewMeetingButton";
-import { MemberIntegrationsForm } from "@/components/team/MemberIntegrationsForm";
+import { MemberHeaderMenu } from "@/components/team/MemberHeaderMenu";
 import { GitHubCard } from "@/components/team/GitHubCard";
 import { GitHubSummaryTile } from "@/components/team/GitHubSummaryTile";
 import { fetchAllIntegrations } from "@/lib/integrations";
@@ -216,9 +215,10 @@ export default async function MemberProfilePage({
   const interactions = (interactionsRaw ?? []) as InteractionRow[];
   const interactionIds = interactions.map((m) => m.id);
 
-  const orFilter = interactionIds.length > 0
-    ? `interaction_id.in.(${interactionIds.join(",")}),assignee_id.eq.${id}`
-    : `assignee_id.eq.${id}`;
+  const orFilter =
+    interactionIds.length > 0
+      ? `interaction_id.in.(${interactionIds.join(",")}),assignee_id.eq.${id}`
+      : `assignee_id.eq.${id}`;
 
   const { data: actionItems } = await supabase
     .from("action_items")
@@ -321,27 +321,23 @@ export default async function MemberProfilePage({
     .order("title");
 
   return (
-    <div className="p-8 max-w-6xl mx-auto">
+    <div className="p-2 sm:p-8 max-w-6xl mx-auto">
       {/* Header */}
       <div className="flex items-center gap-4 mb-8">
         <div className="flex-1" />
         <div className="flex items-center gap-2 shrink-0">
-          <MemberIntegrationsForm
-            memberId={member.id}
-            managerId={user.id}
-            integrations={memberIntegrations ?? []}
-          />
-          {/* wrap to prevent flex-1 inside NewMeetingButton from growing */}
           <div className="w-fit">
             <NewInteractionButton
               memberId={member.id}
               memberName={member.name}
             />
           </div>
-          <MemberEditButton
+          <MemberHeaderMenu
             member={member}
             teams={teams ?? []}
             roles={allRoles ?? []}
+            managerId={user.id}
+            integrations={memberIntegrations ?? []}
           />
         </div>
       </div>
@@ -350,7 +346,7 @@ export default async function MemberProfilePage({
         {/* ── Left column ── */}
         <div className="space-y-6">
           {/* Details */}
-          <div className="rounded-lg bg-card px-5 pt-0 pb-0 space-y-4">
+          <div className="rounded-lg bg-card px-0 pt-0 pb-0 space-y-4">
             {/* Name as card title */}
             <div>
               <h2 className="text-xl font-bold tracking-tight leading-tight">

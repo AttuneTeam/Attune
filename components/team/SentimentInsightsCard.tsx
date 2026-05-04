@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   LineChart,
   Line,
@@ -11,7 +12,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { Badge } from "@/components/ui/badge";
-import { Lightbulb, Sparkles } from "lucide-react";
+import { ChevronDown, Lightbulb, Sparkles } from "lucide-react";
 import { format, parseISO } from "date-fns";
 
 interface Props {
@@ -45,6 +46,7 @@ export function SentimentInsightsCard({
   managerRead,
   memberName,
 }: Props) {
+  const [open, setOpen] = useState(true);
   const color = avgSentiment !== null ? scoreColor(avgSentiment) : "#94a3b8";
 
   const chartData = sentimentHistory.map((d) => ({
@@ -53,12 +55,20 @@ export function SentimentInsightsCard({
   }));
 
   return (
-    <div className="rounded-lg border bg-card p-5 space-y-4">
-      <div className="flex items-center gap-1.5">
-        <Sparkles className="h-3.5 w-3.5" />
-        <h2 className="text-sm font-semibold">Insights</h2>
-      </div>
+    <div className="rounded-lg border bg-card">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="w-full px-5 py-4 flex items-center justify-between text-left hover:bg-muted/30 transition-colors rounded-t-lg"
+      >
+        <div className="flex items-center gap-1.5">
+          <Sparkles className="h-3.5 w-3.5" />
+          <h2 className="text-sm font-semibold">Insights</h2>
+        </div>
+        <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
 
+      {open && <div className="px-5 pb-5 space-y-4">
       {meetingCount === 0 ? (
         <p className="text-xs text-muted-foreground leading-relaxed">
           Run <span className="font-medium">Summarize</span> on interaction
@@ -226,6 +236,7 @@ export function SentimentInsightsCard({
           </ul>
         </div>
       )}
+      </div>}
     </div>
   );
 }

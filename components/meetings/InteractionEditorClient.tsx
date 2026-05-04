@@ -298,7 +298,7 @@ export function InteractionEditorClient({
   const member = interaction.team_members;
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
+    <div className="p-2 sm:p-6 max-w-6xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-end gap-3 mb-6">
         <div className="flex items-center gap-2 flex-wrap min-w-0">
@@ -374,7 +374,7 @@ export function InteractionEditorClient({
         {/* Left column */}
         <div className="space-y-4">
           {/* Member name block */}
-          <div className="rounded-lg bg-card px-5 pt-4 pb-5">
+          <div className="rounded-lg bg-card px-0 pt-4 pb-5">
             <div>
               <Link href={`/team/${member?.id}`}>
                 <h2 className="text-xl font-bold tracking-tight leading-tight">

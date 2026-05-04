@@ -30,13 +30,20 @@ export function MemberEditButton({
   member,
   teams,
   roles,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
 }: {
   member: TeamMember;
   teams: Team[];
   roles: Role[];
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = isControlled ? controlledOpen! : internalOpen;
+  const setOpen = isControlled ? controlledOnOpenChange! : setInternalOpen;
   const [isPending, startTransition] = useTransition();
 
   const [name, setName] = useState(member.name);
@@ -86,10 +93,12 @@ export function MemberEditButton({
 
   return (
     <>
-      <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
-        <Pencil className="h-3.5 w-3.5" />
-        Edit
-      </Button>
+      {!isControlled && (
+        <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
+          <Pencil className="h-3.5 w-3.5" />
+          Edit
+        </Button>
+      )}
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-md">
