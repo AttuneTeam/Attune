@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { TeamPulsePageClient } from "@/components/team/TeamPulsePageClient";
@@ -23,12 +24,12 @@ export default async function TeamPulsePage() {
         <p className="text-muted-foreground mb-6">
           Add team members to start tracking team health.
         </p>
-        <a
+        <Link
           href="/team"
           className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:bg-primary/90"
         >
           Add team members
-        </a>
+        </Link>
       </div>
     );
   }

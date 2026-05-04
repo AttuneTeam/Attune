@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
+import Link from 'next/link'
 import { InteractionCard } from '@/components/meetings/InteractionCard'
 import { SemanticSearch } from '@/components/meetings/SemanticSearch'
 
@@ -17,9 +17,6 @@ export default async function InteractionsPage({
   searchParams: Promise<{ member?: string; type?: string }>
 }) {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
-
   const params = await searchParams
   const memberFilter = params.member
   const typeFilter = params.type
@@ -61,7 +58,7 @@ export default async function InteractionsPage({
         {/* Type filter */}
         <div className="flex gap-2 flex-wrap">
           {TYPE_FILTERS.map(({ label, value }) => (
-            <a
+            <Link
               key={label}
               href={value ? `${baseUrl}${memberFilter ? '&' : '?'}type=${value}` : baseUrl}
               className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
@@ -71,23 +68,23 @@ export default async function InteractionsPage({
               }`}
             >
               {label}
-            </a>
+            </Link>
           ))}
         </div>
 
         {/* Member filter */}
         {members && members.length > 0 && (
           <div className="flex gap-2 flex-wrap">
-            <a
+            <Link
               href={typeFilter ? `/interactions?type=${typeFilter}` : '/interactions'}
               className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
                 !memberFilter ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'
               }`}
             >
               All people
-            </a>
+            </Link>
             {members.map((m) => (
-              <a
+              <Link
                 key={m.id}
                 href={`/interactions?member=${m.id}${typeFilter ? `&type=${typeFilter}` : ''}`}
                 className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
@@ -95,7 +92,7 @@ export default async function InteractionsPage({
                 }`}
               >
                 {m.name}
-              </a>
+              </Link>
             ))}
           </div>
         )}

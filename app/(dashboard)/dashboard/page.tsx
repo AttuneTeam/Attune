@@ -1,16 +1,15 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { NewBookingButton } from "@/components/dashboard/NewBookingButton";
-import { NewStrategyButton } from "@/components/dashboard/NewStrategyButton";
-import { OrgStructureSheet } from "@/components/dashboard/OrgStructureSheet";
+import { DashboardOverflowMenu } from "@/components/dashboard/DashboardOverflowMenu";
 import { DashboardPageTabs } from "@/components/dashboard/DashboardPageTabs";
-import { redirect } from "next/navigation";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  if (!user) return null;
 
   // Fetch all direct reports
   const { data: members } = await supabase
@@ -25,12 +24,12 @@ export default async function DashboardPage() {
         <p className="text-muted-foreground mb-6">
           Welcome! Add your team members to get started.
         </p>
-        <a
+        <Link
           href="/team"
           className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:bg-primary/90"
         >
           Add team members
-        </a>
+        </Link>
       </div>
     );
   }
@@ -133,9 +132,8 @@ export default async function DashboardPage() {
       <div className="flex items-center justify-between mb-6">
         <div />
         <div className="flex items-center gap-2">
-          <NewStrategyButton />
-          <OrgStructureSheet teams={teams ?? []} members={members} />
           <NewBookingButton members={members} />
+          <DashboardOverflowMenu teams={teams ?? []} members={members} />
         </div>
       </div>
 

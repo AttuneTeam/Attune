@@ -9,6 +9,7 @@ import { UpcomingList } from "@/components/dashboard/UpcomingList";
 import { DashboardActionItems } from "@/components/dashboard/DashboardActionItems";
 import { NewTaskButton } from "@/components/action-items/NewTaskButton";
 import type { ActionItem, TeamMember } from "@/lib/supabase/types";
+import Link from "next/link";
 
 type PreviewItem = {
   id: string;
@@ -50,7 +51,7 @@ export function DashboardPageTabs({
 
           <div className="space-y-4">
             {/* Stat tiles */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <InteractionsSheet
                 preview={interactionsPreview}
                 totalThisMonth={totalThisMonth}
@@ -80,12 +81,12 @@ export function DashboardPageTabs({
                     members={members}
                     label="Add Action"
                   />
-                  <a
+                  <Link
                     href="/action-items"
                     className="text-xs text-muted-foreground hover:text-foreground transition-colors"
                   >
                     View all
-                  </a>
+                  </Link>
                 </div>
               </div>
               <DashboardActionItems
