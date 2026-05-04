@@ -32,7 +32,7 @@ import {
   Pencil,
 } from "lucide-react";
 import { format, isPast, isToday, parseISO } from "date-fns";
-import type { PersonalItem } from "@/lib/supabase/types";
+import type { ActionItem, PersonalItem } from "@/lib/supabase/types";
 import type { Json } from "@/lib/supabase/types";
 import { DailyBriefing } from "@/components/dashboard/DailyBriefing";
 
@@ -67,10 +67,9 @@ export function PersonalTab({
   initialItems,
   userId,
 }: {
-  initialItems: PersonalItem[];
+  initialItems: ActionItem[];
   userId: string;
 }) {
-  const [items, setItems] = useState<PersonalItem[]>(initialItems);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<PersonalItem | null>(null);
   const [pendingDelete, setPendingDelete] = useState<PersonalItem | null>(null);
@@ -134,9 +133,6 @@ export function PersonalTab({
 
     if (editingItem) {
       const updated: PersonalItem = { ...editingItem, ...payload };
-      setItems((prev) =>
-        prev.map((i) => (i.id === editingItem.id ? updated : i)),
-      );
       setSheetOpen(false);
       const { error } = await supabase
         .from("personal_items")
@@ -144,7 +140,6 @@ export function PersonalTab({
         .eq("id", editingItem.id);
       if (error) {
         toast.error(error.message);
-        setItems(initialItems);
       }
     } else {
       const optimistic: PersonalItem = {
@@ -154,7 +149,6 @@ export function PersonalTab({
         created_at: new Date().toISOString(),
         ...payload,
       };
-      setItems((prev) => [optimistic, ...prev]);
       setSheetOpen(false);
       const { data, error } = await supabase
         .from("personal_items")
@@ -163,11 +157,7 @@ export function PersonalTab({
         .single();
       if (error) {
         toast.error(error.message);
-        setItems((prev) => prev.filter((i) => i.id !== optimistic.id));
       } else {
-        setItems((prev) =>
-          prev.map((i) => (i.id === optimistic.id ? data : i)),
-        );
       }
     }
     setSaving(false);
@@ -177,7 +167,6 @@ export function PersonalTab({
     if (!pendingDelete) return;
     const item = pendingDelete;
     setPendingDelete(null);
-    setItems((prev) => prev.filter((i) => i.id !== item.id));
     const supabase = createClient();
     const { error } = await supabase
       .from("personal_items")
@@ -185,11 +174,8 @@ export function PersonalTab({
       .eq("id", item.id);
     if (error) {
       toast.error(error.message);
-      setItems(initialItems);
     }
   };
-
-  const activeItems = items.filter((i) => i.type !== "todo");
 
   return (
     <div className="max-w-2xl space-y-4">

@@ -20,7 +20,7 @@ export default async function ActionItemsPage({
       let q = supabase
         .from('action_items')
         .select(`
-          id, description, status, due_date, created_at, assignee_id,
+          id, title, description, status, due_date, created_at, assignee_id,
           interactions!left (
             id, scheduled_at, manager_id,
             team_members (id, name)

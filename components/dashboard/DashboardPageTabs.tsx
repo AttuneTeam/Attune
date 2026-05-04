@@ -8,7 +8,7 @@ import { InteractionsSheet } from "@/components/dashboard/InteractionsSheet";
 import { UpcomingList } from "@/components/dashboard/UpcomingList";
 import { DashboardActionItems } from "@/components/dashboard/DashboardActionItems";
 import { NewTaskButton } from "@/components/action-items/NewTaskButton";
-import type { PersonalItem, TeamMember } from "@/lib/supabase/types";
+import type { ActionItem, TeamMember } from "@/lib/supabase/types";
 
 type PreviewItem = {
   id: string;
@@ -19,7 +19,6 @@ type PreviewItem = {
 };
 
 export function DashboardPageTabs({
-  personalItems,
   userId,
   hasGoogleCalendar,
   interactionsPreview,
@@ -29,14 +28,13 @@ export function DashboardPageTabs({
   actionItems,
   members,
 }: {
-  personalItems: PersonalItem[];
   userId: string;
   hasGoogleCalendar: boolean;
   interactionsPreview: PreviewItem[];
   totalThisMonth: number;
   totalMinutesThisMonth: number;
   upcomingBookings: any[];
-  actionItems: any[];
+  actionItems: ActionItem[];
   members: TeamMember[];
 }) {
   return (
@@ -48,7 +46,7 @@ export function DashboardPageTabs({
 
       <TabsContent value="personal">
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-6 pt-4">
-          <PersonalTab initialItems={personalItems} userId={userId} />
+          <PersonalTab initialItems={actionItems} userId={userId} />
 
           <div className="space-y-4">
             {/* Stat tiles */}
