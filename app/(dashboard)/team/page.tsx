@@ -1,5 +1,4 @@
 import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
 import Link from "next/link";
 import { TeamMemberForm } from "@/components/team/TeamMemberForm";
 import { TeamForm } from "@/components/team/TeamForm";
@@ -12,7 +11,7 @@ export default async function TeamPage() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  if (!user) return null
 
   const { data: members } = await supabase
     .from("team_members")

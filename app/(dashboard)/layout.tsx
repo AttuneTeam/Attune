@@ -24,16 +24,10 @@ export default async function DashboardLayout({
     role: 'manager',
   }, { onConflict: 'id', ignoreDuplicates: true })
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single()
-
-  const { data: members } = await supabase
-    .from('team_members')
-    .select('id, name, relationship')
-    .order('name')
+  const [{ data: profile }, { data: members }] = await Promise.all([
+    supabase.from('profiles').select('*').eq('id', user.id).single(),
+    supabase.from('team_members').select('id, name, relationship').order('name'),
+  ])
 
   const cookieStore = await cookies()
   const sidebarCollapsed = cookieStore.get('sidebar-collapsed')?.value === 'true'

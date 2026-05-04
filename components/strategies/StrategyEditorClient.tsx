@@ -96,7 +96,9 @@ function SubInitiativeList({
     const supabase = createClient();
     supabase
       .from("strategic_initiatives")
-      .select("id, title, status, updated_at, depth, parent_id, manager_id, description, tags, domain, horizon, source_chat_id, created_at")
+      .select(
+        "id, title, status, updated_at, depth, parent_id, manager_id, description, tags, domain, horizon, source_chat_id, created_at",
+      )
       .eq("parent_id", parentId)
       .order("created_at", { ascending: true })
       .then(({ data }) => {
@@ -119,8 +121,7 @@ function SubInitiativeList({
     setCreating(false);
   };
 
-  if (loading)
-    return <p className="text-xs text-muted-foreground">Loading…</p>;
+  if (loading) return <p className="text-xs text-muted-foreground">Loading…</p>;
 
   return (
     <div className="space-y-1.5">
@@ -410,7 +411,10 @@ export function StrategyEditorClient({
 
                 {/* Sub-initiatives */}
                 {initiative.depth < 2 && (
-                  <CollapsibleSection title="Sub-initiatives" defaultOpen={true}>
+                  <CollapsibleSection
+                    title="Sub-initiatives"
+                    defaultOpen={true}
+                  >
                     <SubInitiativeList
                       parentId={initiative.id}
                       parentDepth={initiative.depth}
@@ -421,13 +425,13 @@ export function StrategyEditorClient({
                 {/* Source conversation */}
                 {initiative.source_chat_id && (
                   <CollapsibleSection title="Source" defaultOpen={true}>
-                    <a
+                    <Link
                       href={`/?conversation=${initiative.source_chat_id}`}
                       className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
                     >
                       <ExternalLink className="h-3.5 w-3.5" />
                       View source conversation
-                    </a>
+                    </Link>
                     <p className="text-[11px] text-muted-foreground mt-1">
                       Opens in the AI chat panel
                     </p>
@@ -484,8 +488,9 @@ export function StrategyEditorClient({
           <p className="text-sm text-muted-foreground mt-1">
             <span className="font-medium text-foreground">{title}</span> will be
             permanently deleted.
-            {initiative.depth < 2 && " Sub-initiatives will also be deleted."}
-            {" "}This cannot be undone.
+            {initiative.depth < 2 &&
+              " Sub-initiatives will also be deleted."}{" "}
+            This cannot be undone.
           </p>
           <DialogFooter>
             <Button
