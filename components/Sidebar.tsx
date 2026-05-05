@@ -35,9 +35,9 @@ import { useMobileNav } from "@/components/layout/MobileNavContext";
 
 const navItems = [
   { href: "/dashboard", label: "Home", icon: LayoutDashboard },
-  { href: "/team-pulse", label: "Team", icon: Activity },
-  { href: "/initiatives", label: "Initiatives", icon: Target },
-  { href: "/workshop", label: "Workshop", icon: FlaskConical },
+  // { href: "/team-pulse", label: "Team", icon: Activity },
+  // { href: "/initiatives", label: "Initiatives", icon: Target },
+  // { href: "/workshop", label: "Workshop", icon: FlaskConical },
 ];
 
 const settingsItems = [
