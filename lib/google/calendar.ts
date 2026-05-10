@@ -125,6 +125,40 @@ export async function fetchUpcomingEvents(
 }
 
 /**
+ * Fetch total meeting minutes for a team member for a given date range.
+ * Only counts timed events (skips all-day events).
+ * Returns 0 if the calendar is not accessible (not shared or not on Workspace).
+ */
+export async function fetchMemberMeetingMinutes(
+  accessToken: string,
+  memberEmail: string,
+  from: Date,
+  to: Date,
+): Promise<number> {
+  const params = new URLSearchParams({
+    timeMin: from.toISOString(),
+    timeMax: to.toISOString(),
+    maxResults: "250",
+    singleEvents: "true",
+  });
+
+  const calendarId = encodeURIComponent(memberEmail);
+  const res = await fetch(
+    `https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events?${params}`,
+    { headers: { Authorization: `Bearer ${accessToken}` } },
+  );
+
+  if (!res.ok) return 0;
+  const data = await res.json();
+  return ((data.items ?? []) as Record<string, unknown>[]).reduce((total, event) => {
+    const start = event.start as { dateTime?: string; date?: string } | undefined;
+    const end = event.end as { dateTime?: string; date?: string } | undefined;
+    if (!start?.dateTime || !end?.dateTime) return total;
+    return total + eventDurationMinutes(start.dateTime, end.dateTime);
+  }, 0);
+}
+
+/**
  * Count calendar events for a specific team member email for the given month.
  * Uses their calendar directly (requires Workspace domain sharing or explicit share).
  */

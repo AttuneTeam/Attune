@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import {
   getValidToken,
   fetchUpcomingEvents,
+  fetchMemberMeetingMinutes,
   eventDurationMinutes,
 } from "@/lib/google/calendar";
 
@@ -87,12 +88,17 @@ export async function POST() {
   todayEnd.setHours(23, 59, 59, 999);
   const todayStart = new Date(now);
   todayStart.setHours(0, 0, 0, 0);
+  const yesterdayStart = new Date(todayStart);
+  yesterdayStart.setDate(yesterdayStart.getDate() - 1);
+  const yesterdayEnd = new Date(todayEnd);
+  yesterdayEnd.setDate(yesterdayEnd.getDate() - 1);
 
   const [
     { data: reminders },
     { data: actionItems },
     { data: recentInteractions },
     { data: members },
+    { data: yesterdayInteractions },
   ] = await Promise.all([
     supabase
       .from("action_items")
@@ -104,7 +110,7 @@ export async function POST() {
     supabase
       .from("action_items")
       .select(
-        "id, description, status, due_date, interactions!left(participant_id, team_members(id, name))",
+        "id, description, status, due_date, interactions!left(participant_id, ai_summary, team_members(id, name, level, role_description))",
       )
       .in("status", ["open", "in_progress"])
       .order("due_date", { ascending: true, nullsFirst: false })
@@ -118,9 +124,16 @@ export async function POST() {
       .limit(200),
     supabase
       .from("team_members")
-      .select("id, name")
+      .select("id, name, email")
       .eq("manager_id", user.id)
       .order("name"),
+    supabase
+      .from("interactions")
+      .select("id, title, scheduled_at, ai_summary, participant_id")
+      .eq("manager_id", user.id)
+      .gte("scheduled_at", yesterdayStart.toISOString())
+      .lte("scheduled_at", yesterdayEnd.toISOString())
+      .order("scheduled_at"),
   ]);
 
   // Calendar events for today
@@ -131,6 +144,7 @@ export async function POST() {
     duration_minutes: number;
   }[] = [];
   let totalMeetingHours = 0;
+  let teamMemberHours: { member_id: string; member_name: string; meeting_minutes: number }[] = [];
   try {
     const token = await getValidToken(supabase, user.id);
     const events = await fetchUpcomingEvents(token, 2);
@@ -150,6 +164,16 @@ export async function POST() {
       0,
     );
     totalMeetingHours = Math.round((totalMinutes / 60) * 10) / 10;
+
+    // Team member meeting hours for today (silently skips inaccessible calendars)
+    const membersWithEmail = (members ?? []).filter((m) => m.email);
+    teamMemberHours = await Promise.all(
+      membersWithEmail.map(async (m) => ({
+        member_id: m.id,
+        member_name: m.name,
+        meeting_minutes: await fetchMemberMeetingMinutes(token, m.email!, todayStart, todayEnd),
+      })),
+    );
   } catch {
     // Calendar not connected — skip silently
   }
@@ -180,7 +204,7 @@ export async function POST() {
     return { id: m.id, name: m.name, daysAgo };
   });
 
-  // Flatten action items with member names
+  // Flatten action items with member context
   const actionItemsFlat = (actionItems ?? []).map((a) => {
     const interaction = a.interactions as unknown as Record<
       string,
@@ -189,6 +213,8 @@ export async function POST() {
     const member = interaction?.team_members as {
       id: string;
       name: string;
+      level: string | null;
+      role_description: string | null;
     } | null;
     return {
       id: a.id,
@@ -196,6 +222,9 @@ export async function POST() {
       status: a.status,
       due_date: a.due_date,
       member_name: member?.name ?? null,
+      member_level: member?.level ?? null,
+      member_role: member?.role_description ?? null,
+      last_interaction_summary: (interaction?.ai_summary as string | null) ?? null,
     };
   });
 
@@ -213,17 +242,47 @@ export async function POST() {
     })),
   ];
 
+  // IDs already shown in REMINDERS — exclude from OPEN ACTION ITEMS to prevent duplicates
+  const reminderIdSet = new Set(allReminderItems.map((r) => r.id));
+
   const remindersText =
     allReminderItems.length > 0
       ? allReminderItems.map((r) => `- [id:${r.id}] ${r.label}`).join("\n")
       : "None";
 
+  const actionItemsForPrompt = actionItemsFlat.filter((a) => !reminderIdSet.has(a.id));
   const actionText =
-    actionItemsFlat.length > 0
-      ? actionItemsFlat
+    actionItemsForPrompt.length > 0
+      ? actionItemsForPrompt
+          .map((a) => {
+            const memberParts: string[] = [];
+            if (a.member_name) memberParts.push(a.member_name);
+            if (a.member_level) memberParts.push(a.member_level);
+            if (a.member_role) memberParts.push(a.member_role);
+            const memberInfo = memberParts.length > 0 ? ` (re: ${memberParts.join(", ")})` : "";
+            const dueInfo = a.due_date ? ` — due ${a.due_date.slice(0, 10)}` : "";
+            const summaryInfo = a.last_interaction_summary
+              ? `\n  Last 1:1: ${a.last_interaction_summary.slice(0, 200)}`
+              : "";
+            return `- [id:${a.id}] ${a.description}${memberInfo}${dueInfo}${summaryInfo}`;
+          })
+          .join("\n")
+      : "None";
+
+  // Yesterday's recap (data-driven, no AI needed)
+  const memberById = Object.fromEntries((members ?? []).map((m) => [m.id, m.name]));
+  const yesterdayRecap = (yesterdayInteractions ?? []).map((i) => ({
+    title: i.title ?? "Interaction",
+    member_name: i.participant_id ? (memberById[i.participant_id] ?? null) : null,
+    ai_summary: i.ai_summary ?? null,
+  }));
+
+  const yesterdayText =
+    yesterdayRecap.length > 0
+      ? yesterdayRecap
           .map(
-            (a) =>
-              `- [id:${a.id}] ${a.description}${a.member_name ? ` (re: ${a.member_name})` : ""}${a.due_date ? ` — due ${a.due_date.slice(0, 10)}` : ""}`,
+            (i) =>
+              `- ${i.title}${i.member_name ? ` (with ${i.member_name})` : ""}${i.ai_summary ? `: ${i.ai_summary.slice(0, 150)}` : ""}`,
           )
           .join("\n")
       : "None";
@@ -240,10 +299,13 @@ export async function POST() {
 
   const prompt = `Today is ${today}.
 
+YESTERDAY'S INTERACTIONS (${yesterdayRecap.length}):
+${yesterdayText}
+
 REMINDERS — overdue or with a due date (${allReminderItems.length}):
 ${remindersText}
 
-OPEN ACTION ITEMS (${actionItemsFlat.length} total, includes personal tasks):
+OPEN ACTION ITEMS (${actionItemsForPrompt.length} items, excludes those already in REMINDERS):
 ${actionText}
 
 TODAY'S MEETINGS (${meetingsToday.length}): ${meetingsToday.length > 0 ? meetingsToday.map((m) => m.title).join(", ") : "None"}
@@ -255,14 +317,24 @@ Return a prioritised list of items to focus on today, and up to 3 team members t
 Rules for priority_items:
 - Use the exact id values from the input (the part after "id:").
 - Items from the REMINDERS section → type "reminder".
-- Items from the OPEN ACTION ITEMS section → type "action_item".`;
+- Items from the OPEN ACTION ITEMS section → type "action_item".
+- Each id must appear at most once across all priority_items.
+- Do not include items that are already shown in the REMINDERS section.`;
 
   const { object } = await generateObject({
-    model: openai("gpt-5.4-mini"),
+    model: openai("gpt-5.5"),
     system:
       "You are a daily briefing assistant for an engineering manager. Help them prioritise their day and maintain good relationships with their direct reports. Be concise and practical.",
     prompt,
     schema: BriefingSchema,
+  });
+
+  // Deduplicate priority_items by ID (keep first occurrence)
+  const seenPriorityIds = new Set<string>();
+  const dedupedPriorityItems = object.priority_items.filter((item) => {
+    if (seenPriorityIds.has(item.id)) return false;
+    seenPriorityIds.add(item.id);
+    return true;
   });
 
   const overdueForWidget = overdueReminders.map((r) => ({
@@ -290,9 +362,11 @@ Rules for priority_items:
     action_items_count: actionItemsFlat.length,
     meetings_today: meetingsToday,
     total_meeting_hours: totalMeetingHours,
-    priority_items: object.priority_items,
+    priority_items: dedupedPriorityItems,
     suggested_meetings: object.suggested_meetings,
     team_members: (members ?? []).map((m) => ({ id: m.id, name: m.name })),
+    yesterday_recap: { interactions: yesterdayRecap },
+    team_member_hours: teamMemberHours,
   };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

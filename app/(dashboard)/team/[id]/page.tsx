@@ -320,6 +320,29 @@ export default async function MemberProfilePage({
     .eq("manager_id", user.id)
     .order("title");
 
+  // Meeting hours history from daily briefings
+  const fourteenDaysAgo = new Date();
+  fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+  const fourteenDaysAgoStr = fourteenDaysAgo.toISOString().slice(0, 10);
+  const todayStr = new Date().toISOString().slice(0, 10);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: briefingHistory } = await (supabase as any)
+    .from("daily_briefings")
+    .select("date, content")
+    .eq("user_id", user.id)
+    .gte("date", fourteenDaysAgoStr)
+    .order("date", { ascending: false })
+    .limit(14);
+
+  type HoursEntry = { member_id: string; member_name: string; meeting_minutes: number };
+  const memberHoursHistory = ((briefingHistory ?? []) as { date: string; content: Record<string, unknown> }[]).flatMap((row) => {
+    const hours = (row.content?.team_member_hours as HoursEntry[] | undefined) ?? [];
+    const entry = hours.find((h) => h.member_id === id);
+    return entry ? [{ date: row.date, minutes: entry.meeting_minutes }] : [];
+  });
+  const todayMeetingMinutes = memberHoursHistory.find((h) => h.date === todayStr)?.minutes ?? null;
+
   return (
     <div className="max-w-6xl mx-auto">
       {/* Header */}
@@ -428,6 +451,32 @@ export default async function MemberProfilePage({
                   >
                     {daysSince === 0 ? "Today" : `${daysSince}d ago`}
                   </Badge>
+                </div>
+              )}
+              {todayMeetingMinutes !== null && todayMeetingMinutes > 0 && (
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Briefcase className="h-3.5 w-3.5 shrink-0" />
+                  <span>
+                    {Math.round((todayMeetingMinutes / 60) * 10) / 10}h in meetings today
+                  </span>
+                </div>
+              )}
+              {memberHoursHistory.length > 1 && (
+                <div className="pt-1">
+                  <p className="text-xs text-muted-foreground mb-1.5">Meeting load (last {memberHoursHistory.length} days)</p>
+                  <div className="flex items-end gap-1 h-8">
+                    {[...memberHoursHistory].reverse().map((h) => {
+                      const pct = Math.min(100, Math.round((h.minutes / (8 * 60)) * 100));
+                      return (
+                        <div
+                          key={h.date}
+                          className="flex-1 bg-primary/20 rounded-sm relative group"
+                          style={{ height: `${Math.max(4, pct)}%` }}
+                          title={`${format(new Date(h.date), "MMM d")}: ${Math.round((h.minutes / 60) * 10) / 10}h`}
+                        />
+                      );
+                    })}
+                  </div>
                 </div>
               )}
             </div>
