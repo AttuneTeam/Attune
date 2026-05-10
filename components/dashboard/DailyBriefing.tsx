@@ -52,6 +52,18 @@ interface BriefingContent {
   priority_items: PriorityItem[];
   suggested_meetings: SuggestedMeeting[];
   team_members?: { id: string; name: string }[];
+  yesterday_recap?: {
+    interactions: {
+      title: string;
+      member_name: string | null;
+      ai_summary: string | null;
+    }[];
+  };
+  team_member_hours?: {
+    member_id: string;
+    member_name: string;
+    meeting_minutes: number;
+  }[];
 }
 
 interface DayState {
@@ -254,8 +266,15 @@ export function DailyBriefing({ userId }: { userId: string }) {
   const hasMeetings = briefing.meetings_today.length > 0;
   const hasPriorities = visiblePriorityItems.length > 0;
   const hasSuggestions = briefing.suggested_meetings.length > 0;
+  const hasRecap = (briefing.yesterday_recap?.interactions ?? []).length > 0;
+  const memberHoursMap = Object.fromEntries(
+    (briefing.team_member_hours ?? []).map((h) => [h.member_id, h.meeting_minutes]),
+  );
+  const teamMemberHoursWithData = (briefing.team_member_hours ?? []).filter(
+    (h) => h.meeting_minutes > 0,
+  );
 
-  if (!hasOverdue && !hasMeetings && !hasPriorities && !hasSuggestions)
+  if (!hasOverdue && !hasMeetings && !hasPriorities && !hasSuggestions && !hasRecap)
     return null;
 
   return (
@@ -315,6 +334,35 @@ export function DailyBriefing({ userId }: { userId: string }) {
             >
               View <ChevronRight className="h-3 w-3" />
             </Button>
+          </div>
+        )}
+
+        {/* Yesterday's recap */}
+        {hasRecap && (
+          <div className="px-4 py-2.5 space-y-1.5">
+            <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+              Yesterday
+            </p>
+            {(briefing.yesterday_recap?.interactions ?? []).map((item, i) => (
+              <div key={i} className="flex items-start gap-2">
+                <CheckCircle className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <span className="font-medium">
+                    {item.title}
+                    {item.member_name && (
+                      <span className="font-normal text-muted-foreground">
+                        {" "}· {item.member_name}
+                      </span>
+                    )}
+                  </span>
+                  {item.ai_summary && (
+                    <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                      {item.ai_summary}
+                    </p>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
         )}
 
@@ -466,27 +514,59 @@ export function DailyBriefing({ userId }: { userId: string }) {
             <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
               Consider connecting with
             </p>
-            {briefing.suggested_meetings.map((m) => (
-              <div key={m.member_id} className="flex items-center gap-2">
-                <Users className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <span className="font-medium">{m.member_name}</span>
-                  <span className="text-muted-foreground text-xs">
-                    {m.last_met_days_ago !== null
-                      ? ` · ${m.last_met_days_ago}d ago`
-                      : " · never met"}
-                  </span>
-                  {m.reason && (
-                    <p className="text-xs text-muted-foreground">{m.reason}</p>
-                  )}
+            {briefing.suggested_meetings.map((m) => {
+              const hoursToday = memberHoursMap[m.member_id];
+              return (
+                <div key={m.member_id} className="flex items-center gap-2">
+                  <Users className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <span className="font-medium">{m.member_name}</span>
+                    <span className="text-muted-foreground text-xs">
+                      {m.last_met_days_ago !== null
+                        ? ` · ${m.last_met_days_ago}d ago`
+                        : " · never met"}
+                      {hoursToday != null && hoursToday > 0 && (
+                        <> · {Math.round((hoursToday / 60) * 10) / 10}h in meetings</>
+                      )}
+                    </span>
+                    {m.reason && (
+                      <p className="text-xs text-muted-foreground">{m.reason}</p>
+                    )}
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 px-2 text-xs gap-1 shrink-0 text-muted-foreground"
+                    onClick={() => router.push(`/team/${m.member_id}`)}
+                  >
+                    View <ChevronRight className="h-3 w-3" />
+                  </Button>
                 </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Team meeting load today */}
+        {teamMemberHoursWithData.length > 0 && (
+          <div className="px-4 py-2.5 space-y-1.5">
+            <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+              Team meeting load today
+            </p>
+            {teamMemberHoursWithData.map((h) => (
+              <div key={h.member_id} className="flex items-center gap-2">
+                <Users className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                <span className="flex-1 font-medium">{h.member_name}</span>
+                <span className="text-xs text-muted-foreground">
+                  {Math.round((h.meeting_minutes / 60) * 10) / 10}h
+                </span>
                 <Button
                   size="sm"
                   variant="ghost"
                   className="h-6 px-2 text-xs gap-1 shrink-0 text-muted-foreground"
-                  onClick={() => router.push(`/team/${m.member_id}`)}
+                  onClick={() => router.push(`/team/${h.member_id}`)}
                 >
-                  View <ChevronRight className="h-3 w-3" />
+                  <ChevronRight className="h-3 w-3" />
                 </Button>
               </div>
             ))}
