@@ -99,6 +99,7 @@ export async function POST() {
     { data: recentInteractions },
     { data: members },
     { data: yesterdayInteractions },
+    { data: profile },
   ] = await Promise.all([
     supabase
       .from("action_items")
@@ -134,6 +135,7 @@ export async function POST() {
       .gte("scheduled_at", yesterdayStart.toISOString())
       .lte("scheduled_at", yesterdayEnd.toISOString())
       .order("scheduled_at"),
+    supabase.from("profiles").select("role").eq("id", user.id).single(),
   ]);
 
   // Calendar events for today
@@ -324,7 +326,7 @@ Rules for priority_items:
   const { object } = await generateObject({
     model: openai("gpt-5.5"),
     system:
-      "You are a daily briefing assistant for an engineering manager. Help them prioritise their day and maintain good relationships with their direct reports. Be concise and practical.",
+      `You are a daily briefing assistant for a manager${profile?.role ? ` (${profile.role})` : ""}. Help them prioritise their day and maintain good relationships with their direct reports. Be concise and practical.`,
     prompt,
     schema: BriefingSchema,
   });

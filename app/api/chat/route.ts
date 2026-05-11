@@ -101,11 +101,12 @@ export async function POST(request: NextRequest) {
         .from("team_values")
         .select("name, description, keywords")
         .eq("manager_id", user.id),
-      supabase.from("profiles").select("full_name").eq("id", user.id).single(),
+      supabase.from("profiles").select("full_name, role").eq("id", user.id).single(),
     ]);
 
   const system = buildChatSystemPrompt({
     managerName: profile?.full_name ?? "Manager",
+    managerRole: profile?.role ?? null,
     orgContext: orgContext ?? null,
     teamValues: teamValues ?? [],
     today: new Date().toISOString().split("T")[0],

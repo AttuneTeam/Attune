@@ -379,7 +379,7 @@ export function StrategyEditorClient({
                         value={domain}
                         onChange={(e) => setDomain(e.target.value)}
                         onBlur={handleDomainBlur}
-                        placeholder="e.g. Engineering, People…"
+                        placeholder="e.g. Marketing, People, Operations…"
                         className="h-8 text-xs"
                       />
                     </div>

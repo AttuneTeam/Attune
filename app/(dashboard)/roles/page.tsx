@@ -59,7 +59,7 @@ export default async function RolesPage() {
         <div className="rounded-lg border border-dashed p-12 text-center">
           <p className="text-sm text-muted-foreground">No roles defined yet.</p>
           <p className="text-xs text-muted-foreground mt-1">
-            Create a role (e.g. "Mid Frontend Developer") and define its areas
+            Create a role (e.g. "Senior Account Executive") and define its areas
             of responsibility.
           </p>
         </div>

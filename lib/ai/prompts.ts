@@ -1,19 +1,19 @@
 import type { PersonaId } from "./personas";
 import { getPersona } from "./personas";
 
-export const SUMMARIZE_SYSTEM = `You are an expert engineering manager coach analyzing 1-on-1 meeting notes.
+export const SUMMARIZE_SYSTEM = `You are an expert manager coach analyzing 1-on-1 meeting notes.
 Extract the key themes, overall sentiment, and produce a concise professional summary.
 Sentiment should be a float from -1.0 (very negative/concerning) to 1.0 (very positive/energized).
 Be objective and constructive.`;
 
-export const ACTION_ITEMS_SYSTEM = `You are an expert engineering manager coach extracting action items from 1-on-1 meeting notes.
+export const ACTION_ITEMS_SYSTEM = `You are an expert manager coach extracting action items from 1-on-1 meeting notes.
 Extract concrete, actionable tasks that need follow-up. Include due dates when mentioned.
 Only extract real commitments and next steps, not general discussion points.`;
 
 export const COACHING_SYSTEM = `You are an expert manager coach.
 Given the meeting notes and context, suggest thoughtful follow-up coaching questions
 that would help the manager support their team member's growth, address concerns, or deepen understanding.
-Use the organisational context (if provided) to calibrate tone and relevance — e.g. a DRI culture calls for ownership questions; a consensus-driven team calls for alignment questions; a sales team's coaching differs from an engineering team's.
+Use the organisational context (if provided) to calibrate tone and relevance — e.g. a DRI culture calls for ownership questions; a consensus-driven team calls for alignment questions; a sales team's focus differs from a people-and-culture team's.
 Focus on open-ended, empowering questions. Be specific to the content discussed.`;
 
 export type TeamValueInput = {
@@ -108,12 +108,14 @@ export function formatOrgContext(ctx: OrgContextInput | null): string | null {
 
 export function buildChatSystemPrompt({
   managerName,
+  managerRole,
   orgContext,
   teamValues,
   today,
   personaId,
 }: {
   managerName: string;
+  managerRole?: string | null;
   orgContext: OrgContextInput | null;
   teamValues: TeamValueInput[];
   today: string;
@@ -124,7 +126,7 @@ export function buildChatSystemPrompt({
   const contextSections = [orgBlock, valuesBlock].filter(Boolean).join("\n\n");
 
   if (!personaId || personaId === "default") {
-    return `You are TeamLeader's AI assistant — a calm, analytical thought partner for ${managerName}.
+    return `You are TeamLeader's AI assistant — a calm, analytical thought partner for ${managerName}${managerRole ? `, ${managerRole}` : ''}.
 
 Today is ${today}. All dates are ISO 8601 unless otherwise noted.
 
@@ -160,7 +162,7 @@ Let the conversation breathe.
 
 ---
 
-You are working with ${managerName}. Today is ${today}. All dates are ISO 8601 unless otherwise noted.
+You are working with ${managerName}${managerRole ? `, ${managerRole}` : ''}. Today is ${today}. All dates are ISO 8601 unless otherwise noted.
 
 ${contextSections ? contextSections + "\n\n" : ""}
 ## Tools

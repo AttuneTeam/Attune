@@ -126,7 +126,7 @@ export function WorkshopCanvas({
                 <textarea
                   value={question}
                   onChange={(e) => setQuestion(e.target.value)}
-                  placeholder="e.g. I need to scale from 10 to 35+ engineers — what issues may occur and how should I prepare?"
+                  placeholder="e.g. I need to grow my team from 10 to 35+ people — what issues may occur and how should I prepare?"
                   rows={4}
                   disabled={status === "loading"}
                   className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm placeholder:text-muted-foreground resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:opacity-50 transition"

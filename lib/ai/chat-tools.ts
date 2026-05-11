@@ -580,7 +580,7 @@ export function buildChatTools(supabase: SupabaseClient, userId: string) {
 
     search_knowledge: tool({
       description:
-        "Search the manager's uploaded reference documents: career ladders, performance frameworks, engineering principles, company strategy, handbooks. Use when asked about policies, best practices, or frameworks. If results are empty or the note says no documents were found, call web_search next with the same query.",
+        "Search the manager's uploaded reference documents: career ladders, performance frameworks, team principles, company strategy, handbooks. Use when asked about policies, best practices, or frameworks. If results are empty or the note says no documents were found, call web_search next with the same query.",
       inputSchema: z.object({
         query: z.string().describe("What to look up in the knowledge base"),
       }),
@@ -613,7 +613,7 @@ export function buildChatTools(supabase: SupabaseClient, userId: string) {
 
     web_search: tool({
       description:
-        "Search the web for current information: salary benchmarks, engineering management frameworks, industry trends, tool comparisons, or anything not in the team's internal data.",
+        "Search the web for current information: salary benchmarks, management frameworks, industry trends, tool comparisons, or anything not in the team's internal data.",
       inputSchema: z.object({
         query: z.string().describe("What to search for"),
       }),

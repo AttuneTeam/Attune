@@ -374,9 +374,20 @@ export function ActionItemsTable({
                     </DropdownMenu>
                   </td>
                   <td className="px-3 py-2 max-w-0">
-                    <p className={`truncate ${done ? "line-through text-muted-foreground" : ""}`}>
-                      {item.title ?? item.description}
-                    </p>
+                    {item.title ? (
+                      <>
+                        <p className={`truncate font-medium ${done ? "line-through text-muted-foreground" : ""}`}>
+                          {item.title}
+                        </p>
+                        <p className="truncate text-xs text-muted-foreground">
+                          {item.description}
+                        </p>
+                      </>
+                    ) : (
+                      <p className={`truncate ${done ? "line-through text-muted-foreground" : ""}`}>
+                        {item.description}
+                      </p>
+                    )}
                   </td>
                   <td className="px-3 py-2 text-muted-foreground hidden sm:table-cell whitespace-nowrap">
                     {assignee && assigneeId ? (

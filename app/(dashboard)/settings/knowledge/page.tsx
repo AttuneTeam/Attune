@@ -18,7 +18,7 @@ export default async function KnowledgePage() {
       <div className="mb-8">
         <h1 className="text-2xl font-bold">Knowledge base</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Upload reference documents — career ladders, performance frameworks, engineering principles, company strategy — so the AI assistant can reason from them directly.
+          Upload reference documents — career ladders, performance frameworks, team principles, company strategy — so the AI assistant can reason from them directly.
         </p>
       </div>
       <KnowledgeManager initialDocuments={documents ?? []} />

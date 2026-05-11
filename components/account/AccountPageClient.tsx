@@ -140,7 +140,7 @@ export function AccountPageClient({
             <Input
               value={role}
               onChange={(e) => setRole(e.target.value)}
-              placeholder="e.g. Engineering Manager"
+              placeholder="e.g. Team Lead, Marketing Manager, Head of Ops"
             />
           </Field>
         </div>

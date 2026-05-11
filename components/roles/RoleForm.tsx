@@ -94,7 +94,7 @@ export function RoleForm({ managerId, existing }: Props) {
               id="role-title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. Mid Frontend Developer"
+              placeholder="e.g. Senior Account Executive, Mid Designer, Team Lead"
               required
               autoFocus
             />

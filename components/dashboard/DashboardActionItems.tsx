@@ -160,10 +160,21 @@ export function DashboardActionItems({
                   <td className={overdue ? "text-destructive font-medium" : ""}>
                     {item.due_date ? format(parseISO(item.due_date), "MMM d") : "—"}
                   </td>
-                  <td
-                    className={`px-2 py-1.5 max-w-0 ${item.status === "done" ? "line-through text-muted-foreground" : ""}`}
-                  >
-                    <span className="block truncate">{item.title ?? item.description}</span>
+                  <td className="px-2 py-1.5 max-w-0">
+                    {item.title ? (
+                      <>
+                        <span className={`block truncate font-medium ${item.status === "done" ? "line-through text-muted-foreground" : ""}`}>
+                          {item.title}
+                        </span>
+                        <span className="block truncate text-muted-foreground">
+                          {item.description}
+                        </span>
+                      </>
+                    ) : (
+                      <span className={`block truncate ${item.status === "done" ? "line-through text-muted-foreground" : ""}`}>
+                        {item.description}
+                      </span>
+                    )}
                   </td>
                   <td className="px-2 py-1.5 text-muted-foreground whitespace-nowrap hidden sm:table-cell">
                     {item.assignee_id
