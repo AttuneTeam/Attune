@@ -115,9 +115,10 @@ interface Props {
   managerId: string
   initialGoals: MemberGoal[]
   templates: GoalTemplate[]
+  inline?: boolean
 }
 
-export function GoalsCard({ memberId, managerId, initialGoals, templates }: Props) {
+export function GoalsCard({ memberId, managerId, initialGoals, templates, inline = false }: Props) {
   const [open, setOpen] = useState(false)
   const [periodType, setPeriodType] = useState<'yearly' | 'quarterly' | 'monthly'>('yearly')
   const [{ year, period }, setNav] = useState(() => currentPeriod('yearly'))
@@ -204,20 +205,8 @@ export function GoalsCard({ memberId, managerId, initialGoals, templates }: Prop
     })
   }
 
-  return (
-    <div className="rounded-lg border bg-card">
-      {/* Header — always visible, click to collapse/expand */}
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="w-full px-5 py-4 flex items-center justify-between text-left hover:bg-muted/30 transition-colors rounded-t-lg"
-      >
-        <h2 className="text-sm font-semibold">Goals</h2>
-        <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${open ? 'rotate-180' : ''}`} />
-      </button>
-
-      {open && (
-        <>
+  const innerContent = (
+    <>
       {/* Controls */}
       <div className="px-5 pb-4 border-b space-y-3">
         <div className="flex items-center justify-between">
@@ -300,7 +289,7 @@ export function GoalsCard({ memberId, managerId, initialGoals, templates }: Prop
       )}
 
       {/* Add goal */}
-      <div className="px-5 py-3 border-t rounded-b-lg">
+      <div className="px-5 py-3 border-t">
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger render={
             <Button variant="outline" size="sm" className="w-full" onClick={openAdd}>
@@ -382,8 +371,26 @@ export function GoalsCard({ memberId, managerId, initialGoals, templates }: Prop
           </DialogContent>
         </Dialog>
       </div>
-        </>
-      )}
+    </>
+  )
+
+  if (inline) {
+    return <div className="rounded-lg bg-card mt-2">{innerContent}</div>
+  }
+
+  return (
+    <div className="rounded-lg border bg-card">
+      {/* Header — always visible, click to collapse/expand */}
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="w-full px-5 py-4 flex items-center justify-between text-left hover:bg-muted/30 transition-colors rounded-t-lg"
+      >
+        <h2 className="text-sm font-semibold">Goals</h2>
+        <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+
+      {open && innerContent}
     </div>
   )
 }

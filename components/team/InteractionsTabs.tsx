@@ -24,9 +24,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { DeleteInteractionButton } from "@/components/team/DeleteInteractionButton";
 import { ActionItemEditDialog } from "@/components/action-items/ActionItemEditDialog";
+import { GoalsCard } from "@/components/team/GoalsCard";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import { Badge } from "../ui/badge";
+import type { MemberGoal, GoalTemplate } from "@/lib/supabase/types";
 
 type InteractionRow = {
   id: string;
@@ -181,6 +183,9 @@ interface Props {
   interactions: InteractionRow[];
   items: ActionItem[];
   memberId: string;
+  managerId: string;
+  goals: MemberGoal[];
+  goalTemplates: GoalTemplate[];
 }
 
 const EMPTY_ACTION_ITEM = {
@@ -192,7 +197,7 @@ const EMPTY_ACTION_ITEM = {
   assignee_id: null,
 } as const;
 
-export function InteractionsTabs({ interactions, items: initialItems, memberId }: Props) {
+export function InteractionsTabs({ interactions, items: initialItems, memberId, managerId, goals, goalTemplates }: Props) {
   const [items, setItems] = useState<ActionItem[]>(initialItems);
   const [editingItem, setEditingItem] = useState<ActionItem | null>(null);
   const [addActionOpen, setAddActionOpen] = useState(false);
@@ -296,6 +301,7 @@ export function InteractionsTabs({ interactions, items: initialItems, memberId }
               </span>
             )}
           </TabsTrigger>
+          <TabsTrigger value="goals">Goals</TabsTrigger>
         </TabsList>
 
         {/* Interactions tab */}
@@ -499,6 +505,17 @@ export function InteractionsTabs({ interactions, items: initialItems, memberId }
               </table>
             </div>
           )}
+        </TabsContent>
+
+        {/* Goals tab */}
+        <TabsContent value="goals">
+          <GoalsCard
+            inline
+            memberId={memberId}
+            managerId={managerId}
+            initialGoals={goals}
+            templates={goalTemplates}
+          />
         </TabsContent>
       </Tabs>
 

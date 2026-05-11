@@ -18,7 +18,6 @@ import { GitHubCard } from "@/components/team/GitHubCard";
 import { GitHubSummaryTile } from "@/components/team/GitHubSummaryTile";
 import { fetchAllIntegrations } from "@/lib/integrations";
 import type { IntegrationResult } from "@/lib/integrations";
-import { GoalsCard } from "@/components/team/GoalsCard";
 import { InteractionsTabs } from "@/components/team/InteractionsTabs";
 import { SlackCard } from "@/components/team/SlackCard";
 import type { MemberGoal, GoalTemplate, Role } from "@/lib/supabase/types";
@@ -511,13 +510,6 @@ export default async function MemberProfilePage({
             memberName={member.name}
           />
 
-          {/* Goals */}
-          <GoalsCard
-            memberId={member.id}
-            managerId={user.id}
-            initialGoals={goals}
-            templates={goalTemplates}
-          />
         </div>
 
         {/* ── Right column ── */}
@@ -538,7 +530,14 @@ export default async function MemberProfilePage({
                 ))}
             </div>
           )}
-          <InteractionsTabs interactions={interactions} items={items} memberId={member.id} />
+          <InteractionsTabs
+            interactions={interactions}
+            items={items}
+            memberId={member.id}
+            managerId={user.id}
+            goals={goals}
+            goalTemplates={goalTemplates}
+          />
         </div>
       </div>
     </div>
