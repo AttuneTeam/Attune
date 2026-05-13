@@ -8,6 +8,7 @@ import {
   formatTeamValues,
   SUMMARIZE_SYSTEM,
   MANAGER_READ_SYSTEM,
+  COACHING_NUDGES_SYSTEM,
 } from "@/lib/ai/prompts";
 import { embedInteraction } from "@/lib/ai/embeddings";
 
@@ -116,7 +117,7 @@ export async function POST(request: NextRequest) {
 
         const { data: memberInfo } = await supabase
           .from("team_members")
-          .select("name")
+          .select("name, level")
           .eq("id", interaction.participant_id)
           .single();
 
@@ -154,6 +155,77 @@ export async function POST(request: NextRequest) {
           .update({
             manager_read: readObject.bullets,
             manager_read_updated_at: new Date().toISOString(),
+          })
+          .eq("id", interaction.participant_id);
+
+        // Generate coaching nudges from the manager read + sentiment signals
+        const scores = recent
+          .map((r) => r.sentiment_score)
+          .filter((s): s is number => s !== null);
+        const recentScores = scores.slice(0, 3);
+        const priorScores = scores.slice(3, 6);
+        const recentAvg =
+          recentScores.length > 0
+            ? recentScores.reduce((a, b) => a + b, 0) / recentScores.length
+            : null;
+        const priorAvg =
+          priorScores.length > 0
+            ? priorScores.reduce((a, b) => a + b, 0) / priorScores.length
+            : null;
+        const trend =
+          recentAvg !== null && priorAvg !== null
+            ? recentAvg > priorAvg + 0.2
+              ? "improving"
+              : recentAvg < priorAvg - 0.2
+                ? "declining"
+                : "stable"
+            : "unknown";
+        const daysSinceLastMeeting =
+          recent[0]?.scheduled_at
+            ? Math.floor(
+                (Date.now() - new Date(recent[0].scheduled_at).getTime()) /
+                  86400000,
+              )
+            : null;
+
+        const nudgesPrompt = [
+          `Team member: ${memberInfo?.name ?? "Unknown"}${memberInfo?.level ? ` (${memberInfo.level})` : ""}`,
+          `Manager read:\n${readObject.bullets.map((b) => `• ${b}`).join("\n")}`,
+          `Sentiment signals:`,
+          `- Recent avg: ${recentAvg !== null ? recentAvg.toFixed(2) : "no data"}`,
+          `- Trend: ${trend}`,
+          daysSinceLastMeeting !== null
+            ? `- Days since last interaction: ${daysSinceLastMeeting}`
+            : null,
+        ]
+          .filter(Boolean)
+          .join("\n");
+
+        const { object: nudgesObject } = await generateObject({
+          model: openai("gpt-5.4"),
+          system: COACHING_NUDGES_SYSTEM,
+          prompt: nudgesPrompt,
+          schema: z.object({
+            nudges: z
+              .array(
+                z.object({
+                  text: z.string().describe("The coaching nudge text"),
+                  theme: z
+                    .enum(["ask", "check-in", "challenge", "reinforce", "unblock"])
+                    .describe("The nudge theme"),
+                }),
+              )
+              .min(2)
+              .max(3)
+              .describe("2–3 specific coaching nudges"),
+          }),
+        });
+
+        await supabase
+          .from("team_members")
+          .update({
+            coaching_nudges: nudgesObject.nudges,
+            coaching_nudges_updated_at: new Date().toISOString(),
           })
           .eq("id", interaction.participant_id);
       } catch (e) {

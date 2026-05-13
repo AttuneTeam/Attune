@@ -72,6 +72,8 @@ export type Database = {
           created_at: string
           manager_read: string[]
           manager_read_updated_at: string | null
+          coaching_nudges: Array<{ text: string; theme: string }> | null
+          coaching_nudges_updated_at: string | null
           is_squad_lead: boolean
           relationship: string
         }
@@ -88,6 +90,8 @@ export type Database = {
           skills?: string[]
           manager_read?: string[]
           manager_read_updated_at?: string | null
+          coaching_nudges?: Array<{ text: string; theme: string }> | null
+          coaching_nudges_updated_at?: string | null
           is_squad_lead?: boolean
           relationship?: string
         }
@@ -102,6 +106,8 @@ export type Database = {
           skills?: string[]
           manager_read?: string[]
           manager_read_updated_at?: string | null
+          coaching_nudges?: Array<{ text: string; theme: string }> | null
+          coaching_nudges_updated_at?: string | null
           is_squad_lead?: boolean
           relationship?: string
         }
@@ -509,6 +515,26 @@ export type Database = {
           url?: string | null
           status?: 'open' | 'done'
           due_date?: string | null
+        }
+      }
+      github_activity_snapshots: {
+        Row: {
+          id: string
+          manager_id: string
+          github_handle: string
+          week_start: string
+          pr_review_comment_count: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          manager_id: string
+          github_handle: string
+          week_start: string
+          pr_review_comment_count?: number
+        }
+        Update: {
+          pr_review_comment_count?: number
         }
       }
     }

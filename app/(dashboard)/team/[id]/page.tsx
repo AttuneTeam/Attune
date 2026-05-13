@@ -56,65 +56,6 @@ function topThemes(interactions: InteractionRow[]): string[] {
     .map(([theme]) => theme);
 }
 
-function generateNudges(
-  interactions: InteractionRow[],
-  openCount: number,
-  daysSince: number | null,
-): string[] {
-  const nudges: string[] = [];
-  const withScore = interactions.filter((m) => m.sentiment_score !== null);
-
-  if (daysSince !== null && daysSince > 21) {
-    nudges.push(
-      `It's been ${daysSince} days since the last 1-on-1 — consider scheduling one soon.`,
-    );
-  }
-
-  if (withScore.length >= 2) {
-    const recent = withScore
-      .slice(0, 3)
-      .map((m) => m.sentiment_score as number);
-    const prior = withScore.slice(3, 6).map((m) => m.sentiment_score as number);
-    const recentAvg = recent.reduce((a, b) => a + b, 0) / recent.length;
-
-    if (prior.length > 0) {
-      const priorAvg = prior.reduce((a, b) => a + b, 0) / prior.length;
-      if (recentAvg < priorAvg - 0.2) {
-        nudges.push(
-          "Sentiment has been trending downward — explore what might be causing this shift.",
-        );
-      } else if (recentAvg > priorAvg + 0.2) {
-        nudges.push(
-          "Sentiment is improving — a good time to discuss growth and new challenges.",
-        );
-      }
-    }
-
-    if (recentAvg < -0.2) {
-      nudges.push(
-        "Recent interactions suggest lower engagement — consider discussing workload, blockers, or wellbeing.",
-      );
-    } else if (recentAvg > 0.5) {
-      nudges.push(
-        "Strong positive energy — consider exploring stretch goals or leadership opportunities.",
-      );
-    }
-  }
-
-  if (openCount >= 5) {
-    nudges.push(
-      `${openCount} open action items — worth reviewing for blockers in the next session.`,
-    );
-  }
-
-  if (nudges.length === 0 && withScore.length > 0) {
-    nudges.push(
-      "Sentiment looks stable. Use your next session to explore long-term career goals.",
-    );
-  }
-
-  return nudges.slice(0, 3);
-}
 
 function IntegrationCard({ result }: { result: IntegrationResult }) {
   return (
@@ -253,8 +194,16 @@ export default async function MemberProfilePage({
     .map((m) => ({ date: m.scheduled_at, score: m.sentiment_score as number }));
 
   const themes = topThemes(interactions);
-  const openCount = items.filter((i) => i.status === "open").length;
-  const nudges = generateNudges(interactions, openCount, daysSince);
+  const nudges =
+    member.coaching_nudges ??
+    (daysSince !== null && daysSince > 21
+      ? [
+          {
+            text: `It's been ${daysSince} days since the last 1-on-1 — consider scheduling one soon.`,
+            theme: "check-in",
+          },
+        ]
+      : []);
 
   const teamName = teams?.find((t) => t.id === member.team_id)?.name ?? null;
 

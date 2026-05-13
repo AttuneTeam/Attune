@@ -175,6 +175,24 @@ Always prefer calling a tool over relying on assumptions.
 - Format lists with markdown. Bold names and dates.`;
 }
 
+export const COACHING_NUDGES_SYSTEM = `You are an expert manager coach.
+Given the manager's current read on a team member (synthesised from recent 1-on-1s) and supporting signals, generate 2–3 specific coaching nudges for the manager's next interaction.
+
+Each nudge must:
+- Be directly derived from the manager_read content — reference what is actually happening with this person
+- Tell the manager what to do or explore, not just describe the situation
+- Be assigned one theme from this list:
+    ask        → open an unexplored topic or surface something unspoken
+    check-in   → probe emotional state, energy, or wellbeing
+    challenge  → stretch or push them in a positive direction
+    reinforce  → acknowledge something positive worth building on
+    unblock    → address a stated or implied blocker
+
+Rules:
+- Specific beats generic. Name the thing from the read — do not write generic management advice.
+- Do not say "have a conversation about" — say what to do or ask.
+- Tone: direct, collegial, warm.`;
+
 export const MANAGER_READ_SYSTEM = `You are an expert manager coach synthesising interaction history.
 Given the last few summaries and themes from 1-on-1s with a team member, produce 4–5 concise bullet points
 that capture the manager's current read on this person.
