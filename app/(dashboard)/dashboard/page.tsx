@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { NewBookingButton } from "@/components/dashboard/NewBookingButton";
+import { NewTaskButton } from "@/components/action-items/NewTaskButton";
 import { DashboardOverflowMenu } from "@/components/dashboard/DashboardOverflowMenu";
 import { DashboardPageTabs } from "@/components/dashboard/DashboardPageTabs";
 
@@ -132,6 +133,7 @@ export default async function DashboardPage() {
       <div className="flex items-center justify-between mb-6">
         <div />
         <div className="flex items-center gap-2">
+          <NewTaskButton userId={user.id} members={members} label="Add Action" />
           <NewBookingButton members={members} />
           <DashboardOverflowMenu teams={teams ?? []} members={members} />
         </div>

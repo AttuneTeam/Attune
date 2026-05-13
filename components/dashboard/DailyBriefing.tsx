@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -202,7 +202,7 @@ export function DailyBriefing({ userId }: { userId: string }) {
     }
   }
 
-  const generate = useCallback(async () => {
+  async function generate() {
     setLoading(true);
     setError(false);
     try {
@@ -215,7 +215,7 @@ export function DailyBriefing({ userId }: { userId: string }) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }
 
   useEffect(() => {
     (async () => {
@@ -224,15 +224,14 @@ export function DailyBriefing({ userId }: { userId: string }) {
         const data = await res.json();
         if (data.briefing) {
           setBriefing(data.briefing);
-          setLoading(false);
-          return;
         }
       } catch {
-        // fall through to generate
+        // ignore
+      } finally {
+        setLoading(false);
       }
-      generate();
     })();
-  }, [generate]);
+  }, []);
 
   if (loading) return <BriefingSkeleton />;
 
@@ -247,7 +246,16 @@ export function DailyBriefing({ userId }: { userId: string }) {
     );
   }
 
-  if (!briefing) return null;
+  if (!briefing) {
+    return (
+      <div className="rounded-lg border bg-card px-4 py-3 text-sm text-muted-foreground flex items-center justify-between mb-4">
+        <span>No briefing yet for today.</span>
+        <Button size="sm" variant="ghost" onClick={generate}>
+          Generate
+        </Button>
+      </div>
+    );
+  }
 
   const overdueIds = new Set(briefing.overdue_reminders.map((r) => r.id));
   const teamMembers = briefing.team_members ?? [];

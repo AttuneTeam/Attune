@@ -22,6 +22,7 @@ import { InteractionsTabs } from "@/components/team/InteractionsTabs";
 import { SlackCard } from "@/components/team/SlackCard";
 import type { MemberGoal, GoalTemplate, Role } from "@/lib/supabase/types";
 import { formatTenure } from "@/lib/tenure";
+import { MeetingLoadChart } from "@/components/team/MeetingLoadChart";
 
 type InteractionRow = {
   id: string;
@@ -463,19 +464,7 @@ export default async function MemberProfilePage({
               {memberHoursHistory.length > 1 && (
                 <div className="pt-1">
                   <p className="text-xs text-muted-foreground mb-1.5">Meeting load (last {memberHoursHistory.length} days)</p>
-                  <div className="flex items-end gap-1 h-8">
-                    {[...memberHoursHistory].reverse().map((h) => {
-                      const pct = Math.min(100, Math.round((h.minutes / (8 * 60)) * 100));
-                      return (
-                        <div
-                          key={h.date}
-                          className="flex-1 bg-primary/20 rounded-sm relative group"
-                          style={{ height: `${Math.max(4, pct)}%` }}
-                          title={`${format(new Date(h.date), "MMM d")}: ${Math.round((h.minutes / 60) * 10) / 10}h`}
-                        />
-                      );
-                    })}
-                  </div>
+                  <MeetingLoadChart history={memberHoursHistory} />
                 </div>
               )}
             </div>

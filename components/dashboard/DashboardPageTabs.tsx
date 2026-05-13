@@ -7,7 +7,6 @@ import { ManagerProfileInsights } from "@/components/account/ManagerProfileInsig
 import { InteractionsSheet } from "@/components/dashboard/InteractionsSheet";
 import { UpcomingList } from "@/components/dashboard/UpcomingList";
 import { DashboardActionItems } from "@/components/dashboard/DashboardActionItems";
-import { NewTaskButton } from "@/components/action-items/NewTaskButton";
 import type { ActionItem, TeamMember } from "@/lib/supabase/types";
 import Link from "next/link";
 
@@ -75,19 +74,12 @@ export function DashboardPageTabs({
                 <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                   Open Action Items
                 </h2>
-                <div className="flex items-center gap-2">
-                  <NewTaskButton
-                    userId={userId}
-                    members={members}
-                    label="Add Action"
-                  />
-                  <Link
-                    href="/action-items"
-                    className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    View all
-                  </Link>
-                </div>
+                <Link
+                  href="/action-items"
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  View all
+                </Link>
               </div>
               <DashboardActionItems
                 items={actionItems as never}
