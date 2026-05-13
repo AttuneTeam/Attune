@@ -10,6 +10,20 @@ const GH_HEADERS = {
     : {}),
 };
 
+function getISOWeekStart(): string {
+  const now = new Date();
+  const day = now.getUTCDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  const d = new Date(
+    Date.UTC(
+      now.getUTCFullYear(),
+      now.getUTCMonth(),
+      now.getUTCDate() + diff,
+    ),
+  );
+  return d.toISOString().split("T")[0];
+}
+
 async function fetchPRs(
   username: string,
   repo: string,
@@ -48,6 +62,7 @@ async function fetchPRs(
       status: merged ? "merged" : item.state === "open" ? "open" : "closed",
       subtitle,
       date: item.created_at,
+      comments: item.comments ?? 0,
     };
   });
 }
@@ -56,9 +71,6 @@ async function fetchEvents(
   username: string,
   repo: string,
 ): Promise<ActivityItem[]> {
-  // When a repo is supplied use the authenticated endpoint so private events are included.
-  // The token must have `repo` scope for private repo events to be visible.
-  // Without a repo filter, fall back to the public endpoint to avoid leaking unrelated private activity.
   const endpoint = repo
     ? `https://api.github.com/users/${encodeURIComponent(username)}/events?per_page=100`
     : `https://api.github.com/users/${encodeURIComponent(username)}/events/public?per_page=30`;
@@ -83,14 +95,13 @@ async function fetchEvents(
   let events: any[] = await res.json();
 
   console.log(events);
-  // Filter to the specified repo/org when supplied
   if (repo) {
     const isSpecificRepo = repo.includes("/");
     events = events.filter((ev) => {
       const evRepo: string = ev.repo?.name ?? "";
       return isSpecificRepo
-        ? evRepo === repo // exact "owner/repo" match
-        : evRepo.startsWith(`${repo}/`); // any repo in the org
+        ? evRepo === repo
+        : evRepo.startsWith(`${repo}/`);
     });
   }
   const items: ActivityItem[] = [];
@@ -230,6 +241,89 @@ async function fetchLastCommit(
   };
 }
 
+async function fetchPRReviewActivity(
+  username: string,
+  repo: string,
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  managerId: string,
+): Promise<{ count: number; history: Array<{ week_start: string; count: number }> }> {
+  const weekStart = getISOWeekStart();
+
+  // Use the Search Issues API instead of the Events API.
+  // The Events API only returns PUBLIC events for third-party tokens, so any
+  // reviews on private repos would be invisible. The Search API respects the
+  // token's repo scope and can see private repos the token has access to.
+  //
+  // reviewed-by: finds PRs where the user submitted a review (approve / request
+  // changes / comment). Combining with updated:>=weekStart means the PR was
+  // touched this week, which is a reliable proxy because submitting a review
+  // always bumps updated_at.
+  let scopeFilter = "";
+  if (repo) {
+    scopeFilter = repo.includes("/") ? `+repo:${repo}` : `+org:${repo}`;
+  }
+  const url =
+    `https://api.github.com/search/issues` +
+    `?q=is:pr+reviewed-by:${encodeURIComponent(username)}` +
+    `+-author:${encodeURIComponent(username)}` +
+    `+updated:>=${weekStart}` +
+    `${scopeFilter}` +
+    `&per_page=1`;
+
+  let count = 0;
+  const res = await fetch(url, {
+    headers: GH_HEADERS,
+    next: { revalidate: 900 },
+  });
+  if (res.ok) {
+    const data = await res.json();
+    count = data.total_count ?? 0;
+  } else {
+    const body = await res.text();
+    console.error("[github/pr_review_comments] search failed", {
+      status: res.status,
+      body,
+    });
+  }
+
+  // Upsert this week's count
+  const { error: upsertErr } = await supabase
+    .from("github_activity_snapshots")
+    .upsert(
+      {
+        manager_id: managerId,
+        github_handle: username,
+        week_start: weekStart,
+        pr_review_comment_count: count,
+      },
+      { onConflict: "manager_id,github_handle,week_start" },
+    );
+  if (upsertErr) {
+    console.error("[github/pr_review_comments] upsert error", upsertErr);
+  }
+
+  // Fetch last 8 weeks of history for sparkline
+  const eightWeeksAgo = new Date(weekStart + "T00:00:00Z");
+  eightWeeksAgo.setUTCDate(eightWeeksAgo.getUTCDate() - 7 * 7);
+  const { data: historyRows, error: historyErr } = await supabase
+    .from("github_activity_snapshots")
+    .select("week_start, pr_review_comment_count")
+    .eq("manager_id", managerId)
+    .eq("github_handle", username)
+    .gte("week_start", eightWeeksAgo.toISOString().split("T")[0])
+    .order("week_start", { ascending: true });
+  if (historyErr) {
+    console.error("[github/pr_review_comments] history error", historyErr);
+  }
+
+  const history = (historyRows ?? []).map((row: any) => ({
+    week_start: row.week_start,
+    count: row.pr_review_comment_count as number,
+  }));
+
+  return { count, history };
+}
+
 export async function GET(req: NextRequest) {
   const supabase = await createClient();
   const {
@@ -250,6 +344,10 @@ export async function GET(req: NextRequest) {
     if (type === "lastcommit") {
       const item = await fetchLastCommit(username, repo);
       return NextResponse.json({ item });
+    }
+    if (type === "pr_review_comments") {
+      const result = await fetchPRReviewActivity(username, repo, supabase, user.id);
+      return NextResponse.json(result);
     }
     const items =
       type === "prs"

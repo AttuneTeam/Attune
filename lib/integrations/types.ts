@@ -5,6 +5,7 @@ export type ActivityItem = {
   status: string    // 'merged' | 'open' | 'closed' | 'published' | 'done' | etc.
   subtitle: string  // repo name, workspace, project, channel, etc.
   date: string      // ISO string
+  comments?: number // total comment count (PRs)
 }
 
 export type IntegrationResult = {

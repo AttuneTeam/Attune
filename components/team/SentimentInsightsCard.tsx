@@ -16,15 +16,28 @@ import { ChevronDown, Lightbulb, Sparkles } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { SentimentBadge } from "../meetings/SentimentBadge";
 
+interface CoachingNudge {
+  text: string;
+  theme: string;
+}
+
 interface Props {
   avgSentiment: number | null;
   sentimentHistory: { date: string; score: number }[];
   themes: string[];
-  nudges: string[];
+  nudges: CoachingNudge[];
   meetingCount: number;
   managerRead: string[];
   memberName: string;
 }
+
+const THEME_LABELS: Record<string, string> = {
+  ask: "Ask",
+  "check-in": "Check in",
+  challenge: "Challenge",
+  reinforce: "Reinforce",
+  unblock: "Unblock",
+};
 
 function scoreColor(score: number) {
   if (score >= 0.3) return "#6D998F";
@@ -232,12 +245,12 @@ export function SentimentInsightsCard({
                 {nudges.map((nudge, i) => (
                   <li
                     key={i}
-                    className="flex gap-2 text-xs text-muted-foreground leading-relaxed"
+                    className="flex gap-2 text-xs leading-relaxed"
                   >
-                    <span className="shrink-0 text-muted-foreground/40 mt-0.5">
-                      ·
+                    <span className="shrink-0 font-medium text-foreground/70 min-w-[4.5rem]">
+                      {THEME_LABELS[nudge.theme] ?? nudge.theme}
                     </span>
-                    {nudge}
+                    <span className="text-muted-foreground">{nudge.text}</span>
                   </li>
                 ))}
               </ul>
