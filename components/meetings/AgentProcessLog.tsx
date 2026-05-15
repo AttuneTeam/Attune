@@ -25,8 +25,14 @@ function toolResultSummary(toolName: string, result: unknown): string {
       const themes = Array.isArray(r.keyThemes) ? (r.keyThemes as string[]).join(", ") : "";
       return `Sentiment ${sentiment}${themes ? ` · ${themes}` : ""}`;
     }
-    case "extract_action_items":
-      return `${r.count ?? 0} item${(r.count as number) !== 1 ? "s" : ""} found`;
+    case "extract_action_items": {
+      const ind = (r.individualCount as number) ?? 0;
+      const mgr = (r.managerCount as number) ?? 0;
+      const parts = [];
+      if (ind > 0) parts.push(`${ind} individual`);
+      if (mgr > 0) parts.push(`${mgr} yours`);
+      return parts.length ? parts.join(", ") : "none found";
+    }
     case "generate_coaching_questions":
       return `${Array.isArray(r.questions) ? r.questions.length : 0} questions generated`;
     case "check_sentiment_history": {
