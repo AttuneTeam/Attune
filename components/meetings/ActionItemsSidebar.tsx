@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -12,25 +11,32 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { createClient } from "@/lib/supabase/client";
 import { Plus, Check, Clock, Circle, Pencil, Trash2 } from "lucide-react";
 import { format, isPast, parseISO } from "date-fns";
 import { toast } from "sonner";
 import type { ActionItem } from "@/lib/supabase/types";
-import { DescriptionEditor } from "@/components/action-items/DescriptionEditor";
+import {
+  ActionItemEditDialog,
+  type ActionItemUpdates,
+} from "@/components/action-items/ActionItemEditDialog";
 
-const STATUS_CYCLE: Record<string, string> = {
-  open: "in_progress",
-  in_progress: "done",
-  done: "open",
-};
+const STATUS_OPTIONS = [
+  { value: "open", label: "Open", icon: Circle, className: "text-muted-foreground" },
+  { value: "in_progress", label: "In progress", icon: Clock, className: "text-amber-500" },
+  { value: "done", label: "Done", icon: Check, className: "text-green-500" },
+] as const;
 
 const StatusIcon = ({ status }: { status: string }) => {
-  if (status === "done")
-    return <Check className="h-3.5 w-3.5 text-green-500" />;
-  if (status === "in_progress")
-    return <Clock className="h-3.5 w-3.5 text-amber-500" />;
-  return <Circle className="h-3.5 w-3.5 text-muted-foreground" />;
+  const opt = STATUS_OPTIONS.find((o) => o.value === status) ?? STATUS_OPTIONS[0];
+  const Icon = opt.icon;
+  return <Icon className={`h-3.5 w-3.5 ${opt.className}`} />;
 };
 
 interface Member {
@@ -53,8 +59,6 @@ export function ActionItemsSidebar({
   const [newDesc, setNewDesc] = useState("");
   const [adding, setAdding] = useState(false);
   const [editingItem, setEditingItem] = useState<ActionItem | null>(null);
-  const [editTitle, setEditTitle] = useState("");
-  const [editingText, setEditingText] = useState("");
   const [deletingItem, setDeletingItem] = useState<ActionItem | null>(null);
 
   const handleAdd = async (e: React.FormEvent) => {
@@ -75,8 +79,7 @@ export function ActionItemsSidebar({
     setAdding(false);
   };
 
-  const cycleStatus = async (item: ActionItem) => {
-    const newStatus = STATUS_CYCLE[item.status] ?? "open";
+  const changeStatus = async (item: ActionItem, newStatus: string) => {
     const supabase = createClient();
     const { error } = await supabase
       .from("action_items")
@@ -89,27 +92,17 @@ export function ActionItemsSidebar({
     }
   };
 
-  const startEdit = (item: ActionItem) => {
-    setEditingItem(item);
-    setEditTitle(item.title ?? "");
-    setEditingText(item.description);
-  };
-
-  const saveEdit = async () => {
+  const handleSaveEdit = async (updates: ActionItemUpdates) => {
     if (!editingItem) return;
-    const trimmed = editingText.trim();
-    if (!trimmed) return;
     const supabase = createClient();
     const { error } = await supabase
       .from("action_items")
-      .update({ title: editTitle.trim() || null, description: trimmed })
+      .update(updates)
       .eq("id", editingItem.id);
     if (error) {
       toast.error(error.message);
     } else {
       setEditingItem(null);
-      setEditTitle("");
-      setEditingText("");
       onUpdate();
     }
   };
@@ -156,13 +149,31 @@ export function ActionItemsSidebar({
                   item.status === "done" ? "opacity-50" : ""
                 }`}
               >
-                <button
-                  onClick={() => cycleStatus(item)}
-                  className="mt-0.5 shrink-0 hover:opacity-70"
-                  title={`Status: ${item.status}`}
-                >
-                  <StatusIcon status={item.status} />
-                </button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    render={
+                      <button
+                        className="mt-0.5 shrink-0 hover:opacity-70 p-0.5 rounded"
+                        title="Change status"
+                      >
+                        <StatusIcon status={item.status} />
+                      </button>
+                    }
+                  />
+                  <DropdownMenuContent>
+                    {STATUS_OPTIONS.map(({ value, label, icon: Icon, className }) => (
+                      <DropdownMenuItem
+                        key={value}
+                        onClick={() => changeStatus(item, value)}
+                        className={item.status === value ? "font-medium" : ""}
+                      >
+                        <Icon className={`h-3.5 w-3.5 ${className}`} />
+                        {label}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
                 <div className="flex-1 min-w-0">
                   {item.title ? (
                     <>
@@ -179,17 +190,16 @@ export function ActionItemsSidebar({
                     </p>
                   )}
                   {item.due_date && (
-                    <p
-                      className={`text-xs mt-0.5 ${overdue ? "text-destructive" : "text-muted-foreground"}`}
-                    >
+                    <p className={`text-xs mt-0.5 ${overdue ? "text-destructive" : "text-muted-foreground"}`}>
                       Due {format(parseISO(item.due_date), "MMM d")}
                       {overdue ? " (overdue)" : ""}
                     </p>
                   )}
                 </div>
+
                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                   <button
-                    onClick={() => startEdit(item)}
+                    onClick={() => setEditingItem(item)}
                     className="hover:opacity-70"
                     title="Edit"
                   >
@@ -203,18 +213,6 @@ export function ActionItemsSidebar({
                     <Trash2 className="h-3 w-3 text-destructive" />
                   </button>
                 </div>
-                <Badge
-                  variant={
-                    item.status === "done"
-                      ? "secondary"
-                      : item.status === "in_progress"
-                        ? "default"
-                        : "outline"
-                  }
-                  className="text-xs shrink-0 h-fit"
-                >
-                  {item.status.replace("_", " ")}
-                </Badge>
               </div>
             );
           })
@@ -241,54 +239,14 @@ export function ActionItemsSidebar({
         </form>
       </div>
 
-      {/* Edit modal */}
-      <Dialog
-        open={!!editingItem}
-        onOpenChange={(open) => {
-          if (!open) {
-            setEditingItem(null);
-            setEditTitle("");
-            setEditingText("");
-          }
-        }}
-      >
-        <DialogContent showCloseButton={false}>
-          <DialogHeader>
-            <DialogTitle>Edit action item</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Title (optional)</label>
-              <Input
-                value={editTitle}
-                onChange={(e) => setEditTitle(e.target.value)}
-                placeholder="Short title…"
-                autoFocus
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Description</label>
-              {editingItem && (
-                <DescriptionEditor
-                  key={editingItem.id}
-                  initialValue={editingText}
-                  onChange={setEditingText}
-                />
-              )}
-            </div>
-          </div>
-          <DialogFooter>
-            <DialogClose render={<Button variant="outline" />}>
-              Cancel
-            </DialogClose>
-            <Button onClick={saveEdit} disabled={!editingText.trim()}>
-              Save
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ActionItemEditDialog
+        key={editingItem?.id ?? "none"}
+        item={editingItem}
+        members={allMembers}
+        onClose={() => setEditingItem(null)}
+        onSave={handleSaveEdit}
+      />
 
-      {/* Delete confirmation modal */}
       <Dialog
         open={!!deletingItem}
         onOpenChange={(open) => {

@@ -14,17 +14,23 @@ import { createClient } from "@/lib/supabase/client"
 import { format, isPast, parseISO } from "date-fns"
 import { toast } from "sonner"
 import { Check, Clock, Circle, Pencil, Trash2, ExternalLink } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { useRouter } from "next/navigation"
 import {
   ActionItemEditDialog,
   type ActionItemUpdates,
 } from "@/components/action-items/ActionItemEditDialog"
 
-const STATUS_CYCLE: Record<string, string> = {
-  open: "in_progress",
-  in_progress: "done",
-  done: "open",
-}
+const STATUS_OPTIONS = [
+  { value: "open", label: "Open", icon: Circle, className: "text-muted-foreground" },
+  { value: "in_progress", label: "In progress", icon: Clock, className: "text-amber-500" },
+  { value: "done", label: "Done", icon: Check, className: "text-green-500" },
+]
 
 export interface DashboardActionItem {
   id: string
@@ -67,8 +73,7 @@ export function DashboardActionItems({
     setItems(initialItems)
   }, [initialItems])
 
-  const cycleStatus = async (item: DashboardActionItem) => {
-    const newStatus = STATUS_CYCLE[item.status] ?? "open"
+  const changeStatus = async (item: DashboardActionItem, newStatus: string) => {
     setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, status: newStatus } : i)))
     const supabase = createClient()
     const { error } = await supabase
@@ -150,12 +155,27 @@ export function DashboardActionItems({
                   className={`hover:bg-muted/40 transition-colors ${item.status === "done" ? "opacity-40" : ""}`}
                 >
                   <td className="px-2 py-1.5">
-                    <button
-                      onClick={() => cycleStatus(item)}
-                      className="hover:opacity-70 flex items-center"
-                    >
-                      <StatusIcon status={item.status} />
-                    </button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger
+                        render={
+                          <button className="hover:opacity-70 flex items-center" title="Change status">
+                            <StatusIcon status={item.status} />
+                          </button>
+                        }
+                      />
+                      <DropdownMenuContent>
+                        {STATUS_OPTIONS.map(({ value, label, icon: Icon, className }) => (
+                          <DropdownMenuItem
+                            key={value}
+                            onClick={() => changeStatus(item, value)}
+                            className={item.status === value ? "font-medium" : ""}
+                          >
+                            <Icon className={`h-3.5 w-3.5 ${className}`} />
+                            {label}
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </td>
                   <td className={overdue ? "text-destructive font-medium" : ""}>
                     {item.due_date ? format(parseISO(item.due_date), "MMM d") : "—"}
@@ -179,7 +199,7 @@ export function DashboardActionItems({
                   <td className="px-2 py-1.5 text-muted-foreground whitespace-nowrap hidden sm:table-cell">
                     {item.assignee_id
                       ? (members.find((m) => m.id === item.assignee_id)?.name ?? "—")
-                      : (item.interactions?.team_members?.name ?? "—")}
+                      : "—"}
                   </td>
                   <td className="px-2 py-1.5">
                     <div className="flex items-center gap-0.5 justify-end">

@@ -95,10 +95,8 @@ function SwipeableRow({
 
   const done = item.status === "done";
   const overdue = !done && item.due_date && isPast(parseISO(item.due_date));
-  const assignee = item.assignee_id
-    ? members.find((m) => m.id === item.assignee_id)
-    : item.interactions?.team_members;
-  const assigneeId = item.assignee_id ?? item.interactions?.team_members?.id;
+  const assignee = item.assignee_id ? members.find((m) => m.id === item.assignee_id) : null;
+  const assigneeId = item.assignee_id ?? null;
 
   // Close when another row is swiped open
   useEffect(() => {
@@ -343,10 +341,8 @@ export function ActionItemsTable({
             {localItems.map((item) => {
               const done = item.status === "done";
               const overdue = !done && item.due_date && isPast(parseISO(item.due_date));
-              const assignee = item.assignee_id
-                ? members.find((m) => m.id === item.assignee_id)
-                : item.interactions?.team_members;
-              const assigneeId = item.assignee_id ?? item.interactions?.team_members?.id;
+              const assignee = item.assignee_id ? members.find((m) => m.id === item.assignee_id) : null;
+              const assigneeId = item.assignee_id ?? null;
 
               return (
                 <tr key={item.id} className={`hover:bg-muted/30 transition-colors ${done ? "opacity-50" : ""}`}>

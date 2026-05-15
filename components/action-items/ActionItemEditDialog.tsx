@@ -121,7 +121,7 @@ export function ActionItemEditDialog({ item, members = [], hideAssignee = false,
                 onChange={(e) => setAssigneeId(e.target.value)}
                 className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring"
               >
-                <option value="">No one</option>
+                <option value="">Me</option>
                 {members.map((m) => (
                   <option key={m.id} value={m.id}>{m.name}</option>
                 ))}
