@@ -5,6 +5,7 @@ import { TiptapEditor } from "@/components/editor/TiptapEditor";
 import { ActionItemsSidebar } from "./ActionItemsSidebar";
 import { AgendaItemsSidebar } from "./AgendaItemsSidebar";
 import { SentimentBadge } from "./SentimentBadge";
+import { AgentProcessLog, type AgentLogEntry } from "./AgentProcessLog";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
@@ -22,11 +23,8 @@ import {
 } from "@/components/ui/select";
 import Link from "next/link";
 import {
-  ChevronLeft,
   ChevronDown,
   Sparkles,
-  List,
-  HelpCircle,
   Loader2,
   MoreHorizontal,
   Trash2,
@@ -155,10 +153,12 @@ export function InteractionEditorClient({
   const [coachingQuestions, setCoachingQuestions] = useState<string[]>([]);
   const [aiTab, setAiTab] = useState("summary");
   const [aiLoading, setAiLoading] = useState<
-    "summarize" | "action-items" | "coaching" | null
+    "summarize" | "action-items" | "coaching" | "processing" | null
   >(null);
   const [editorWordCount, setEditorWordCount] = useState(0);
   const [editorSaving, setEditorSaving] = useState(false);
+  const [agentLog, setAgentLog] = useState<AgentLogEntry[]>([]);
+  const toolCallNames = useRef<Map<string, string>>(new Map());
   const dateInputRef = useRef<HTMLInputElement>(null);
 
   const handleTitleBlur = useCallback(
@@ -304,6 +304,128 @@ export function InteractionEditorClient({
     }
   }, [interaction.id]);
 
+  const handleProcess = useCallback(async () => {
+    setAiLoading("processing");
+    setAgentLog([]);
+    toolCallNames.current.clear();
+
+    // Accumulated results from tool outputs — applied after stream ends
+    const finalResults: Record<string, unknown> = {};
+
+    try {
+      const res = await fetch("/api/ai/process-interaction", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ interactionId: interaction.id }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+
+      // Insufficient content returns JSON, not SSE
+      if (res.headers.get("content-type")?.includes("application/json")) {
+        const data = await res.json();
+        if (data.skipped) toast.info("Add more notes before processing");
+        return;
+      }
+
+      // Parse SSE stream: each event is "data: <JSON>\n\n"
+      const reader = res.body!.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        // SSE events are separated by double newlines
+        const events = buffer.split("\n\n");
+        buffer = events.pop() ?? "";
+
+        for (const event of events) {
+          const dataLine = event
+            .split("\n")
+            .find((l) => l.startsWith("data: "));
+          if (!dataLine) continue;
+          const payload = dataLine.slice(6).trim();
+          if (payload === "[DONE]") continue;
+
+          let chunk: Record<string, unknown>;
+          try {
+            chunk = JSON.parse(payload);
+          } catch {
+            continue;
+          }
+
+          const chunkType = chunk.type as string;
+
+          if (chunkType === "text-delta") {
+            const delta = (chunk.delta as string) ?? "";
+            setAgentLog((prev) => {
+              const last = prev[prev.length - 1];
+              if (last?.type === "thinking") {
+                return [
+                  ...prev.slice(0, -1),
+                  { type: "thinking", content: last.content + delta },
+                ];
+              }
+              return [...prev, { type: "thinking", content: delta }];
+            });
+          } else if (chunkType === "tool-input-available") {
+            const toolCallId = chunk.toolCallId as string;
+            const toolName = chunk.toolName as string;
+            toolCallNames.current.set(toolCallId, toolName);
+            setAgentLog((prev) => [
+              ...prev,
+              { type: "tool_call", toolCallId, toolName },
+            ]);
+          } else if (chunkType === "tool-output-available") {
+            const toolCallId = chunk.toolCallId as string;
+            const toolName =
+              toolCallNames.current.get(toolCallId) ?? "unknown";
+            const result = chunk.output;
+            finalResults[toolName] = result;
+            setAgentLog((prev) => [
+              ...prev,
+              { type: "tool_result", toolCallId, toolName, result },
+            ]);
+          }
+        }
+      }
+
+      // Apply results to component state
+      const summarizeResult = finalResults["summarize_interaction"] as any;
+      if (summarizeResult) {
+        setSummary(summarizeResult.summary ?? null);
+        setSentiment(summarizeResult.sentiment ?? null);
+        setThemes(summarizeResult.keyThemes ?? []);
+        setAiTab("summary");
+      }
+      const coachingResult = finalResults["generate_coaching_questions"] as any;
+      if (coachingResult) {
+        setCoachingQuestions(coachingResult.questions ?? []);
+      }
+      if (finalResults["extract_action_items"]) {
+        await refreshActionItems();
+      }
+
+      const actionCount =
+        (finalResults["extract_action_items"] as any)?.count ?? 0;
+      const escalated = !!finalResults["create_escalation_reminder"];
+      const itemsMsg =
+        actionCount > 0
+          ? ` — ${actionCount} action item${actionCount !== 1 ? "s" : ""} extracted`
+          : "";
+      toast.success(`Processed${itemsMsg}`);
+      if (escalated) {
+        toast.warning("Escalation reminder added to your briefing");
+      }
+    } catch {
+      toast.error("Failed to process interaction");
+    } finally {
+      setAiLoading(null);
+    }
+  }, [interaction.id, refreshActionItems]);
+
   const router = useRouter();
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -348,6 +470,24 @@ export function InteractionEditorClient({
             ))}
           </SelectContent>
         </Select>
+        <button
+          type="button"
+          onClick={handleProcess}
+          disabled={aiLoading !== null}
+          className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md border border-input bg-background text-xs font-medium hover:bg-accent hover:text-accent-foreground transition-colors shrink-0 disabled:opacity-50 disabled:pointer-events-none"
+        >
+          {aiLoading === "processing" ? (
+            <>
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              Processing…
+            </>
+          ) : (
+            <>
+              <Sparkles className="h-3.5 w-3.5" />
+              Process
+            </>
+          )}
+        </button>
         <DropdownMenu>
           <DropdownMenuTrigger className="inline-flex items-center justify-center h-8 w-8 rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors">
             <MoreHorizontal className="h-4 w-4" />
@@ -389,8 +529,8 @@ export function InteractionEditorClient({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      {/* Content grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+      {/* Content grid — expands to 3 columns when agent log is visible */}
+      <div className={`grid grid-cols-1 gap-6 items-start ${agentLog.length > 0 ? "lg:grid-cols-3" : "lg:grid-cols-3"}`}>
         {/* Left column */}
         <div className="space-y-4">
           {/* Member name block */}
@@ -504,47 +644,9 @@ export function InteractionEditorClient({
 
             {/* Tabs: Summary | Action Items | Coaching */}
             <div className="border-t">
-              <div className="flex justify-between px-4 pt-4">
-                <div className="flex items-center gap-2">
-                  <h2 className="text-sm font-semibold">Insights</h2>
-                  <SentimentBadge score={sentiment} />
-                </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger
-                    className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md border border-input bg-background text-xs font-medium hover:bg-accent hover:text-accent-foreground transition-colors shrink-0 disabled:opacity-50 disabled:pointer-events-none"
-                    disabled={aiLoading !== null}
-                  >
-                    Generate
-                    {aiLoading !== null ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <Sparkles className="h-3.5 w-3.5" />
-                    )}
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48">
-                    <DropdownMenuItem
-                      onClick={handleSummarize}
-                      disabled={aiLoading !== null}
-                    >
-                      <Sparkles className="h-3.5 w-3.5" />
-                      Summarize
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={handleExtractItems}
-                      disabled={aiLoading !== null}
-                    >
-                      <List className="h-3.5 w-3.5" />
-                      Extract action items
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={handleCoachingQuestions}
-                      disabled={aiLoading !== null}
-                    >
-                      <HelpCircle className="h-3.5 w-3.5" />
-                      Coaching questions
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+              <div className="flex items-center gap-2 px-4 pt-4">
+                <h2 className="text-sm font-semibold">Insights</h2>
+                <SentimentBadge score={sentiment} />
               </div>
 
               <Tabs value={aiTab} onValueChange={(v) => setAiTab(v as string)}>
@@ -576,7 +678,7 @@ export function InteractionEditorClient({
                     </div>
                   ) : (
                     <p className="text-sm text-muted-foreground">
-                      No summary yet. Use the AI dropdown next to the title.
+                      No summary yet. Click Process to analyse these notes.
                     </p>
                   )}
                 </TabsContent>
@@ -604,8 +706,7 @@ export function InteractionEditorClient({
                     </ol>
                   ) : (
                     <p className="text-sm text-muted-foreground">
-                      No coaching questions yet. Use the AI dropdown next to the
-                      title.
+                      No coaching questions yet. Click Process to generate them.
                     </p>
                   )}
                 </TabsContent>
@@ -614,8 +715,8 @@ export function InteractionEditorClient({
           </div>
         </div>
 
-        {/* Right column — title + editor */}
-        <div className="lg:col-span-2">
+        {/* Editor column — spans 2 cols normally, 1 col when log is open */}
+        <div className={agentLog.length > 0 ? "" : "lg:col-span-2"}>
           <div className="mb-2 flex items-center gap-2">
             <input
               type="text"
@@ -635,6 +736,13 @@ export function InteractionEditorClient({
             }}
           />
         </div>
+
+        {/* Agent reasoning column — appears when processing starts */}
+        {agentLog.length > 0 && (
+          <div className="sticky top-6">
+            <AgentProcessLog entries={agentLog} />
+          </div>
+        )}
       </div>
     </div>
   );
