@@ -408,13 +408,15 @@ export function InteractionEditorClient({
         await refreshActionItems();
       }
 
-      const actionCount =
-        (finalResults["extract_action_items"] as any)?.count ?? 0;
+      const actionResult = finalResults["extract_action_items"] as any;
+      const indCount = actionResult?.individualCount ?? 0;
+      const mgrCount = actionResult?.managerCount ?? 0;
       const escalated = !!finalResults["create_escalation_reminder"];
-      const itemsMsg =
-        actionCount > 0
-          ? ` — ${actionCount} action item${actionCount !== 1 ? "s" : ""} extracted`
-          : "";
+      const itemParts: string[] = [];
+      if (indCount > 0)
+        itemParts.push(`${indCount} assigned to ${member?.name ?? "them"}`);
+      if (mgrCount > 0) itemParts.push(`${mgrCount} added to your list`);
+      const itemsMsg = itemParts.length ? ` — ${itemParts.join(", ")}` : "";
       toast.success(`Processed${itemsMsg}`);
       if (escalated) {
         toast.warning("Escalation reminder added to your briefing");

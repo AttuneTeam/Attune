@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -12,25 +11,33 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { createClient } from "@/lib/supabase/client";
 import { Plus, Check, Clock, Circle, Pencil, Trash2 } from "lucide-react";
 import { format, isPast, parseISO } from "date-fns";
 import { toast } from "sonner";
 import type { ActionItem } from "@/lib/supabase/types";
-import { DescriptionEditor } from "@/components/action-items/DescriptionEditor";
+import {
+  ActionItemEditDialog,
+  type ActionItemUpdates,
+} from "@/components/action-items/ActionItemEditDialog";
+import { SwipeableActionRow } from "@/components/action-items/SwipeableActionRow";
 
-const STATUS_CYCLE: Record<string, string> = {
-  open: "in_progress",
-  in_progress: "done",
-  done: "open",
-};
+const STATUS_OPTIONS = [
+  { value: "open", label: "Open", icon: Circle, className: "text-muted-foreground" },
+  { value: "in_progress", label: "In progress", icon: Clock, className: "text-amber-500" },
+  { value: "done", label: "Done", icon: Check, className: "text-green-500" },
+] as const;
 
 const StatusIcon = ({ status }: { status: string }) => {
-  if (status === "done")
-    return <Check className="h-3.5 w-3.5 text-green-500" />;
-  if (status === "in_progress")
-    return <Clock className="h-3.5 w-3.5 text-amber-500" />;
-  return <Circle className="h-3.5 w-3.5 text-muted-foreground" />;
+  const opt = STATUS_OPTIONS.find((o) => o.value === status) ?? STATUS_OPTIONS[0];
+  const Icon = opt.icon;
+  return <Icon className={`h-3.5 w-3.5 ${opt.className}`} />;
 };
 
 interface Member {
@@ -53,9 +60,8 @@ export function ActionItemsSidebar({
   const [newDesc, setNewDesc] = useState("");
   const [adding, setAdding] = useState(false);
   const [editingItem, setEditingItem] = useState<ActionItem | null>(null);
-  const [editTitle, setEditTitle] = useState("");
-  const [editingText, setEditingText] = useState("");
   const [deletingItem, setDeletingItem] = useState<ActionItem | null>(null);
+  const [activeSwipeId, setActiveSwipeId] = useState<string | null>(null);
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,8 +81,7 @@ export function ActionItemsSidebar({
     setAdding(false);
   };
 
-  const cycleStatus = async (item: ActionItem) => {
-    const newStatus = STATUS_CYCLE[item.status] ?? "open";
+  const changeStatus = async (item: ActionItem, newStatus: string) => {
     const supabase = createClient();
     const { error } = await supabase
       .from("action_items")
@@ -89,27 +94,17 @@ export function ActionItemsSidebar({
     }
   };
 
-  const startEdit = (item: ActionItem) => {
-    setEditingItem(item);
-    setEditTitle(item.title ?? "");
-    setEditingText(item.description);
-  };
-
-  const saveEdit = async () => {
+  const handleSaveEdit = async (updates: ActionItemUpdates) => {
     if (!editingItem) return;
-    const trimmed = editingText.trim();
-    if (!trimmed) return;
     const supabase = createClient();
     const { error } = await supabase
       .from("action_items")
-      .update({ title: editTitle.trim() || null, description: trimmed })
+      .update(updates)
       .eq("id", editingItem.id);
     if (error) {
       toast.error(error.message);
     } else {
       setEditingItem(null);
-      setEditTitle("");
-      setEditingText("");
       onUpdate();
     }
   };
@@ -133,91 +128,155 @@ export function ActionItemsSidebar({
   const open = items.filter((i) => i.status === "open");
   const inProgress = items.filter((i) => i.status === "in_progress");
   const done = items.filter((i) => i.status === "done");
+  const sorted = [...open, ...inProgress, ...done];
+
+  const empty = (
+    <p className="text-xs text-muted-foreground text-center py-8">
+      No action items yet.
+      <br />
+      Use &ldquo;Extract items&rdquo; or add one below.
+    </p>
+  );
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-y-auto p-3 space-y-1">
+      <div className="flex-1 overflow-y-auto">
         {items.length === 0 ? (
-          <p className="text-xs text-muted-foreground text-center py-8">
-            No action items yet.
-            <br />
-            Use &ldquo;Extract items&rdquo; or add one below.
-          </p>
+          <div className="p-3">{empty}</div>
         ) : (
-          [...open, ...inProgress, ...done].map((item) => {
-            const overdue =
-              item.status !== "done" &&
-              item.due_date &&
-              isPast(parseISO(item.due_date));
-            return (
-              <div
-                key={item.id}
-                className={`group flex gap-2 p-2 rounded-md hover:bg-accent/30 transition-colors ${
-                  item.status === "done" ? "opacity-50" : ""
-                }`}
-              >
-                <button
-                  onClick={() => cycleStatus(item)}
-                  className="mt-0.5 shrink-0 hover:opacity-70"
-                  title={`Status: ${item.status}`}
-                >
-                  <StatusIcon status={item.status} />
-                </button>
-                <div className="flex-1 min-w-0">
-                  {item.title ? (
-                    <>
-                      <p className={`text-xs font-medium leading-relaxed ${item.status === "done" ? "line-through" : ""}`}>
-                        {item.title}
-                      </p>
-                      <p className="text-xs text-muted-foreground leading-relaxed truncate">
-                        {item.description}
-                      </p>
-                    </>
-                  ) : (
-                    <p className={`text-xs leading-relaxed ${item.status === "done" ? "line-through" : ""}`}>
-                      {item.description}
-                    </p>
-                  )}
-                  {item.due_date && (
-                    <p
-                      className={`text-xs mt-0.5 ${overdue ? "text-destructive" : "text-muted-foreground"}`}
-                    >
-                      Due {format(parseISO(item.due_date), "MMM d")}
-                      {overdue ? " (overdue)" : ""}
-                    </p>
-                  )}
-                </div>
-                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                  <button
-                    onClick={() => startEdit(item)}
-                    className="hover:opacity-70"
-                    title="Edit"
+          <>
+            {/* ── Mobile swipeable list (≤ 720px) ── */}
+            <div className="min-[721px]:hidden bg-card">
+              {sorted.map((item) => {
+                const isDone = item.status === "done";
+                const overdue = !isDone && item.due_date && isPast(parseISO(item.due_date));
+                return (
+                  <SwipeableActionRow
+                    key={item.id}
+                    rowId={item.id}
+                    activeSwipeId={activeSwipeId}
+                    setActiveSwipeId={setActiveSwipeId}
+                    onEdit={() => setEditingItem(item)}
+                    onDeleteRequest={() => setDeletingItem(item)}
                   >
-                    <Pencil className="h-3 w-3 text-muted-foreground" />
-                  </button>
-                  <button
-                    onClick={() => setDeletingItem(item)}
-                    className="hover:opacity-70"
-                    title="Delete"
+                    <div className={`flex items-start gap-2 px-3 py-2.5 ${isDone ? "opacity-50" : ""}`}>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger
+                          render={
+                            <button className="mt-0.5 shrink-0 p-0.5 rounded" title="Change status">
+                              <StatusIcon status={item.status} />
+                            </button>
+                          }
+                        />
+                        <DropdownMenuContent>
+                          {STATUS_OPTIONS.map(({ value, label, icon: Icon, className }) => (
+                            <DropdownMenuItem
+                              key={value}
+                              onClick={() => changeStatus(item, value)}
+                              className={item.status === value ? "font-medium" : ""}
+                            >
+                              <Icon className={`h-3.5 w-3.5 ${className}`} />
+                              {label}
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                      <div className="flex-1 min-w-0">
+                        {item.title ? (
+                          <>
+                            <p className={`text-xs font-medium leading-relaxed ${isDone ? "line-through" : ""}`}>
+                              {item.title}
+                            </p>
+                            <p className="text-xs text-muted-foreground leading-relaxed truncate">
+                              {item.description}
+                            </p>
+                          </>
+                        ) : (
+                          <p className={`text-xs leading-relaxed ${isDone ? "line-through" : ""}`}>
+                            {item.description}
+                          </p>
+                        )}
+                        {item.due_date && (
+                          <p className={`text-xs mt-0.5 ${overdue ? "text-destructive" : "text-muted-foreground"}`}>
+                            Due {format(parseISO(item.due_date), "MMM d")}
+                            {overdue ? " (overdue)" : ""}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </SwipeableActionRow>
+                );
+              })}
+            </div>
+
+            {/* ── Desktop hover list (> 720px) ── */}
+            <div className="hidden min-[721px]:block p-3 space-y-1">
+              {sorted.map((item) => {
+                const isDone = item.status === "done";
+                const overdue = !isDone && item.due_date && isPast(parseISO(item.due_date));
+                return (
+                  <div
+                    key={item.id}
+                    className={`group flex gap-2 p-2 rounded-md hover:bg-accent/30 transition-colors ${isDone ? "opacity-50" : ""}`}
                   >
-                    <Trash2 className="h-3 w-3 text-destructive" />
-                  </button>
-                </div>
-                <Badge
-                  variant={
-                    item.status === "done"
-                      ? "secondary"
-                      : item.status === "in_progress"
-                        ? "default"
-                        : "outline"
-                  }
-                  className="text-xs shrink-0 h-fit"
-                >
-                  {item.status.replace("_", " ")}
-                </Badge>
-              </div>
-            );
-          })
+                    <DropdownMenu>
+                      <DropdownMenuTrigger
+                        render={
+                          <button className="mt-0.5 shrink-0 hover:opacity-70 p-0.5 rounded" title="Change status">
+                            <StatusIcon status={item.status} />
+                          </button>
+                        }
+                      />
+                      <DropdownMenuContent>
+                        {STATUS_OPTIONS.map(({ value, label, icon: Icon, className }) => (
+                          <DropdownMenuItem
+                            key={value}
+                            onClick={() => changeStatus(item, value)}
+                            className={item.status === value ? "font-medium" : ""}
+                          >
+                            <Icon className={`h-3.5 w-3.5 ${className}`} />
+                            {label}
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+
+                    <div className="flex-1 min-w-0">
+                      {item.title ? (
+                        <>
+                          <p className={`text-xs font-medium leading-relaxed ${isDone ? "line-through" : ""}`}>
+                            {item.title}
+                          </p>
+                          <p className="text-xs text-muted-foreground leading-relaxed truncate">
+                            {item.description}
+                          </p>
+                        </>
+                      ) : (
+                        <p className={`text-xs leading-relaxed ${isDone ? "line-through" : ""}`}>
+                          {item.description}
+                        </p>
+                      )}
+                      {item.due_date && (
+                        <p className={`text-xs mt-0.5 ${overdue ? "text-destructive" : "text-muted-foreground"}`}>
+                          Due {format(parseISO(item.due_date), "MMM d")}
+                          {overdue ? " (overdue)" : ""}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                      <button onClick={() => setEditingItem(item)} className="hover:opacity-70" title="Edit">
+                        <Pencil className="h-3 w-3 text-muted-foreground" />
+                      </button>
+                      <button onClick={() => setDeletingItem(item)} className="hover:opacity-70" title="Delete">
+                        <Trash2 className="h-3 w-3 text-destructive" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
         )}
       </div>
 
@@ -230,71 +289,21 @@ export function ActionItemsSidebar({
             placeholder="Add action item…"
             className="text-xs h-8"
           />
-          <Button
-            type="submit"
-            size="icon"
-            className="h-8 w-8 shrink-0"
-            disabled={adding}
-          >
+          <Button type="submit" size="icon" className="h-8 w-8 shrink-0" disabled={adding}>
             <Plus className="h-3.5 w-3.5" />
           </Button>
         </form>
       </div>
 
-      {/* Edit modal */}
-      <Dialog
-        open={!!editingItem}
-        onOpenChange={(open) => {
-          if (!open) {
-            setEditingItem(null);
-            setEditTitle("");
-            setEditingText("");
-          }
-        }}
-      >
-        <DialogContent showCloseButton={false}>
-          <DialogHeader>
-            <DialogTitle>Edit action item</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Title (optional)</label>
-              <Input
-                value={editTitle}
-                onChange={(e) => setEditTitle(e.target.value)}
-                placeholder="Short title…"
-                autoFocus
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Description</label>
-              {editingItem && (
-                <DescriptionEditor
-                  key={editingItem.id}
-                  initialValue={editingText}
-                  onChange={setEditingText}
-                />
-              )}
-            </div>
-          </div>
-          <DialogFooter>
-            <DialogClose render={<Button variant="outline" />}>
-              Cancel
-            </DialogClose>
-            <Button onClick={saveEdit} disabled={!editingText.trim()}>
-              Save
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ActionItemEditDialog
+        key={editingItem?.id ?? "none"}
+        item={editingItem}
+        members={allMembers}
+        onClose={() => setEditingItem(null)}
+        onSave={handleSaveEdit}
+      />
 
-      {/* Delete confirmation modal */}
-      <Dialog
-        open={!!deletingItem}
-        onOpenChange={(open) => {
-          if (!open) setDeletingItem(null);
-        }}
-      >
+      <Dialog open={!!deletingItem} onOpenChange={(open) => { if (!open) setDeletingItem(null); }}>
         <DialogContent showCloseButton={false}>
           <DialogHeader>
             <DialogTitle>Delete action item?</DialogTitle>
@@ -303,12 +312,8 @@ export function ActionItemsSidebar({
             {deletingItem?.title ?? deletingItem?.description}
           </p>
           <DialogFooter>
-            <DialogClose render={<Button variant="outline" />}>
-              Cancel
-            </DialogClose>
-            <Button variant="destructive" onClick={confirmDelete}>
-              Delete
-            </Button>
+            <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
+            <Button variant="destructive" onClick={confirmDelete}>Delete</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

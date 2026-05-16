@@ -154,24 +154,19 @@ export default async function MemberProfilePage({
     .order("scheduled_at", { ascending: false });
 
   const interactions = (interactionsRaw ?? []) as InteractionRow[];
-  const interactionIds = interactions.map((m) => m.id);
-
-  const orFilter =
-    interactionIds.length > 0
-      ? `interaction_id.in.(${interactionIds.join(",")}),assignee_id.eq.${id}`
-      : `assignee_id.eq.${id}`;
-
   const { data: actionItems } = await supabase
     .from("action_items")
     .select("*")
-    .or(orFilter)
+    .eq("assignee_id", id)
     .order("created_at", { ascending: false });
 
   const items = (actionItems ?? []) as Array<{
     id: string;
+    title: string | null;
     description: string;
     status: string;
     due_date: string | null;
+    assignee_id: string | null;
     interaction_id: string | null;
   }>;
 

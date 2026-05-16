@@ -14,17 +14,24 @@ import { createClient } from "@/lib/supabase/client"
 import { format, isPast, parseISO } from "date-fns"
 import { toast } from "sonner"
 import { Check, Clock, Circle, Pencil, Trash2, ExternalLink } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { useRouter } from "next/navigation"
 import {
   ActionItemEditDialog,
   type ActionItemUpdates,
 } from "@/components/action-items/ActionItemEditDialog"
+import { SwipeableActionRow } from "@/components/action-items/SwipeableActionRow"
 
-const STATUS_CYCLE: Record<string, string> = {
-  open: "in_progress",
-  in_progress: "done",
-  done: "open",
-}
+const STATUS_OPTIONS = [
+  { value: "open", label: "Open", icon: Circle, className: "text-muted-foreground" },
+  { value: "in_progress", label: "In progress", icon: Clock, className: "text-amber-500" },
+  { value: "done", label: "Done", icon: Check, className: "text-green-500" },
+]
 
 export interface DashboardActionItem {
   id: string
@@ -61,14 +68,14 @@ export function DashboardActionItems({
   const [items, setItems] = useState(initialItems)
   const [editingItem, setEditingItem] = useState<DashboardActionItem | null>(null)
   const [pendingDelete, setPendingDelete] = useState<DashboardActionItem | null>(null)
+  const [activeSwipeId, setActiveSwipeId] = useState<string | null>(null)
   const router = useRouter()
 
   useEffect(() => {
     setItems(initialItems)
   }, [initialItems])
 
-  const cycleStatus = async (item: DashboardActionItem) => {
-    const newStatus = STATUS_CYCLE[item.status] ?? "open"
+  const changeStatus = async (item: DashboardActionItem, newStatus: string) => {
     setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, status: newStatus } : i)))
     const supabase = createClient()
     const { error } = await supabase
@@ -127,7 +134,77 @@ export function DashboardActionItems({
 
   return (
     <>
-      <div className="rounded-lg border bg-card overflow-hidden">
+      {/* ── Mobile swipeable list (≤ 720px) ── */}
+      <div className="min-[721px]:hidden rounded-lg border bg-card overflow-hidden">
+        {items.map((item) => {
+          const done = item.status === "done"
+          const overdue = !done && item.due_date && isPast(parseISO(item.due_date))
+          const assignee = item.assignee_id ? members.find((m) => m.id === item.assignee_id) : null
+          return (
+            <SwipeableActionRow
+              key={item.id}
+              rowId={item.id}
+              activeSwipeId={activeSwipeId}
+              setActiveSwipeId={setActiveSwipeId}
+              onEdit={() => setEditingItem(item)}
+              onDeleteRequest={() => setPendingDelete(item)}
+            >
+              <div className={`flex items-start gap-3 px-4 py-3 ${done ? "opacity-40" : ""}`}>
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    render={
+                      <button className="mt-0.5 hover:opacity-70 flex items-center shrink-0" title="Change status">
+                        <StatusIcon status={item.status} />
+                      </button>
+                    }
+                  />
+                  <DropdownMenuContent>
+                    {STATUS_OPTIONS.map(({ value, label, icon: Icon, className }) => (
+                      <DropdownMenuItem
+                        key={value}
+                        onClick={() => changeStatus(item, value)}
+                        className={item.status === value ? "font-medium" : ""}
+                      >
+                        <Icon className={`h-3.5 w-3.5 ${className}`} />
+                        {label}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <div className="flex-1 min-w-0">
+                  {item.title ? (
+                    <>
+                      <p className={`text-sm font-medium truncate ${done ? "line-through text-muted-foreground" : ""}`}>
+                        {item.title}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                        {item.description}
+                      </p>
+                    </>
+                  ) : (
+                    <p className={`text-sm truncate ${done ? "line-through text-muted-foreground" : ""}`}>
+                      {item.description}
+                    </p>
+                  )}
+                  <div className="flex items-center gap-2 mt-1 flex-wrap">
+                    {item.due_date && (
+                      <span className={`text-xs ${overdue ? "text-destructive font-medium" : "text-muted-foreground"}`}>
+                        {format(parseISO(item.due_date), "MMM d")}
+                      </span>
+                    )}
+                    {assignee && (
+                      <span className="text-xs text-muted-foreground">{assignee.name}</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </SwipeableActionRow>
+          )
+        })}
+      </div>
+
+      {/* ── Desktop table (> 720px) ── */}
+      <div className="hidden min-[721px]:block rounded-lg border bg-card overflow-hidden">
         <table className="w-full text-xs">
           <thead>
             <tr className="border-b bg-muted/50">
@@ -150,12 +227,27 @@ export function DashboardActionItems({
                   className={`hover:bg-muted/40 transition-colors ${item.status === "done" ? "opacity-40" : ""}`}
                 >
                   <td className="px-2 py-1.5">
-                    <button
-                      onClick={() => cycleStatus(item)}
-                      className="hover:opacity-70 flex items-center"
-                    >
-                      <StatusIcon status={item.status} />
-                    </button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger
+                        render={
+                          <button className="hover:opacity-70 flex items-center" title="Change status">
+                            <StatusIcon status={item.status} />
+                          </button>
+                        }
+                      />
+                      <DropdownMenuContent>
+                        {STATUS_OPTIONS.map(({ value, label, icon: Icon, className }) => (
+                          <DropdownMenuItem
+                            key={value}
+                            onClick={() => changeStatus(item, value)}
+                            className={item.status === value ? "font-medium" : ""}
+                          >
+                            <Icon className={`h-3.5 w-3.5 ${className}`} />
+                            {label}
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </td>
                   <td className={overdue ? "text-destructive font-medium" : ""}>
                     {item.due_date ? format(parseISO(item.due_date), "MMM d") : "—"}
@@ -179,7 +271,7 @@ export function DashboardActionItems({
                   <td className="px-2 py-1.5 text-muted-foreground whitespace-nowrap hidden sm:table-cell">
                     {item.assignee_id
                       ? (members.find((m) => m.id === item.assignee_id)?.name ?? "—")
-                      : (item.interactions?.team_members?.name ?? "—")}
+                      : "—"}
                   </td>
                   <td className="px-2 py-1.5">
                     <div className="flex items-center gap-0.5 justify-end">

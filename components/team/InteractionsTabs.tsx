@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { format, parseISO } from "date-fns";
+import { format, isPast, parseISO } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
@@ -23,7 +23,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { DeleteInteractionButton } from "@/components/team/DeleteInteractionButton";
-import { ActionItemEditDialog } from "@/components/action-items/ActionItemEditDialog";
+import {
+  ActionItemEditDialog,
+  type ActionItemUpdates,
+} from "@/components/action-items/ActionItemEditDialog";
+import { SwipeableActionRow } from "@/components/action-items/SwipeableActionRow";
 import { GoalsCard } from "@/components/team/GoalsCard";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
@@ -42,9 +46,11 @@ type InteractionRow = {
 
 type ActionItem = {
   id: string;
+  title: string | null;
   description: string;
   status: string;
   due_date: string | null;
+  assignee_id: string | null;
   interaction_id: string | null;
 };
 
@@ -80,104 +86,6 @@ function StatusIcon({ status }: { status: string }) {
   return <Icon className={`h-3.5 w-3.5 ${opt.className}`} />;
 }
 
-function EditActionItemDialog({
-  item,
-  onSave,
-  onClose,
-}: {
-  item: ActionItem;
-  onSave: (updated: ActionItem) => void;
-  onClose: () => void;
-}) {
-  const [description, setDescription] = useState(item.description);
-  const [status, setStatus] = useState(item.status);
-  const [dueDate, setDueDate] = useState(item.due_date ?? "");
-  const [saving, setSaving] = useState(false);
-
-  async function handleSave() {
-    setSaving(true);
-    try {
-      const res = await fetch(`/api/action-items/${item.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          description,
-          status,
-          due_date: dueDate || null,
-        }),
-      });
-      if (!res.ok) {
-        const err = await res.json();
-        toast.error(err.error ?? "Failed to save");
-        return;
-      }
-      onSave({ ...item, description, status, due_date: dueDate || null });
-      onClose();
-    } catch {
-      toast.error("Something went wrong");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  return (
-    <DialogContent className="max-w-md">
-      <DialogHeader>
-        <DialogTitle>Edit action item</DialogTitle>
-      </DialogHeader>
-      <div className="space-y-4 py-2">
-        <div className="space-y-1.5">
-          <label className="text-xs font-medium text-muted-foreground">
-            Description
-          </label>
-          <textarea
-            className="w-full rounded-md border bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring"
-            rows={3}
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-          />
-        </div>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">
-              Status
-            </label>
-            <select
-              className="w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
-            >
-              {STATUS_OPTIONS.map((s) => (
-                <option key={s.value} value={s.value}>
-                  {s.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">
-              Due date
-            </label>
-            <input
-              type="date"
-              className="w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-              value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
-            />
-          </div>
-        </div>
-      </div>
-      <DialogFooter>
-        <Button variant="ghost" size="sm" onClick={onClose} disabled={saving}>
-          Cancel
-        </Button>
-        <Button size="sm" onClick={handleSave} disabled={saving}>
-          {saving ? "Saving…" : "Save"}
-        </Button>
-      </DialogFooter>
-    </DialogContent>
-  );
-}
 
 interface Props {
   interactions: InteractionRow[];
@@ -195,10 +103,12 @@ const EMPTY_ACTION_ITEM = {
   status: "open",
   due_date: null,
   assignee_id: null,
+  interaction_id: null,
 } as const;
 
 export function InteractionsTabs({ interactions, items: initialItems, memberId, managerId, goals, goalTemplates }: Props) {
   const [items, setItems] = useState<ActionItem[]>(initialItems);
+  const [activeSwipeId, setActiveSwipeId] = useState<string | null>(null);
   const [editingItem, setEditingItem] = useState<ActionItem | null>(null);
   const [addActionOpen, setAddActionOpen] = useState(false);
   const [deletingItem, setDeletingItem] = useState<ActionItem | null>(null);
@@ -214,10 +124,6 @@ export function InteractionsTabs({ interactions, items: initialItems, memberId, 
     ...items.filter((i) => i.status === "in_progress"),
     ...items.filter((i) => i.status === "done"),
   ];
-
-  function handleSave(updated: ActionItem) {
-    setItems((prev) => prev.map((i) => (i.id === updated.id ? updated : i)));
-  }
 
   async function handleDeleteActionItem() {
     if (!deletingItem) return;
@@ -265,6 +171,21 @@ export function InteractionsTabs({ interactions, items: initialItems, memberId, 
     setItems((prev) => [data as ActionItem, ...prev]);
     setAddActionOpen(false);
     router.refresh();
+  }
+
+  async function handleSaveEdit(updates: ActionItemUpdates) {
+    if (!editingItem) return;
+    const id = editingItem.id;
+    setItems((prev) => prev.map((i) => (i.id === id ? { ...i, ...updates } : i)));
+    const supabase = createClient();
+    const { error } = await supabase.from("action_items").update(updates).eq("id", id);
+    if (error) {
+      toast.error("Failed to save");
+      router.refresh();
+    } else {
+      setEditingItem(null);
+      router.refresh();
+    }
   }
 
   async function changeStatus(item: ActionItem, newStatus: string) {
@@ -405,105 +326,162 @@ export function InteractionsTabs({ interactions, items: initialItems, memberId, 
               </Button>
             </div>
           ) : (
-            <div className="rounded-lg border overflow-hidden mt-2">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-muted border-b">
-                    <th className="w-8 px-3 py-2" />
-                    <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                      Task
-                    </th>
-                    <th className="w-24 px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wide hidden sm:table-cell">
-                      Due
-                    </th>
-                    <th className="px-3 py-2 w-12" />
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border/50 bg-card">
-                  {sorted.map((item) => {
-                    const done = item.status === "done";
-                    return (
-                      <tr
-                        key={item.id}
-                        className={`hover:bg-muted/30 transition-colors ${done ? "opacity-50" : ""}`}
-                      >
-                        {/* Status dropdown */}
-                        <td className="px-3 py-2">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger
-                              render={
-                                <button
-                                  className="p-0.5 rounded hover:bg-muted flex items-center justify-center"
-                                  title="Change status"
-                                >
-                                  <StatusIcon status={item.status} />
-                                </button>
-                              }
-                            />
-                            <DropdownMenuContent>
-                              {STATUS_OPTIONS.map(
-                                ({ value, label, icon: Icon, className }) => (
+            <>
+              {/* ── Mobile swipeable list (≤ 720px) ── */}
+              <div className="min-[721px]:hidden rounded-lg border overflow-hidden mt-2 bg-card">
+                {sorted.map((item) => {
+                  const done = item.status === "done";
+                  const overdue = !done && item.due_date && isPast(parseISO(item.due_date));
+                  return (
+                    <SwipeableActionRow
+                      key={item.id}
+                      rowId={item.id}
+                      activeSwipeId={activeSwipeId}
+                      setActiveSwipeId={setActiveSwipeId}
+                      onEdit={() => setEditingItem(item)}
+                      onDeleteRequest={() => setDeletingItem(item)}
+                    >
+                      <div className={`flex items-start gap-3 px-4 py-3 ${done ? "opacity-50" : ""}`}>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger
+                            render={
+                              <button className="mt-0.5 p-0.5 rounded hover:bg-muted shrink-0" title="Change status">
+                                <StatusIcon status={item.status} />
+                              </button>
+                            }
+                          />
+                          <DropdownMenuContent>
+                            {STATUS_OPTIONS.map(({ value, label, icon: Icon, className }) => (
+                              <DropdownMenuItem
+                                key={value}
+                                onClick={() => changeStatus(item, value)}
+                                className={item.status === value ? "font-medium" : ""}
+                              >
+                                <Icon className={`h-3.5 w-3.5 ${className}`} />
+                                {label}
+                              </DropdownMenuItem>
+                            ))}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                        <div className="flex-1 min-w-0">
+                          {item.title ? (
+                            <>
+                              <p className={`text-sm font-medium truncate ${done ? "line-through text-muted-foreground" : ""}`}>
+                                {item.title}
+                              </p>
+                              <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                                {item.description}
+                              </p>
+                            </>
+                          ) : (
+                            <p className={`text-sm truncate ${done ? "line-through text-muted-foreground" : ""}`}>
+                              {item.description}
+                            </p>
+                          )}
+                          {item.due_date && (
+                            <p className={`text-xs mt-1 ${overdue ? "text-destructive" : "text-muted-foreground"}`}>
+                              {format(parseISO(item.due_date), "MMM d")}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </SwipeableActionRow>
+                  );
+                })}
+              </div>
+
+              {/* ── Desktop table (> 720px) ── */}
+              <div className="hidden min-[721px]:block rounded-lg border overflow-hidden mt-2">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-muted border-b">
+                      <th className="w-8 px-3 py-2" />
+                      <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                        Task
+                      </th>
+                      <th className="w-24 px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                        Due
+                      </th>
+                      <th className="px-3 py-2 w-12" />
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/50 bg-card">
+                    {sorted.map((item) => {
+                      const done = item.status === "done";
+                      return (
+                        <tr
+                          key={item.id}
+                          className={`hover:bg-muted/30 transition-colors ${done ? "opacity-50" : ""}`}
+                        >
+                          <td className="px-3 py-2">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger
+                                render={
+                                  <button className="p-0.5 rounded hover:bg-muted flex items-center justify-center" title="Change status">
+                                    <StatusIcon status={item.status} />
+                                  </button>
+                                }
+                              />
+                              <DropdownMenuContent>
+                                {STATUS_OPTIONS.map(({ value, label, icon: Icon, className }) => (
                                   <DropdownMenuItem
                                     key={value}
                                     onClick={() => changeStatus(item, value)}
-                                    className={
-                                      item.status === value ? "font-medium" : ""
-                                    }
+                                    className={item.status === value ? "font-medium" : ""}
                                   >
-                                    <Icon
-                                      className={`h-3.5 w-3.5 ${className}`}
-                                    />
+                                    <Icon className={`h-3.5 w-3.5 ${className}`} />
                                     {label}
                                   </DropdownMenuItem>
-                                ),
-                              )}
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </td>
-
-                        {/* Description */}
-                        <td className="px-3 py-2 max-w-0">
-                          <p
-                            className={`truncate ${done ? "line-through text-muted-foreground" : ""}`}
-                          >
-                            {item.description}
-                          </p>
-                        </td>
-
-                        {/* Due date — hidden on mobile */}
-                        <td className="px-3 py-2 text-xs text-muted-foreground whitespace-nowrap hidden sm:table-cell">
-                          {item.due_date
-                            ? format(parseISO(item.due_date), "MMM d")
-                            : "—"}
-                        </td>
-
-                        {/* Edit / Delete */}
-                        <td className="px-3 py-2">
-                          <div className="flex justify-end gap-0.5">
-                            <button
-                              type="button"
-                              onClick={() => setEditingItem(item)}
-                              className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
-                              title="Edit"
-                            >
-                              <Pencil className="h-3 w-3" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setDeletingItem(item)}
-                              className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-destructive"
-                              title="Delete"
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                                ))}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </td>
+                          <td className="px-3 py-2 max-w-0">
+                            {item.title ? (
+                              <>
+                                <p className={`truncate font-medium ${done ? "line-through text-muted-foreground" : ""}`}>
+                                  {item.title}
+                                </p>
+                                <p className="truncate text-xs text-muted-foreground">
+                                  {item.description}
+                                </p>
+                              </>
+                            ) : (
+                              <p className={`truncate ${done ? "line-through text-muted-foreground" : ""}`}>
+                                {item.description}
+                              </p>
+                            )}
+                          </td>
+                          <td className="px-3 py-2 text-xs text-muted-foreground whitespace-nowrap">
+                            {item.due_date ? format(parseISO(item.due_date), "MMM d") : "—"}
+                          </td>
+                          <td className="px-3 py-2">
+                            <div className="flex justify-end gap-0.5">
+                              <button
+                                type="button"
+                                onClick={() => setEditingItem(item)}
+                                className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
+                                title="Edit"
+                              >
+                                <Pencil className="h-3 w-3" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setDeletingItem(item)}
+                                className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-destructive"
+                                title="Delete"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </TabsContent>
 
@@ -519,18 +497,13 @@ export function InteractionsTabs({ interactions, items: initialItems, memberId, 
         </TabsContent>
       </Tabs>
 
-      <Dialog
-        open={!!editingItem}
-        onOpenChange={(open) => !open && setEditingItem(null)}
-      >
-        {editingItem && (
-          <EditActionItemDialog
-            item={editingItem}
-            onSave={handleSave}
-            onClose={() => setEditingItem(null)}
-          />
-        )}
-      </Dialog>
+      <ActionItemEditDialog
+        key={editingItem?.id ?? "none"}
+        item={editingItem}
+        hideAssignee
+        onClose={() => setEditingItem(null)}
+        onSave={handleSaveEdit}
+      />
 
       <Dialog
         open={!!deletingItem}
