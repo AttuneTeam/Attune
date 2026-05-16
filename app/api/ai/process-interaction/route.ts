@@ -215,7 +215,12 @@ export async function POST(request: NextRequest) {
               questions: z.array(z.string()).min(3).max(5),
             }),
           });
-          return { questions: object.questions };
+          const questions = object.questions.slice(0, 5);
+          await supabase
+            .from("interactions")
+            .update({ coaching_questions: questions })
+            .eq("id", interactionId);
+          return { questions };
         },
       }),
 

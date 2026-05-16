@@ -61,6 +61,7 @@ interface InteractionWithMember {
   ai_summary: string | null;
   sentiment_score: number | null;
   key_themes: string[];
+  coaching_questions: string[];
   title: string | null;
   type: string;
   duration_minutes: number | null;
@@ -150,7 +151,7 @@ export function InteractionEditorClient({
     interaction.google_calendar_event_id ?? null,
   );
   const [linkedEventTitle, setLinkedEventTitle] = useState<string | null>(null);
-  const [coachingQuestions, setCoachingQuestions] = useState<string[]>([]);
+  const [coachingQuestions, setCoachingQuestions] = useState<string[]>(interaction.coaching_questions ?? []);
   const [aiTab, setAiTab] = useState("summary");
   const [aiLoading, setAiLoading] = useState<
     "summarize" | "action-items" | "coaching" | "processing" | null

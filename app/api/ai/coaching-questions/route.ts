@@ -70,7 +70,13 @@ export async function POST(request: NextRequest) {
       }),
     })
 
-    return NextResponse.json({ questions: object.questions })
+    const questions = object.questions.slice(0, 5)
+    await supabase
+      .from('interactions')
+      .update({ coaching_questions: questions })
+      .eq('id', interactionId)
+
+    return NextResponse.json({ questions })
   } catch (error) {
     console.error('Coaching questions error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

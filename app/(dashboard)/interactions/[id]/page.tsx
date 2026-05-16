@@ -18,7 +18,7 @@ export default async function InteractionEditorPage({
     .from("interactions")
     .select(
       `
-      id, scheduled_at, raw_json_notes, ai_summary, sentiment_score, key_themes, title, type, duration_minutes, google_calendar_event_id,
+      id, scheduled_at, raw_json_notes, ai_summary, sentiment_score, key_themes, coaching_questions, title, type, duration_minutes, google_calendar_event_id,
       team_members (id, name, level, role_description, manager_read, is_squad_lead, role_id, team_id)
     `,
     )

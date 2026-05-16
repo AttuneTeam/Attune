@@ -167,6 +167,7 @@ export type Database = {
           ai_summary: string | null
           sentiment_score: number | null
           key_themes: string[]
+          coaching_questions: string[]
           title: string | null
           duration_minutes: number | null
           google_calendar_event_id: string | null
@@ -185,6 +186,7 @@ export type Database = {
           ai_summary?: string | null
           sentiment_score?: number | null
           key_themes?: string[]
+          coaching_questions?: string[]
           title?: string | null
           duration_minutes?: number | null
           google_calendar_event_id?: string | null
@@ -198,6 +200,7 @@ export type Database = {
           ai_summary?: string | null
           sentiment_score?: number | null
           key_themes?: string[]
+          coaching_questions?: string[]
           title?: string | null
           duration_minutes?: number | null
           google_calendar_event_id?: string | null
