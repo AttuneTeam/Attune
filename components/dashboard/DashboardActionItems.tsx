@@ -25,6 +25,7 @@ import {
   ActionItemEditDialog,
   type ActionItemUpdates,
 } from "@/components/action-items/ActionItemEditDialog"
+import { SwipeableActionRow } from "@/components/action-items/SwipeableActionRow"
 
 const STATUS_OPTIONS = [
   { value: "open", label: "Open", icon: Circle, className: "text-muted-foreground" },
@@ -67,6 +68,7 @@ export function DashboardActionItems({
   const [items, setItems] = useState(initialItems)
   const [editingItem, setEditingItem] = useState<DashboardActionItem | null>(null)
   const [pendingDelete, setPendingDelete] = useState<DashboardActionItem | null>(null)
+  const [activeSwipeId, setActiveSwipeId] = useState<string | null>(null)
   const router = useRouter()
 
   useEffect(() => {
@@ -132,7 +134,77 @@ export function DashboardActionItems({
 
   return (
     <>
-      <div className="rounded-lg border bg-card overflow-hidden">
+      {/* ── Mobile swipeable list (≤ 720px) ── */}
+      <div className="min-[721px]:hidden rounded-lg border bg-card overflow-hidden">
+        {items.map((item) => {
+          const done = item.status === "done"
+          const overdue = !done && item.due_date && isPast(parseISO(item.due_date))
+          const assignee = item.assignee_id ? members.find((m) => m.id === item.assignee_id) : null
+          return (
+            <SwipeableActionRow
+              key={item.id}
+              rowId={item.id}
+              activeSwipeId={activeSwipeId}
+              setActiveSwipeId={setActiveSwipeId}
+              onEdit={() => setEditingItem(item)}
+              onDeleteRequest={() => setPendingDelete(item)}
+            >
+              <div className={`flex items-start gap-3 px-4 py-3 ${done ? "opacity-40" : ""}`}>
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    render={
+                      <button className="mt-0.5 hover:opacity-70 flex items-center shrink-0" title="Change status">
+                        <StatusIcon status={item.status} />
+                      </button>
+                    }
+                  />
+                  <DropdownMenuContent>
+                    {STATUS_OPTIONS.map(({ value, label, icon: Icon, className }) => (
+                      <DropdownMenuItem
+                        key={value}
+                        onClick={() => changeStatus(item, value)}
+                        className={item.status === value ? "font-medium" : ""}
+                      >
+                        <Icon className={`h-3.5 w-3.5 ${className}`} />
+                        {label}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <div className="flex-1 min-w-0">
+                  {item.title ? (
+                    <>
+                      <p className={`text-sm font-medium truncate ${done ? "line-through text-muted-foreground" : ""}`}>
+                        {item.title}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                        {item.description}
+                      </p>
+                    </>
+                  ) : (
+                    <p className={`text-sm truncate ${done ? "line-through text-muted-foreground" : ""}`}>
+                      {item.description}
+                    </p>
+                  )}
+                  <div className="flex items-center gap-2 mt-1 flex-wrap">
+                    {item.due_date && (
+                      <span className={`text-xs ${overdue ? "text-destructive font-medium" : "text-muted-foreground"}`}>
+                        {format(parseISO(item.due_date), "MMM d")}
+                      </span>
+                    )}
+                    {assignee && (
+                      <span className="text-xs text-muted-foreground">{assignee.name}</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </SwipeableActionRow>
+          )
+        })}
+      </div>
+
+      {/* ── Desktop table (> 720px) ── */}
+      <div className="hidden min-[721px]:block rounded-lg border bg-card overflow-hidden">
         <table className="w-full text-xs">
           <thead>
             <tr className="border-b bg-muted/50">

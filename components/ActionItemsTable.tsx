@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -35,6 +35,7 @@ import {
   ActionItemEditDialog,
   type ActionItemUpdates,
 } from "@/components/action-items/ActionItemEditDialog";
+import { SwipeableActionRow } from "@/components/action-items/SwipeableActionRow";
 
 interface ActionItemRow {
   id: string;
@@ -68,9 +69,6 @@ function StatusIcon({ status }: { status: string }) {
   return <Icon className={`h-3.5 w-3.5 ${opt.className}`} />;
 }
 
-const ACTION_WIDTH = 68;
-const SNAP_THRESHOLD = ACTION_WIDTH * 0.45;
-
 function SwipeableRow({
   item,
   members,
@@ -88,111 +86,23 @@ function SwipeableRow({
   onDeleteRequest: () => void;
   onStatusChange: (status: string) => void;
 }) {
-  const touchStartX = useRef(0);
-  const baseOffset = useRef(0);
-  const [displayOffset, setDisplayOffset] = useState(0);
-  const [transitioning, setTransitioning] = useState(false);
-
   const done = item.status === "done";
   const overdue = !done && item.due_date && isPast(parseISO(item.due_date));
   const assignee = item.assignee_id ? members.find((m) => m.id === item.assignee_id) : null;
-  const assigneeId = item.assignee_id ?? null;
-
-  // Close when another row is swiped open
-  useEffect(() => {
-    if (activeSwipeId && !activeSwipeId.startsWith(item.id)) {
-      setTransitioning(true);
-      baseOffset.current = 0;
-      setDisplayOffset(0);
-    }
-  }, [activeSwipeId, item.id]);
-
-  function handleTouchStart(e: React.TouchEvent) {
-    touchStartX.current = e.touches[0].clientX;
-    setTransitioning(false);
-  }
-
-  function handleTouchMove(e: React.TouchEvent) {
-    const dx = e.touches[0].clientX - touchStartX.current;
-    const raw = baseOffset.current + dx;
-    setDisplayOffset(Math.max(-ACTION_WIDTH, Math.min(ACTION_WIDTH, raw)));
-  }
-
-  function handleTouchEnd() {
-    setTransitioning(true);
-    if (displayOffset < -SNAP_THRESHOLD) {
-      baseOffset.current = -ACTION_WIDTH;
-      setDisplayOffset(-ACTION_WIDTH);
-      setActiveSwipeId(`${item.id}:left`);
-    } else if (displayOffset > SNAP_THRESHOLD) {
-      baseOffset.current = ACTION_WIDTH;
-      setDisplayOffset(ACTION_WIDTH);
-      setActiveSwipeId(`${item.id}:right`);
-    } else {
-      baseOffset.current = 0;
-      setDisplayOffset(0);
-      setActiveSwipeId(null);
-    }
-  }
-
-  function closeSwipe() {
-    setTransitioning(true);
-    baseOffset.current = 0;
-    setDisplayOffset(0);
-    setActiveSwipeId(null);
-  }
 
   return (
-    <div className="relative overflow-hidden border-b last:border-0">
-      {/* Edit action — revealed by swipe right */}
-      <div className="absolute left-0 inset-y-0 w-[68px] bg-accent flex items-center justify-center">
-        <button
-          type="button"
-          onClick={() => { closeSwipe(); onEdit(); }}
-          className="flex flex-col items-center gap-1 text-foreground"
-          aria-label="Edit"
-        >
-          <Pencil className="h-5 w-5" />
-          <span className="text-[10px] font-medium">Edit</span>
-        </button>
-      </div>
-
-      {/* Delete action — revealed by swipe left */}
-      <div className="absolute right-0 inset-y-0 w-[68px] bg-destructive flex items-center justify-center">
-        <button
-          type="button"
-          onClick={() => { closeSwipe(); onDeleteRequest(); }}
-          className="flex flex-col items-center gap-1 text-white"
-          aria-label="Delete"
-        >
-          <Trash2 className="h-5 w-5" />
-          <span className="text-[10px] font-medium">Delete</span>
-        </button>
-      </div>
-
-      {/* Row content */}
-      <div
-        style={{
-          transform: `translateX(${displayOffset}px)`,
-          touchAction: "pan-y",
-        }}
-        className={cn(
-          "relative bg-card flex items-start gap-3 px-4 py-3",
-          transitioning && "transition-transform duration-200",
-        )}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        onClick={() => displayOffset !== 0 && closeSwipe()}
-      >
-        {/* Status toggle */}
+    <SwipeableActionRow
+      rowId={item.id}
+      activeSwipeId={activeSwipeId}
+      setActiveSwipeId={setActiveSwipeId}
+      onEdit={onEdit}
+      onDeleteRequest={onDeleteRequest}
+    >
+      <div className="flex items-start gap-3 px-4 py-3">
         <DropdownMenu>
           <DropdownMenuTrigger
             render={
-              <button
-                className="mt-0.5 p-0.5 rounded hover:bg-muted shrink-0"
-                title="Change status"
-              >
+              <button className="mt-0.5 p-0.5 rounded hover:bg-muted shrink-0" title="Change status">
                 <StatusIcon status={item.status} />
               </button>
             }
@@ -211,7 +121,6 @@ function SwipeableRow({
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {/* Text */}
         <div className="flex-1 min-w-0">
           {item.title ? (
             <>
@@ -234,9 +143,9 @@ function SwipeableRow({
                 {format(parseISO(item.due_date), "MMM d")}
               </span>
             )}
-            {assignee && assigneeId && (
+            {assignee && item.assignee_id && (
               <Link
-                href={`/team/${assigneeId}`}
+                href={`/team/${item.assignee_id}`}
                 className="text-xs text-muted-foreground hover:text-foreground hover:underline underline-offset-2"
                 onClick={(e) => e.stopPropagation()}
               >
@@ -246,7 +155,7 @@ function SwipeableRow({
           </div>
         </div>
       </div>
-    </div>
+    </SwipeableActionRow>
   );
 }
 
