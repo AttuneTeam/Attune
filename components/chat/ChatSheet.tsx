@@ -36,11 +36,53 @@ type StoredToolCall = { toolCallId: string; toolName: string };
 
 type View = "chat" | "history";
 
-type Props = {
-  onClose: () => void;
+type SuggestedPrompt = {
+  label: string;
+  prompt: string;
 };
 
-export function ChatPanel({ onClose }: Props) {
+function buildSuggestedPrompts(participantName?: string): SuggestedPrompt[] {
+  if (participantName) {
+    return [
+      {
+        label: `Full picture on ${participantName}`,
+        prompt: `Give me a full picture on ${participantName}. Structure your response as: **TL;DR** (current status in one line, momentum direction, one thing to do this week), **Sentiment trend** (table of last 3–4 interactions: date, score, one-word read), **Recent delivery** (last 3–5 work items), **Best 1:1 topics** (3 topics with a sentence on why each matters now), **Watchpoints** (only real risks — omit if none), **Open action items** (list or "None").`,
+      },
+      {
+        label: `Prep for ${participantName}'s 1:1`,
+        prompt: `Prep me for my next 1:1 with ${participantName}. Give me: the 3 most important topics to discuss right now (with a sentence on why each), 2–3 specific questions to ask, and anything I should acknowledge or follow up on from our last conversation.`,
+      },
+      {
+        label: `${participantName}'s growth areas`,
+        prompt: `What are ${participantName}'s main development areas right now? Base it on recent interaction history and patterns you see. Name the skill or behaviour, give evidence from the data, and suggest one concrete thing I can do to support it.`,
+      },
+    ];
+  }
+  return [
+    {
+      label: "Team pulse",
+      prompt:
+        "Give me a quick team pulse. Who needs my attention most this week and why? Rank by urgency and be specific.",
+    },
+    {
+      label: "Who needs a 1:1?",
+      prompt:
+        "Who should I prioritise for a 1:1 this week? Consider time since last meeting, any open issues, and sentiment trends. Give me names and a one-sentence reason for each.",
+    },
+    {
+      label: "Overdue action items",
+      prompt:
+        "Which action items across my team are overdue or at risk? List them by person with the due date and current status.",
+    },
+  ];
+}
+
+type Props = {
+  onClose: () => void;
+  participantName?: string;
+};
+
+export function ChatPanel({ onClose, participantName }: Props) {
   const router = useRouter();
   const [view, setView] = useState<View>("chat");
   const [messages, setMessages] = useState<ChatMessageData[]>([]);
@@ -475,6 +517,7 @@ export function ChatPanel({ onClose }: Props) {
             <ChatInput
               onSubmit={sendMessage}
               disabled={status === "streaming"}
+              suggestedPrompts={messages.length === 0 ? buildSuggestedPrompts(participantName) : undefined}
             />
             <p
               className="text-center text-[10px] mt-1.5"

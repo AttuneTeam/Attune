@@ -1,6 +1,5 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
 import { ChatMessage } from './ChatMessage'
 import type { ChatMessageData } from './ChatMessage'
 
@@ -10,11 +9,6 @@ type Props = {
 }
 
 export function ChatMessageList({ messages, isStreaming }: Props) {
-  const bottomRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
 
   if (messages.length === 0) {
     return (
@@ -62,7 +56,6 @@ export function ChatMessageList({ messages, isStreaming }: Props) {
           <span className="h-1.5 w-1.5 rounded-full animate-bounce" style={{ background: 'var(--color-muted-foreground)' }} />
         </div>
       )}
-      <div ref={bottomRef} />
     </div>
   )
 }

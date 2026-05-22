@@ -2,12 +2,18 @@
 
 import { useRef, useState } from 'react'
 
+type SuggestedPrompt = {
+  label: string
+  prompt: string
+}
+
 type Props = {
   onSubmit: (text: string) => void
   disabled?: boolean
+  suggestedPrompts?: SuggestedPrompt[]
 }
 
-export function ChatInput({ onSubmit, disabled }: Props) {
+export function ChatInput({ onSubmit, disabled, suggestedPrompts }: Props) {
   const [value, setValue] = useState('')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -37,11 +43,33 @@ export function ChatInput({ onSubmit, disabled }: Props) {
     ta.style.height = Math.min(ta.scrollHeight, 160) + 'px'
   }
 
+  const showChips = !disabled && !!suggestedPrompts?.length && !value.trim()
+
   return (
-    <div
-      className="flex items-end gap-2 p-3 rounded-xl"
-      style={{ background: 'var(--color-accent)' }}
-    >
+    <div className="flex flex-col gap-1.5">
+      {showChips && (
+        <div className="flex flex-wrap gap-1.5">
+          {suggestedPrompts!.map((sp) => (
+            <button
+              key={sp.label}
+              type="button"
+              onClick={() => onSubmit(sp.prompt)}
+              className="text-xs px-2.5 py-1 rounded-full border transition-colors"
+              style={{
+                background: 'var(--color-background)',
+                borderColor: 'rgba(65,108,99,0.25)',
+                color: 'var(--color-primary)',
+              }}
+            >
+              {sp.label}
+            </button>
+          ))}
+        </div>
+      )}
+      <div
+        className="flex items-end gap-2 p-3 rounded-xl"
+        style={{ background: 'var(--color-accent)' }}
+      >
       <textarea
         ref={textareaRef}
         value={value}
@@ -77,6 +105,7 @@ export function ChatInput({ onSubmit, disabled }: Props) {
           <path d="M22 2L15 22 11 13 2 9l20-7z" />
         </svg>
       </button>
+      </div>
     </div>
   )
 }

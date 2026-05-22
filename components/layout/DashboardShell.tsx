@@ -6,6 +6,7 @@ import { Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ChatPanel } from "@/components/chat/ChatSheet";
 import { MobileNavContext } from "@/components/layout/MobileNavContext";
+import { createClient } from "@/lib/supabase/client";
 
 type Props = {
   sidebar: React.ReactNode;
@@ -15,10 +16,26 @@ type Props = {
 export function DashboardShell({ sidebar, children }: Props) {
   const [chatOpen, setChatOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [participantName, setParticipantName] = useState<string | undefined>();
   const pathname = usePathname();
 
   useEffect(() => {
     setMobileNavOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    const memberId = pathname.match(/^\/team\/([^/]+)/)?.[1];
+    if (!memberId) {
+      setParticipantName(undefined);
+      return;
+    }
+    const supabase = createClient();
+    supabase
+      .from("team_members")
+      .select("name")
+      .eq("id", memberId)
+      .single()
+      .then(({ data }) => setParticipantName(data?.name ?? undefined));
   }, [pathname]);
 
   return (
@@ -49,7 +66,7 @@ export function DashboardShell({ sidebar, children }: Props) {
         <main className="p-4 sm:p-6 flex-1 overflow-y-auto min-w-0">
           {children}
         </main>
-        {chatOpen && <ChatPanel onClose={() => setChatOpen(false)} />}
+        {chatOpen && <ChatPanel onClose={() => setChatOpen(false)} participantName={participantName} />}
       </div>
 
       {/* Mobile menu button */}
