@@ -64,6 +64,7 @@ interface BriefingContent {
     member_name: string;
     meeting_minutes: number;
   }[];
+  date?: string;
 }
 
 interface DayState {
@@ -106,14 +107,15 @@ function linkifyNames(
 export function DailyBriefing({ userId }: { userId: string }) {
   const router = useRouter();
   const [briefing, setBriefing] = useState<BriefingContent | null>(null);
+  const [briefingDate, setBriefingDate] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
   // userId is used to key the effect; not sent to the API (auth handles identity)
   void userId;
 
-  const today = format(new Date(), "yyyy-MM-dd");
-  const storageKey = `daily-briefing-${today}`;
+  const todayStr = format(new Date(), "yyyy-MM-dd");
+  const storageKey = `daily-briefing-${todayStr}`;
 
   const [dayState, setDayState] = useState<DayState>(() => {
     try {
@@ -210,6 +212,7 @@ export function DailyBriefing({ userId }: { userId: string }) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       setBriefing(data.briefing);
+      if (data.date) setBriefingDate(data.date as string);
     } catch {
       setError(true);
     } finally {
@@ -224,6 +227,7 @@ export function DailyBriefing({ userId }: { userId: string }) {
         const data = await res.json();
         if (data.briefing) {
           setBriefing(data.briefing);
+          if (data.date) setBriefingDate(data.date as string);
         }
       } catch {
         // ignore
@@ -282,8 +286,10 @@ export function DailyBriefing({ userId }: { userId: string }) {
     (h) => h.meeting_minutes > 0,
   );
 
-  if (!hasOverdue && !hasMeetings && !hasPriorities && !hasSuggestions && !hasRecap)
-    return null;
+  const isStale = briefingDate !== null && briefingDate !== todayStr;
+  const displayDate = briefingDate
+    ? format(new Date(briefingDate + "T12:00:00"), "EEEE, d MMMM")
+    : format(new Date(), "EEEE, d MMMM");
 
   return (
     <div className="rounded-lg border bg-card mb-4 overflow-hidden text-sm">
@@ -292,7 +298,10 @@ export function DailyBriefing({ userId }: { userId: string }) {
         <div>
           <p className="text-lg font-bold ">Daily briefing</p>
           <p className="text-xs font-medium text-muted-foreground">
-            {format(new Date(), "EEEE, d MMMM")}
+            {displayDate}
+            {isStale && (
+              <span className="ml-1.5 text-amber-600 dark:text-amber-400">· not yet refreshed</span>
+            )}
           </p>
         </div>
         <Button
@@ -307,6 +316,13 @@ export function DailyBriefing({ userId }: { userId: string }) {
       </div>
 
       <div className="divide-y">
+        {/* Empty state */}
+        {!hasOverdue && !hasMeetings && !hasPriorities && !hasSuggestions && !hasRecap && (
+          <div className="px-4 py-3 text-sm text-muted-foreground">
+            Nothing to highlight today.
+          </div>
+        )}
+
         {/* Meeting load */}
         {hasMeetings && (
           <div className="px-4 py-2.5 flex items-center gap-2">

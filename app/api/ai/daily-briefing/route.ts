@@ -44,15 +44,14 @@ export async function GET() {
   if (!user)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const today = new Date().toISOString().slice(0, 10);
-
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [{ data }, { data: members }] = await Promise.all([
     (supabase as any)
       .from("daily_briefings")
-      .select("content")
+      .select("content, date")
       .eq("user_id", user.id)
-      .eq("date", today)
+      .order("date", { ascending: false })
+      .limit(1)
       .maybeSingle(),
     supabase
       .from("team_members")
@@ -64,6 +63,7 @@ export async function GET() {
   if (!data?.content) return NextResponse.json({ briefing: null });
 
   return NextResponse.json({
+    date: data.date as string,
     briefing: {
       ...data.content,
       team_members: (members ?? []).map((m: { id: string; name: string }) => ({
@@ -387,5 +387,5 @@ Rules for priority_items:
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ briefing: content });
+  return NextResponse.json({ date: today, briefing: content });
 }
