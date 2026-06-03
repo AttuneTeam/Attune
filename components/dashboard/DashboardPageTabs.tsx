@@ -2,7 +2,6 @@
 
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { PersonalTab } from "./PersonalTab";
-import { CalendarSheet } from "@/components/calendar/CalendarSheet";
 import { ManagerProfileInsights } from "@/components/account/ManagerProfileInsights";
 import { InteractionsSheet } from "@/components/dashboard/InteractionsSheet";
 import { UpcomingList } from "@/components/dashboard/UpcomingList";
@@ -56,7 +55,6 @@ export function DashboardPageTabs({
                 totalThisMonth={totalThisMonth}
                 totalMinutesThisMonth={totalMinutesThisMonth}
               />
-              <CalendarSheet connected={hasGoogleCalendar} members={members} />
             </div>
 
             {upcomingBookings.length > 0 && (

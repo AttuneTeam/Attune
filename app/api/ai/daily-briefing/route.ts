@@ -11,18 +11,6 @@ import {
 } from "@/lib/google/calendar";
 
 const BriefingSchema = z.object({
-  priority_items: z
-    .array(
-      z.object({
-        type: z.enum(["reminder", "action_item"]),
-        id: z.string().describe("The exact ID from the input data"),
-        description: z.string().describe("Concise description of the item"),
-        urgency_reason: z
-          .string()
-          .describe("One-line reason this is urgent today"),
-      }),
-    )
-    .describe("Items ordered by urgency, most urgent first"),
   suggested_meetings: z
     .array(
       z.object({
@@ -83,7 +71,7 @@ export async function POST() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const now = new Date();
-  const today = now.toISOString().slice(0, 10);
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
   const todayEnd = new Date(now);
   todayEnd.setHours(23, 59, 59, 999);
   const todayStart = new Date(now);
@@ -230,47 +218,6 @@ export async function POST() {
     };
   });
 
-  // Build prompt
-  const allReminderItems = [
-    ...overdueReminders.map((r) => ({
-      id: r.id,
-      content: r.description,
-      label: `OVERDUE: ${r.description}`,
-    })),
-    ...dueTodayReminders.map((r) => ({
-      id: r.id,
-      content: r.description,
-      label: `Due today: ${r.description}`,
-    })),
-  ];
-
-  // IDs already shown in REMINDERS — exclude from OPEN ACTION ITEMS to prevent duplicates
-  const reminderIdSet = new Set(allReminderItems.map((r) => r.id));
-
-  const remindersText =
-    allReminderItems.length > 0
-      ? allReminderItems.map((r) => `- [id:${r.id}] ${r.label}`).join("\n")
-      : "None";
-
-  const actionItemsForPrompt = actionItemsFlat.filter((a) => !reminderIdSet.has(a.id));
-  const actionText =
-    actionItemsForPrompt.length > 0
-      ? actionItemsForPrompt
-          .map((a) => {
-            const memberParts: string[] = [];
-            if (a.member_name) memberParts.push(a.member_name);
-            if (a.member_level) memberParts.push(a.member_level);
-            if (a.member_role) memberParts.push(a.member_role);
-            const memberInfo = memberParts.length > 0 ? ` (re: ${memberParts.join(", ")})` : "";
-            const dueInfo = a.due_date ? ` — due ${a.due_date.slice(0, 10)}` : "";
-            const summaryInfo = a.last_interaction_summary
-              ? `\n  Last 1:1: ${a.last_interaction_summary.slice(0, 200)}`
-              : "";
-            return `- [id:${a.id}] ${a.description}${memberInfo}${dueInfo}${summaryInfo}`;
-          })
-          .join("\n")
-      : "None";
-
   // Yesterday's recap (data-driven, no AI needed)
   const memberById = Object.fromEntries((members ?? []).map((m) => [m.id, m.name]));
   const yesterdayRecap = (yesterdayInteractions ?? []).map((i) => ({
@@ -304,39 +251,19 @@ export async function POST() {
 YESTERDAY'S INTERACTIONS (${yesterdayRecap.length}):
 ${yesterdayText}
 
-REMINDERS — overdue or with a due date (${allReminderItems.length}):
-${remindersText}
-
-OPEN ACTION ITEMS (${actionItemsForPrompt.length} items, excludes those already in REMINDERS):
-${actionText}
-
 TODAY'S MEETINGS (${meetingsToday.length}): ${meetingsToday.length > 0 ? meetingsToday.map((m) => m.title).join(", ") : "None"}
 
 TEAM MEMBERS:
 ${membersText}
 
-Return a prioritised list of items to focus on today, and up to 3 team members to connect with.
-Rules for priority_items:
-- Use the exact id values from the input (the part after "id:").
-- Items from the REMINDERS section → type "reminder".
-- Items from the OPEN ACTION ITEMS section → type "action_item".
-- Each id must appear at most once across all priority_items.
-- Do not include items that are already shown in the REMINDERS section.`;
+Return up to 3 team members the manager should consider connecting with today.`;
 
   const { object } = await generateObject({
     model: openai("gpt-5.5"),
     system:
-      `You are a daily briefing assistant for a manager${profile?.role ? ` (${profile.role})` : ""}. Help them prioritise their day and maintain good relationships with their direct reports. Be concise and practical.`,
+      `You are a daily briefing assistant for a manager${profile?.role ? ` (${profile.role})` : ""}. Help them maintain good relationships with their direct reports. Be concise and practical.`,
     prompt,
     schema: BriefingSchema,
-  });
-
-  // Deduplicate priority_items by ID (keep first occurrence)
-  const seenPriorityIds = new Set<string>();
-  const dedupedPriorityItems = object.priority_items.filter((item) => {
-    if (seenPriorityIds.has(item.id)) return false;
-    seenPriorityIds.add(item.id);
-    return true;
   });
 
   const overdueForWidget = overdueReminders.map((r) => ({
@@ -364,7 +291,6 @@ Rules for priority_items:
     action_items_count: actionItemsFlat.length,
     meetings_today: meetingsToday,
     total_meeting_hours: totalMeetingHours,
-    priority_items: dedupedPriorityItems,
     suggested_meetings: object.suggested_meetings,
     team_members: (members ?? []).map((m) => ({ id: m.id, name: m.name })),
     yesterday_recap: { interactions: yesterdayRecap },

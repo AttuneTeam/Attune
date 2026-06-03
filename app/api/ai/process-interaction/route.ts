@@ -8,7 +8,6 @@ import {
   formatTeamValues,
   formatOrgContext,
   SUMMARIZE_SYSTEM,
-  ACTION_ITEMS_SYSTEM,
   COACHING_SYSTEM,
   MANAGER_READ_SYSTEM,
   COACHING_NUDGES_SYSTEM,
@@ -20,10 +19,9 @@ const AGENT_SYSTEM = `You are a management assistant AI that processes notes fro
 Given the interaction notes, work through these steps using the available tools:
 
 1. Summarize the interaction — always do this first to understand the content, tone, and sentiment
-2. Extract action items — identify specific commitments, tasks, or next steps from the conversation
-3. Generate coaching questions — prepare the manager for more effective future conversations
-4. Check the member's recent sentiment history — look for patterns across interactions
-5. Based on what you find, decide whether escalation is needed
+2. Generate coaching questions — prepare the manager for more effective future conversations
+3. Check the member's recent sentiment history — look for patterns across interactions
+4. Based on what you find, decide whether escalation is needed
 
 Think out loud as you work. Before each tool call, briefly explain what you are about to do and why. After each result, reflect on what it tells you and what you will do next. When deciding whether to create an escalation reminder, reason through it explicitly — not every negative interaction warrants escalation, but a persistent pattern does.`;
 
@@ -126,67 +124,6 @@ export async function POST(request: NextRequest) {
             console.error,
           );
           return object;
-        },
-      }),
-
-      extract_action_items: tool({
-        description:
-          "Extract specific action items, commitments, or next steps from the meeting notes and save them.",
-        inputSchema: z.object({}),
-        execute: async () => {
-          const { object } = await generateObject({
-            model: openai("gpt-5.4-mini"),
-            system: ACTION_ITEMS_SYSTEM,
-            prompt: [
-              `This interaction is with: ${memberName}`,
-              `Meeting notes:\n\n${notesText}`,
-            ].join("\n\n"),
-            schema: z.object({
-              items: z.array(
-                z.object({
-                  description: z.string(),
-                  due_date: z.string().nullable(),
-                  scope: z
-                    .enum(["individual", "manager"])
-                    .describe(
-                      '"individual" if the action is specific to this person (their task, their growth, their commitment). "manager" if it is something the manager takes away that affects the broader team, company strategy, or multiple people — e.g. process changes, hiring decisions, company initiatives.',
-                    ),
-                }),
-              ),
-            }),
-          });
-
-          const individual = object.items.filter((i) => i.scope === "individual");
-          const manager = object.items.filter((i) => i.scope === "manager");
-
-          if (individual.length > 0) {
-            await supabase.from("action_items").insert(
-              individual.map((item) => ({
-                interaction_id: interactionId,
-                description: item.description,
-                status: "open" as const,
-                due_date: item.due_date ?? null,
-              })),
-            );
-          }
-
-          if (manager.length > 0) {
-            await supabase.from("action_items").insert(
-              manager.map((item) => ({
-                user_id: user.id,
-                description: item.description,
-                status: "open" as const,
-                due_date: item.due_date ?? null,
-              })),
-            );
-          }
-
-          return {
-            count: object.items.length,
-            individualCount: individual.length,
-            managerCount: manager.length,
-            items: object.items.map((i) => `[${i.scope}] ${i.description}`),
-          };
         },
       }),
 

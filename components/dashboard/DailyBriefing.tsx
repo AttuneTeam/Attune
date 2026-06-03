@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,22 +9,15 @@ import {
   Calendar,
   ListChecks,
   ChevronRight,
-  ChevronDown,
   Users,
   CheckCircle,
   X,
   Check,
+  Plus,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-
-interface PriorityItem {
-  type: "reminder" | "action_item";
-  id: string;
-  description: string;
-  urgency_reason: string;
-}
 
 interface SuggestedMeeting {
   member_id: string;
@@ -49,7 +42,6 @@ interface BriefingContent {
     duration_minutes: number;
   }[];
   total_meeting_hours: number;
-  priority_items: PriorityItem[];
   suggested_meetings: SuggestedMeeting[];
   team_members?: { id: string; name: string }[];
   yesterday_recap?: {
@@ -68,8 +60,6 @@ interface BriefingContent {
 }
 
 interface DayState {
-  accepted: Record<string, boolean>;
-  rejected: string[];
   overdueChecked: Record<string, boolean>;
 }
 
@@ -111,7 +101,6 @@ export function DailyBriefing({ userId }: { userId: string }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
-  // userId is used to key the effect; not sent to the API (auth handles identity)
   void userId;
 
   const todayStr = format(new Date(), "yyyy-MM-dd");
@@ -122,65 +111,14 @@ export function DailyBriefing({ userId }: { userId: string }) {
       const raw = localStorage.getItem(storageKey);
       if (raw) return JSON.parse(raw) as DayState;
     } catch {}
-    return { accepted: {}, rejected: [], overdueChecked: {} };
+    return { overdueChecked: {} };
   });
-
-  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
 
   function saveDayState(next: DayState) {
     setDayState(next);
     try {
       localStorage.setItem(storageKey, JSON.stringify(next));
     } catch {}
-  }
-
-  function toggleExpand(id: string) {
-    setExpandedItems((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }
-
-  function acceptItem(id: string) {
-    saveDayState({
-      ...dayState,
-      accepted: { ...dayState.accepted, [id]: false },
-    });
-  }
-
-  async function toggleAccepted(id: string, type: PriorityItem["type"]) {
-    const newChecked = !dayState.accepted[id];
-    const snapshot = dayState;
-    saveDayState({
-      ...dayState,
-      accepted: { ...dayState.accepted, [id]: newChecked },
-    });
-
-    const newStatus = newChecked ? "done" : "open";
-    try {
-      if (type === "action_item") {
-        await fetch(`/api/action-items/${id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status: newStatus }),
-        });
-      } else {
-        const supabase = createClient();
-        await supabase
-          .from("personal_items")
-          .update({ status: newStatus })
-          .eq("id", id);
-      }
-      router.refresh();
-    } catch {
-      saveDayState(snapshot);
-    }
-  }
-
-  function rejectItem(id: string) {
-    saveDayState({ ...dayState, rejected: [...dayState.rejected, id] });
   }
 
   async function toggleOverdueItem(id: string) {
@@ -261,22 +199,10 @@ export function DailyBriefing({ userId }: { userId: string }) {
     );
   }
 
-  const overdueIds = new Set(briefing.overdue_reminders.map((r) => r.id));
   const teamMembers = briefing.team_members ?? [];
-
-  const visiblePriorityItems = briefing.priority_items.filter(
-    (item) => !overdueIds.has(item.id) && !dayState.rejected.includes(item.id),
-  );
-  const acceptedItems = visiblePriorityItems.filter(
-    (item) => item.id in dayState.accepted,
-  );
-  const pendingItems = visiblePriorityItems.filter(
-    (item) => !(item.id in dayState.accepted),
-  );
 
   const hasOverdue = briefing.overdue_reminders.length > 0;
   const hasMeetings = briefing.meetings_today.length > 0;
-  const hasPriorities = visiblePriorityItems.length > 0;
   const hasSuggestions = briefing.suggested_meetings.length > 0;
   const hasRecap = (briefing.yesterday_recap?.interactions ?? []).length > 0;
   const memberHoursMap = Object.fromEntries(
@@ -316,13 +242,6 @@ export function DailyBriefing({ userId }: { userId: string }) {
       </div>
 
       <div className="divide-y">
-        {/* Empty state */}
-        {!hasOverdue && !hasMeetings && !hasPriorities && !hasSuggestions && !hasRecap && (
-          <div className="px-4 py-3 text-sm text-muted-foreground">
-            Nothing to highlight today.
-          </div>
-        )}
-
         {/* Meeting load */}
         {hasMeetings && (
           <div className="px-4 py-2.5 flex items-center gap-2">
@@ -433,104 +352,8 @@ export function DailyBriefing({ userId }: { userId: string }) {
           </div>
         )}
 
-        {/* Priority items */}
-        {hasPriorities && (
-          <div className="px-4 py-2.5 space-y-2">
-            <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
-              Today&apos;s priorities
-            </p>
-
-            {/* Accepted items — checkbox mode */}
-            {acceptedItems.map((item) => (
-              <div
-                key={`${item.type}-${item.id}`}
-                className="flex items-start gap-2"
-              >
-                <button
-                  onClick={() => toggleAccepted(item.id, item.type)}
-                  className={`flex h-4 w-4 mt-0.5 shrink-0 items-center justify-center rounded border transition-colors ${
-                    dayState.accepted[item.id]
-                      ? "border-green-500 bg-green-500 text-white"
-                      : "border-muted-foreground hover:border-foreground"
-                  }`}
-                >
-                  {dayState.accepted[item.id] && (
-                    <Check className="h-2.5 w-2.5" />
-                  )}
-                </button>
-                <span
-                  className={`flex-1 font-medium ${
-                    dayState.accepted[item.id]
-                      ? "line-through text-muted-foreground"
-                      : ""
-                  }`}
-                >
-                  {linkifyNames(item.description, teamMembers)}
-                </span>
-                <TypeBadge type={item.type} />
-              </div>
-            ))}
-
-            {/* Pending items — numbered, expandable, hover accept/reject */}
-            {pendingItems.map((item, i) => {
-              const isExpanded = expandedItems.has(item.id);
-              return (
-                <div
-                  key={`${item.type}-${item.id}`}
-                  className="group flex items-start gap-2"
-                >
-                  <span className="text-xs text-muted-foreground w-4 shrink-0 mt-0.5 tabular-nums">
-                    {i + 1}
-                  </span>
-                  <div
-                    className="flex-1 min-w-0 cursor-pointer"
-                    onClick={() => toggleExpand(item.id)}
-                  >
-                    <div className="flex items-start gap-1">
-                      <span className="font-medium flex-1">
-                        {linkifyNames(item.description, teamMembers)}
-                      </span>
-                      <ChevronDown
-                        className={`h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5 transition-transform ${
-                          isExpanded ? "rotate-180" : ""
-                        }`}
-                      />
-                    </div>
-                    {isExpanded && item.urgency_reason && (
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {linkifyNames(item.urgency_reason, teamMembers)}
-                      </p>
-                    )}
-                  </div>
-                  <div className="shrink-0 relative">
-                    <div className="group-hover:hidden">
-                      <TypeBadge type={item.type} />
-                    </div>
-                    <div className="hidden group-hover:flex items-center gap-1">
-                      <button
-                        onClick={() => acceptItem(item.id)}
-                        className="p-0.5 rounded text-green-600 hover:bg-green-100 dark:hover:bg-green-900/30"
-                        title="Accept"
-                      >
-                        <CheckCircle className="h-3.5 w-3.5" />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          rejectItem(item.id);
-                        }}
-                        className="p-0.5 rounded text-muted-foreground hover:text-destructive hover:bg-muted"
-                        title="Reject"
-                      >
-                        <X className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
+        {/* Today's priorities — quick-add */}
+        <TodaysPriorities userId={userId} />
 
         {/* Suggested meetings */}
         {hasSuggestions && (
@@ -601,18 +424,175 @@ export function DailyBriefing({ userId }: { userId: string }) {
   );
 }
 
-function TypeBadge({ type }: { type: "reminder" | "action_item" }) {
-  if (type === "reminder") {
-    return (
-      <span className="inline-flex items-center rounded px-1.5 py-0 h-4 text-[10px] font-medium shrink-0 bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
-        reminder
-      </span>
-    );
+type SearchResult = { id: string; title: string | null; description: string; memberName: string | null };
+type PriorityItem = { id: string; title: string | null; description: string };
+
+function itemLabel(item: { title: string | null; description: string }) {
+  return item.title || item.description;
+}
+
+function TodaysPriorities({ userId }: { userId: string }) {
+  const todayStr = format(new Date(), "yyyy-MM-dd");
+  const [items, setItems] = useState<PriorityItem[]>([]);
+  const [draft, setDraft] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [results, setResults] = useState<SearchResult[]>([]);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Load today's priorities (RLS handles access)
+  useEffect(() => {
+    const supabase = createClient();
+    supabase
+      .from("action_items")
+      .select("id, title, description")
+      .eq("due_date", todayStr)
+      .in("status", ["open", "in_progress"])
+      .order("created_at", { ascending: true })
+      .then(({ data }) => setItems(data ?? []));
+  }, [userId, todayStr]);
+
+  // Search existing todos as user types (title + description)
+  useEffect(() => {
+    if (draft.length < 2) { setResults([]); return; }
+    const timer = setTimeout(async () => {
+      const supabase = createClient();
+      const todayIds = new Set(items.map((i) => i.id));
+      const q = draft.replace(/[%_]/g, "\\$&");
+      const { data } = await supabase
+        .from("action_items")
+        .select("id, title, description, interactions!left(team_members(name))")
+        .or(`description.ilike.%${q}%,title.ilike.%${q}%`)
+        .in("status", ["open", "in_progress"])
+        .limit(8);
+      setResults(
+        (data ?? [])
+          .filter((r) => !todayIds.has(r.id))
+          .map((r) => ({
+            id: r.id,
+            title: r.title ?? null,
+            description: r.description,
+            memberName: (r.interactions as any)?.team_members?.name ?? null,
+          }))
+          .slice(0, 5),
+      );
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [draft, items]);
+
+  async function pullIn(result: SearchResult) {
+    setResults([]);
+    setDraft("");
+    const supabase = createClient();
+    await supabase.from("action_items").update({ due_date: todayStr }).eq("id", result.id);
+    setItems((prev) => [...prev, { id: result.id, title: result.title, description: result.description }]);
+    inputRef.current?.focus();
   }
+
+  async function add() {
+    const text = draft.trim();
+    if (!text || saving) return;
+    setSaving(true);
+    setResults([]);
+    const supabase = createClient();
+    const { data } = await supabase
+      .from("action_items")
+      .insert({ user_id: userId, description: text, status: "open", due_date: todayStr })
+      .select("id, title, description")
+      .single();
+    if (data) setItems((prev) => [...prev, data]);
+    setDraft("");
+    setSaving(false);
+    inputRef.current?.focus();
+  }
+
+  async function complete(id: string) {
+    setItems((prev) => prev.filter((i) => i.id !== id));
+    await fetch(`/api/action-items/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "done" }),
+    });
+  }
+
+  async function remove(id: string) {
+    setItems((prev) => prev.filter((i) => i.id !== id));
+    await fetch(`/api/action-items/${id}`, { method: "DELETE" });
+  }
+
   return (
-    <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 shrink-0">
-      action
-    </Badge>
+    <div className="px-4 py-2.5 space-y-2">
+      <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
+        Today&apos;s priorities
+      </p>
+      {items.map((item) => (
+        <div key={item.id} className="group flex items-center gap-2">
+          <button
+            onClick={() => complete(item.id)}
+            className="flex h-4 w-4 shrink-0 items-center justify-center rounded border border-muted-foreground hover:border-green-500 hover:bg-green-500 hover:text-white transition-colors"
+            title="Mark done"
+          >
+            <Check className="h-2.5 w-2.5 opacity-0 group-hover:opacity-100" />
+          </button>
+          <span className="flex-1">{itemLabel(item)}</span>
+          <button
+            onClick={() => remove(item.id)}
+            className="opacity-0 group-hover:opacity-100 p-0.5 rounded text-muted-foreground hover:text-destructive transition-colors shrink-0"
+            title="Delete"
+          >
+            <X className="h-3 w-3" />
+          </button>
+        </div>
+      ))}
+      <div className="relative">
+        <div className="flex items-center gap-2">
+          <Plus className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+          <input
+            ref={inputRef}
+            type="text"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") add();
+              if (e.key === "Escape") { setResults([]); setDraft(""); }
+            }}
+            onBlur={() => setTimeout(() => setResults([]), 150)}
+            placeholder="Add or search todos..."
+            className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/50 min-w-0"
+            disabled={saving}
+          />
+          {draft.trim() && (
+            <button
+              onClick={add}
+              disabled={saving}
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors shrink-0"
+            >
+              Add new
+            </button>
+          )}
+        </div>
+        {results.length > 0 && (
+          <div className="absolute left-0 right-0 top-full mt-1 z-50 rounded-md border bg-popover shadow-md py-1">
+            {results.map((r) => (
+              <button
+                key={r.id}
+                onMouseDown={(e) => { e.preventDefault(); pullIn(r); }}
+                className="w-full flex items-start gap-2 px-3 py-1.5 text-sm text-left hover:bg-accent transition-colors"
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="truncate">{r.title || r.description}</div>
+                  {r.title && r.description && (
+                    <div className="truncate text-xs text-muted-foreground">{r.description}</div>
+                  )}
+                </div>
+                {r.memberName && (
+                  <span className="text-xs text-muted-foreground shrink-0 mt-0.5">{r.memberName}</span>
+                )}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
