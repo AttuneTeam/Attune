@@ -187,6 +187,50 @@ export function buildChatTools(supabase: SupabaseClient, userId: string) {
       },
     }),
 
+    get_member_persona: tool({
+      description:
+        "Get the synthesised persona (working-style profile) for a team member: how they communicate, what motivates them, their stress signature, feedback that lands, growth edge, and open threads. Each claim is evidence-anchored (cited to interactions) and carries a confidence level and whether it is an observation or an inference. Use this to prepare for or rehearse a 1-on-1, or when asked what someone is like to work with. The persona is built by folding Processed interactions; it may not exist until the manager has Processed interactions or run a backfill.",
+      inputSchema: z.object({
+        member_name: z
+          .string()
+          .describe("Name (or partial name) of the team member"),
+      }),
+      execute: async ({ member_name }) => {
+        const { data: members } = await supabase
+          .from("team_members")
+          .select("id, name")
+          .eq("manager_id", userId)
+          .ilike("name", `%${member_name}%`)
+          .limit(1);
+
+        const member = members?.[0];
+        if (!member)
+          return { error: `No team member found matching "${member_name}"` };
+
+        const { data: persona } = await supabase
+          .from("member_personas")
+          .select("content, version, source_counts, updated_at")
+          .eq("member_id", member.id)
+          .maybeSingle();
+
+        if (!persona) {
+          return {
+            member_name: member.name,
+            persona: null,
+            note: `No persona has been built for ${member.name} yet. It is created when interactions are Processed, or via a one-time backfill from their profile page.`,
+          };
+        }
+
+        return {
+          member_name: member.name,
+          version: persona.version,
+          updated_at: persona.updated_at,
+          source_counts: persona.source_counts,
+          persona: persona.content,
+        };
+      },
+    }),
+
     get_action_items: tool({
       description:
         "List open or in-progress action items. Optionally filter by team member or due date.",

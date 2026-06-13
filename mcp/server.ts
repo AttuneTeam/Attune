@@ -207,6 +207,50 @@ server.tool(
 )
 
 // ---------------------------------------------------------------------------
+// Tool: get_member_persona
+// ---------------------------------------------------------------------------
+server.tool(
+  "get_member_persona",
+  "Get the synthesised persona (working-style profile) for a team member: how they communicate, what motivates them, their stress signature, feedback that lands, growth edge, and open threads. Each claim is evidence-anchored (cited to interactions) with a confidence level and observation/inference tag. Built by folding Processed interactions; may not exist until interactions are Processed or a backfill is run.",
+  {
+    member_name: z.string().describe("Name (or partial name) of the team member"),
+  },
+  async ({ member_name }) => {
+    const { data: members } = await supabase
+      .from("team_members")
+      .select("id, name")
+      .eq("manager_id", managerId)
+      .ilike("name", `%${member_name}%`)
+      .limit(1)
+
+    const member = members?.[0]
+    if (!member) return err(`No team member found matching "${member_name}"`)
+
+    const { data: persona } = await supabase
+      .from("member_personas")
+      .select("content, version, source_counts, updated_at")
+      .eq("member_id", member.id)
+      .maybeSingle()
+
+    if (!persona) {
+      return ok({
+        member_name: member.name,
+        persona: null,
+        note: `No persona has been built for ${member.name} yet. It is created when interactions are Processed, or via a one-time backfill from their profile page.`,
+      })
+    }
+
+    return ok({
+      member_name: member.name,
+      version: persona.version,
+      updated_at: persona.updated_at,
+      source_counts: persona.source_counts,
+      persona: persona.content,
+    })
+  },
+)
+
+// ---------------------------------------------------------------------------
 // Tool: get_action_items
 // ---------------------------------------------------------------------------
 server.tool(
