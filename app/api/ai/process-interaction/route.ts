@@ -13,6 +13,7 @@ import {
   COACHING_NUDGES_SYSTEM,
 } from "@/lib/ai/prompts";
 import { embedInteraction } from "@/lib/ai/embeddings";
+import { foldPersona } from "@/lib/ai/member-persona";
 
 const AGENT_SYSTEM = `You are a management assistant AI that processes notes from 1-on-1 meetings between a manager and a direct report.
 
@@ -327,6 +328,22 @@ export async function POST(request: NextRequest) {
             .eq("id", memberId);
         } catch (e) {
           console.error("Manager read error:", e);
+        }
+
+        // Fold this interaction into the member's persona. The no-op gate
+        // (changed: false) means most interactions write nothing, and
+        // re-processing is safe. Isolated so a fold failure can't break the
+        // manager_read / nudges flow above.
+        try {
+          await foldPersona(supabase, {
+            memberId,
+            memberName,
+            memberLevel: member?.level,
+            managerId: user.id,
+            interactionId,
+          });
+        } catch (e) {
+          console.error("Persona fold error:", e);
         }
       })();
     },

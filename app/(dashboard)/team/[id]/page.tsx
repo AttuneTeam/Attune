@@ -12,6 +12,7 @@ import {
   Zap,
 } from "lucide-react";
 import { SentimentInsightsCard } from "@/components/team/SentimentInsightsCard";
+import { MemberPersonaCard } from "@/components/team/MemberPersonaCard";
 import { NewInteractionButton } from "@/components/dashboard/NewMeetingButton";
 import { MemberHeaderMenu } from "@/components/team/MemberHeaderMenu";
 import { GitHubCard } from "@/components/team/GitHubCard";
@@ -238,6 +239,24 @@ export default async function MemberProfilePage({
   const goals = (goalsRaw ?? []) as MemberGoal[];
   const goalTemplates = (templatesRaw ?? []) as GoalTemplate[];
 
+  // Working-style persona (current + latest change note)
+  const { data: persona } = await supabase
+    .from("member_personas")
+    .select("content, version, updated_at")
+    .eq("member_id", id)
+    .maybeSingle();
+
+  const { data: latestPersonaVersion } = await supabase
+    .from("member_persona_versions")
+    .select("delta")
+    .eq("member_id", id)
+    .order("version", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const personaLastChange =
+    (latestPersonaVersion?.delta as { note?: string } | null)?.note ?? null;
+
   // Fetch assigned role + its areas
   const assignedRole = member.role_id
     ? await supabase
@@ -441,6 +460,15 @@ export default async function MemberProfilePage({
             meetingCount={withScore.length}
             managerRead={member.manager_read ?? []}
             memberName={member.name}
+          />
+
+          <MemberPersonaCard
+            memberId={member.id}
+            memberName={member.name}
+            persona={(persona?.content as never) ?? null}
+            version={persona?.version ?? null}
+            updatedAt={persona?.updated_at ?? null}
+            lastChange={personaLastChange}
           />
 
         </div>
