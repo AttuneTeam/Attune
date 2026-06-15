@@ -184,17 +184,9 @@ export function Sidebar({
                   "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all",
                   collapsed && "justify-center px-0",
                   active
-                    ? "text-primary-foreground shadow-sm"
+                    ? "text-primary font-semibold"
                     : "text-muted-foreground hover:bg-accent hover:text-foreground",
                 )}
-                style={
-                  active
-                    ? {
-                        background:
-                          "linear-gradient(135deg, var(--color-primary), var(--color-primary-dim))",
-                      }
-                    : undefined
-                }
               >
                 <Icon className="h-4 w-4 shrink-0" />
                 {!collapsed && label}
