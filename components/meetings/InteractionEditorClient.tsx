@@ -4,6 +4,7 @@ import { useState, useCallback, useRef } from "react";
 import { TiptapEditor } from "@/components/editor/TiptapEditor";
 import { ActionItemsSidebar } from "./ActionItemsSidebar";
 import { AgendaItemsSidebar } from "./AgendaItemsSidebar";
+import { InitiativeSignalsPanel } from "./InitiativeSignalsPanel";
 import { SentimentBadge } from "./SentimentBadge";
 import { AgentProcessLog, type AgentLogEntry } from "./AgentProcessLog";
 import { Badge } from "@/components/ui/badge";
@@ -642,6 +643,12 @@ export function InteractionEditorClient({
                 items={agendaItems}
                 onUpdate={refreshAgendaItems}
               />
+            </CollapsibleSection>
+
+            <CollapsibleSection
+              title={<h2 className="text-sm font-semibold">Initiatives</h2>}
+            >
+              <InitiativeSignalsPanel interactionId={interaction.id} />
             </CollapsibleSection>
 
             {/* Tabs: Summary | Action Items | Coaching */}

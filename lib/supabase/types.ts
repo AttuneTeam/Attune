@@ -625,3 +625,15 @@ export type StrategicInitiative = {
   created_at: string
   updated_at: string
 }
+
+export type SignalType = 'advances' | 'reinforces' | 'threatens'
+
+export type InteractionInitiativeSignal = {
+  id: string
+  interaction_id: string
+  initiative_id: string
+  signal: SignalType
+  note: string | null
+  manager_id: string
+  created_at: string
+}

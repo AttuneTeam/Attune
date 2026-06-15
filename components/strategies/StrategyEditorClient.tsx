@@ -34,6 +34,7 @@ import { format } from "date-fns";
 import type { StrategicInitiative } from "@/lib/supabase/types";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
+import { InitiativeSignalsSummary } from "./InitiativeSignalsSummary";
 
 const STATUS_CYCLE: Record<string, string> = {
   active: "paused",
@@ -407,6 +408,11 @@ export function StrategyEditorClient({
                       </div>
                     </div>
                   </div>
+                </CollapsibleSection>
+
+                {/* Signals from interactions */}
+                <CollapsibleSection title="Signals" defaultOpen={true}>
+                  <InitiativeSignalsSummary initiativeId={initiative.id} />
                 </CollapsibleSection>
 
                 {/* Sub-initiatives */}
