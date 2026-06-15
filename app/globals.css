@@ -118,37 +118,60 @@
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  /* ── Surface hierarchy ─────────────────────────────────────────────── */
+  /* Deep olive-green canvas — clearly green-tinted, not charcoal */
+  --background: #232b1b;
+  --muted: #232b1b;
+  --card: #2c3522;
+  --popover: #36402a;
+  --surface-dim: #1a2014;
+
+  /* ── Type ─────────────────────────────────────────────────────────── */
+  --foreground: #ecead2;
+  --card-foreground: #ecead2;
+  --popover-foreground: #ecead2;
+  --muted-foreground: #9aa178;
+
+  /* ── Brand palette ────────────────────────────────────────────────── */
+  --primary: #6fb49f;
+  --primary-foreground: #10201a;
+  --primary-dim: #5a9c88;
+
+  /* ── Secondary (pills / chips) ────────────────────────────────────── */
+  --secondary: #3a4a28;
+  --secondary-foreground: #b9d4a4;
+
+  /* ── Accent (hover backgrounds) ───────────────────────────────────── */
+  --accent: #344023;
+  --accent-foreground: #ecead2;
+
+  /* ── Tertiary / high-priority CTA highlight ───────────────────────── */
+  --tertiary: #e07038;
+
+  /* ── Semantic ─────────────────────────────────────────────────────── */
+  --destructive: #d05c5c;
+
+  /* ── Ghost border ────────────────────────────────────────────────── */
+  --border: #45502e;
+  --input: #344023;
+  --ring: #6fb49f;
+
+  /* ── Charts ───────────────────────────────────────────────────────── */
+  --chart-1: #6fb49f;
+  --chart-2: #9cb87e;
+  --chart-3: #cdd99e;
+  --chart-4: #e07038;
+  --chart-5: #45502e;
+
+  /* ── Sidebar ──────────────────────────────────────────────────────── */
+  --sidebar: #1d2416;
+  --sidebar-foreground: #ecead2;
+  --sidebar-primary: #6fb49f;
+  --sidebar-primary-foreground: #10201a;
+  --sidebar-accent: #344023;
+  --sidebar-accent-foreground: #ecead2;
+  --sidebar-border: transparent;
+  --sidebar-ring: #6fb49f;
 }
 
 .prose li p {

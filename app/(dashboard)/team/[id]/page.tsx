@@ -13,7 +13,6 @@ import {
 } from "lucide-react";
 import { SentimentInsightsCard } from "@/components/team/SentimentInsightsCard";
 import { MemberPersonaCard } from "@/components/team/MemberPersonaCard";
-import { NewInteractionButton } from "@/components/dashboard/NewMeetingButton";
 import { MemberHeaderMenu } from "@/components/team/MemberHeaderMenu";
 import { GitHubCard } from "@/components/team/GitHubCard";
 import { GitHubSummaryTile } from "@/components/team/GitHubSummaryTile";
@@ -56,7 +55,6 @@ function topThemes(interactions: InteractionRow[]): string[] {
     .slice(0, 8)
     .map(([theme]) => theme);
 }
-
 
 function IntegrationCard({ result }: { result: IntegrationResult }) {
   return (
@@ -298,13 +296,24 @@ export default async function MemberProfilePage({
     .order("date", { ascending: false })
     .limit(14);
 
-  type HoursEntry = { member_id: string; member_name: string; meeting_minutes: number };
-  const memberHoursHistory = ((briefingHistory ?? []) as { date: string; content: Record<string, unknown> }[]).flatMap((row) => {
-    const hours = (row.content?.team_member_hours as HoursEntry[] | undefined) ?? [];
+  type HoursEntry = {
+    member_id: string;
+    member_name: string;
+    meeting_minutes: number;
+  };
+  const memberHoursHistory = (
+    (briefingHistory ?? []) as {
+      date: string;
+      content: Record<string, unknown>;
+    }[]
+  ).flatMap((row) => {
+    const hours =
+      (row.content?.team_member_hours as HoursEntry[] | undefined) ?? [];
     const entry = hours.find((h) => h.member_id === id);
     return entry ? [{ date: row.date, minutes: entry.meeting_minutes }] : [];
   });
-  const todayMeetingMinutes = memberHoursHistory.find((h) => h.date === todayStr)?.minutes ?? null;
+  const todayMeetingMinutes =
+    memberHoursHistory.find((h) => h.date === todayStr)?.minutes ?? null;
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -312,12 +321,6 @@ export default async function MemberProfilePage({
       <div className="flex items-center gap-4 mb-8">
         <div className="flex-1" />
         <div className="flex items-center gap-2 shrink-0">
-          <div className="w-fit">
-            <NewInteractionButton
-              memberId={member.id}
-              memberName={member.name}
-            />
-          </div>
           <MemberHeaderMenu
             member={member}
             teams={teams ?? []}
@@ -332,7 +335,7 @@ export default async function MemberProfilePage({
         {/* ── Left column ── */}
         <div className="space-y-6">
           {/* Details */}
-          <div className="rounded-lg bg-card px-0 pt-0 pb-0 space-y-4">
+          <div className="rounded-lg px-0 pt-0 pb-0 space-y-4">
             {/* Name as card title */}
             <div>
               <h2 className="text-xl font-bold tracking-tight leading-tight">
@@ -420,13 +423,16 @@ export default async function MemberProfilePage({
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <Briefcase className="h-3.5 w-3.5 shrink-0" />
                   <span>
-                    {Math.round((todayMeetingMinutes / 60) * 10) / 10}h in meetings today
+                    {Math.round((todayMeetingMinutes / 60) * 10) / 10}h in
+                    meetings today
                   </span>
                 </div>
               )}
               {memberHoursHistory.length > 1 && (
                 <div className="pt-1">
-                  <p className="text-xs text-muted-foreground mb-1.5">Meeting load (last {memberHoursHistory.length} days)</p>
+                  <p className="text-xs text-muted-foreground mb-1.5">
+                    Meeting load (last {memberHoursHistory.length} days)
+                  </p>
                   <MeetingLoadChart history={memberHoursHistory} />
                 </div>
               )}
@@ -470,7 +476,6 @@ export default async function MemberProfilePage({
             updatedAt={persona?.updated_at ?? null}
             lastChange={personaLastChange}
           />
-
         </div>
 
         {/* ── Right column ── */}

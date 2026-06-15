@@ -86,7 +86,6 @@ function StatusIcon({ status }: { status: string }) {
   return <Icon className={`h-3.5 w-3.5 ${opt.className}`} />;
 }
 
-
 interface Props {
   interactions: InteractionRow[];
   items: ActionItem[];
@@ -106,7 +105,14 @@ const EMPTY_ACTION_ITEM = {
   interaction_id: null,
 } as const;
 
-export function InteractionsTabs({ interactions, items: initialItems, memberId, managerId, goals, goalTemplates }: Props) {
+export function InteractionsTabs({
+  interactions,
+  items: initialItems,
+  memberId,
+  managerId,
+  goals,
+  goalTemplates,
+}: Props) {
   const [items, setItems] = useState<ActionItem[]>(initialItems);
   const [activeSwipeId, setActiveSwipeId] = useState<string | null>(null);
   const [editingItem, setEditingItem] = useState<ActionItem | null>(null);
@@ -151,7 +157,9 @@ export function InteractionsTabs({ interactions, items: initialItems, memberId, 
     assignee_id: string | null;
   }) {
     const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     const { data, error } = await supabase
       .from("action_items")
       .insert({
@@ -176,9 +184,14 @@ export function InteractionsTabs({ interactions, items: initialItems, memberId, 
   async function handleSaveEdit(updates: ActionItemUpdates) {
     if (!editingItem) return;
     const id = editingItem.id;
-    setItems((prev) => prev.map((i) => (i.id === id ? { ...i, ...updates } : i)));
+    setItems((prev) =>
+      prev.map((i) => (i.id === id ? { ...i, ...updates } : i)),
+    );
     const supabase = createClient();
-    const { error } = await supabase.from("action_items").update(updates).eq("id", id);
+    const { error } = await supabase
+      .from("action_items")
+      .update(updates)
+      .eq("id", id);
     if (error) {
       toast.error("Failed to save");
       router.refresh();
@@ -227,14 +240,14 @@ export function InteractionsTabs({ interactions, items: initialItems, memberId, 
 
         {/* Interactions tab */}
         <TabsContent value="interactions">
-          <div className="rounded-lg bg-card mt-2">
+          <div className="rounded-lg mt-2">
             {interactions.length === 0 ? (
               <div className="px-5 py-12 text-center">
                 <p className="text-sm text-muted-foreground">
                   No interactions yet.
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Use "New interaction" above to get started.
+                  Use the ⋯ menu and choose "New interaction" to get started.
                 </p>
               </div>
             ) : (
@@ -331,7 +344,8 @@ export function InteractionsTabs({ interactions, items: initialItems, memberId, 
               <div className="min-[721px]:hidden rounded-lg border overflow-hidden mt-2 bg-card">
                 {sorted.map((item) => {
                   const done = item.status === "done";
-                  const overdue = !done && item.due_date && isPast(parseISO(item.due_date));
+                  const overdue =
+                    !done && item.due_date && isPast(parseISO(item.due_date));
                   return (
                     <SwipeableActionRow
                       key={item.id}
@@ -341,32 +355,45 @@ export function InteractionsTabs({ interactions, items: initialItems, memberId, 
                       onEdit={() => setEditingItem(item)}
                       onDeleteRequest={() => setDeletingItem(item)}
                     >
-                      <div className={`flex items-start gap-3 px-4 py-3 ${done ? "opacity-50" : ""}`}>
+                      <div
+                        className={`flex items-start gap-3 px-4 py-3 ${done ? "opacity-50" : ""}`}
+                      >
                         <DropdownMenu>
                           <DropdownMenuTrigger
                             render={
-                              <button className="mt-0.5 p-0.5 rounded hover:bg-muted shrink-0" title="Change status">
+                              <button
+                                className="mt-0.5 p-0.5 rounded hover:bg-muted shrink-0"
+                                title="Change status"
+                              >
                                 <StatusIcon status={item.status} />
                               </button>
                             }
                           />
                           <DropdownMenuContent>
-                            {STATUS_OPTIONS.map(({ value, label, icon: Icon, className }) => (
-                              <DropdownMenuItem
-                                key={value}
-                                onClick={() => changeStatus(item, value)}
-                                className={item.status === value ? "font-medium" : ""}
-                              >
-                                <Icon className={`h-3.5 w-3.5 ${className}`} />
-                                {label}
-                              </DropdownMenuItem>
-                            ))}
+                            {STATUS_OPTIONS.map(
+                              ({ value, label, icon: Icon, className }) => (
+                                <DropdownMenuItem
+                                  key={value}
+                                  onClick={() => changeStatus(item, value)}
+                                  className={
+                                    item.status === value ? "font-medium" : ""
+                                  }
+                                >
+                                  <Icon
+                                    className={`h-3.5 w-3.5 ${className}`}
+                                  />
+                                  {label}
+                                </DropdownMenuItem>
+                              ),
+                            )}
                           </DropdownMenuContent>
                         </DropdownMenu>
                         <div className="flex-1 min-w-0">
                           {item.title ? (
                             <>
-                              <p className={`text-sm font-medium truncate ${done ? "line-through text-muted-foreground" : ""}`}>
+                              <p
+                                className={`text-sm font-medium truncate ${done ? "line-through text-muted-foreground" : ""}`}
+                              >
                                 {item.title}
                               </p>
                               <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
@@ -374,12 +401,16 @@ export function InteractionsTabs({ interactions, items: initialItems, memberId, 
                               </p>
                             </>
                           ) : (
-                            <p className={`text-sm truncate ${done ? "line-through text-muted-foreground" : ""}`}>
+                            <p
+                              className={`text-sm truncate ${done ? "line-through text-muted-foreground" : ""}`}
+                            >
                               {item.description}
                             </p>
                           )}
                           {item.due_date && (
-                            <p className={`text-xs mt-1 ${overdue ? "text-destructive" : "text-muted-foreground"}`}>
+                            <p
+                              className={`text-xs mt-1 ${overdue ? "text-destructive" : "text-muted-foreground"}`}
+                            >
                               {format(parseISO(item.due_date), "MMM d")}
                             </p>
                           )}
@@ -417,29 +448,42 @@ export function InteractionsTabs({ interactions, items: initialItems, memberId, 
                             <DropdownMenu>
                               <DropdownMenuTrigger
                                 render={
-                                  <button className="p-0.5 rounded hover:bg-muted flex items-center justify-center" title="Change status">
+                                  <button
+                                    className="p-0.5 rounded hover:bg-muted flex items-center justify-center"
+                                    title="Change status"
+                                  >
                                     <StatusIcon status={item.status} />
                                   </button>
                                 }
                               />
                               <DropdownMenuContent>
-                                {STATUS_OPTIONS.map(({ value, label, icon: Icon, className }) => (
-                                  <DropdownMenuItem
-                                    key={value}
-                                    onClick={() => changeStatus(item, value)}
-                                    className={item.status === value ? "font-medium" : ""}
-                                  >
-                                    <Icon className={`h-3.5 w-3.5 ${className}`} />
-                                    {label}
-                                  </DropdownMenuItem>
-                                ))}
+                                {STATUS_OPTIONS.map(
+                                  ({ value, label, icon: Icon, className }) => (
+                                    <DropdownMenuItem
+                                      key={value}
+                                      onClick={() => changeStatus(item, value)}
+                                      className={
+                                        item.status === value
+                                          ? "font-medium"
+                                          : ""
+                                      }
+                                    >
+                                      <Icon
+                                        className={`h-3.5 w-3.5 ${className}`}
+                                      />
+                                      {label}
+                                    </DropdownMenuItem>
+                                  ),
+                                )}
                               </DropdownMenuContent>
                             </DropdownMenu>
                           </td>
                           <td className="px-3 py-2 max-w-0">
                             {item.title ? (
                               <>
-                                <p className={`truncate font-medium ${done ? "line-through text-muted-foreground" : ""}`}>
+                                <p
+                                  className={`truncate font-medium ${done ? "line-through text-muted-foreground" : ""}`}
+                                >
                                   {item.title}
                                 </p>
                                 <p className="truncate text-xs text-muted-foreground">
@@ -447,13 +491,17 @@ export function InteractionsTabs({ interactions, items: initialItems, memberId, 
                                 </p>
                               </>
                             ) : (
-                              <p className={`truncate ${done ? "line-through text-muted-foreground" : ""}`}>
+                              <p
+                                className={`truncate ${done ? "line-through text-muted-foreground" : ""}`}
+                              >
                                 {item.description}
                               </p>
                             )}
                           </td>
                           <td className="px-3 py-2 text-xs text-muted-foreground whitespace-nowrap">
-                            {item.due_date ? format(parseISO(item.due_date), "MMM d") : "—"}
+                            {item.due_date
+                              ? format(parseISO(item.due_date), "MMM d")
+                              : "—"}
                           </td>
                           <td className="px-3 py-2">
                             <div className="flex justify-end gap-0.5">
@@ -512,9 +560,7 @@ export function InteractionsTabs({ interactions, items: initialItems, memberId, 
         <DialogContent showCloseButton={false}>
           <DialogHeader>
             <DialogTitle>Delete action item?</DialogTitle>
-            <DialogDescription>
-              This cannot be undone.
-            </DialogDescription>
+            <DialogDescription>This cannot be undone.</DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <DialogClose render={<Button variant="outline" />}>
@@ -533,7 +579,9 @@ export function InteractionsTabs({ interactions, items: initialItems, memberId, 
 
       <ActionItemEditDialog
         key={addActionOpen ? "open" : "closed"}
-        item={addActionOpen ? { ...EMPTY_ACTION_ITEM, assignee_id: memberId } : null}
+        item={
+          addActionOpen ? { ...EMPTY_ACTION_ITEM, assignee_id: memberId } : null
+        }
         hideAssignee
         onClose={() => setAddActionOpen(false)}
         onSave={handleAddActionItem}

@@ -29,6 +29,7 @@ import {
   Loader2,
   MoreHorizontal,
   Trash2,
+  ListChecks,
 } from "lucide-react";
 import { CalendarEventPicker } from "@/components/calendar/CalendarEventPicker";
 import { format, parseISO } from "date-fns";
@@ -381,8 +382,7 @@ export function InteractionEditorClient({
             ]);
           } else if (chunkType === "tool-output-available") {
             const toolCallId = chunk.toolCallId as string;
-            const toolName =
-              toolCallNames.current.get(toolCallId) ?? "unknown";
+            const toolName = toolCallNames.current.get(toolCallId) ?? "unknown";
             const result = chunk.output;
             finalResults[toolName] = result;
             setAgentLog((prev) => [
@@ -432,6 +432,7 @@ export function InteractionEditorClient({
   const router = useRouter();
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [agendaOpen, setAgendaOpen] = useState(false);
 
   const handleDelete = useCallback(async () => {
     setIsDeleting(true);
@@ -496,7 +497,11 @@ export function InteractionEditorClient({
             <MoreHorizontal className="h-4 w-4" />
             <span className="sr-only">More options</span>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-40">
+          <DropdownMenuContent align="end" className="w-44">
+            <DropdownMenuItem onClick={() => setAgendaOpen(true)}>
+              <ListChecks className="h-3.5 w-3.5" />
+              Agenda items
+            </DropdownMenuItem>
             <DropdownMenuItem
               className="text-destructive focus:text-destructive"
               onClick={() => setDeleteOpen(true)}
@@ -507,6 +512,23 @@ export function InteractionEditorClient({
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
+      <Dialog open={agendaOpen} onOpenChange={setAgendaOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Agenda items</DialogTitle>
+            <DialogDescription>
+              Track talking points for this interaction.
+            </DialogDescription>
+          </DialogHeader>
+          <AgendaItemsSidebar
+            interactionId={interaction.id}
+            participantId={member?.id ?? ""}
+            items={agendaItems}
+            onUpdate={refreshAgendaItems}
+          />
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <DialogContent showCloseButton={false}>
@@ -533,11 +555,13 @@ export function InteractionEditorClient({
         </DialogContent>
       </Dialog>
       {/* Content grid — expands to 3 columns when agent log is visible */}
-      <div className={`grid grid-cols-1 gap-6 items-start ${agentLog.length > 0 ? "lg:grid-cols-3" : "lg:grid-cols-3"}`}>
+      <div
+        className={`grid grid-cols-1 gap-6 items-start ${agentLog.length > 0 ? "lg:grid-cols-3" : "lg:grid-cols-3"}`}
+      >
         {/* Left column */}
         <div className="space-y-4">
           {/* Member name block */}
-          <div className="rounded-lg bg-card px-0 pb-5">
+          <div className="rounded-lg px-0 pb-5">
             <div>
               <Link href={`/team/${member?.id}`}>
                 <h2 className="text-xl font-bold tracking-tight leading-tight">
@@ -633,20 +657,8 @@ export function InteractionEditorClient({
           {/* Agenda + My read on + AI actions + Tabs */}
           <div className="rounded-lg border overflow-hidden">
             <CollapsibleSection
-              title={<h2 className="text-sm font-semibold">Agenda</h2>}
-              defaultOpen
-              bordered={false}
-            >
-              <AgendaItemsSidebar
-                interactionId={interaction.id}
-                participantId={member?.id ?? ""}
-                items={agendaItems}
-                onUpdate={refreshAgendaItems}
-              />
-            </CollapsibleSection>
-
-            <CollapsibleSection
               title={<h2 className="text-sm font-semibold">Initiatives</h2>}
+              bordered={false}
             >
               <InitiativeSignalsPanel interactionId={interaction.id} />
             </CollapsibleSection>

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { MoreHorizontal, Plug, Pencil, ListPlus } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { MoreHorizontal, Plug, Pencil, ListPlus, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -48,6 +49,36 @@ export function MemberHeaderMenu({
   const [editOpen, setEditOpen] = useState(false);
   const [integrationsOpen, setIntegrationsOpen] = useState(false);
   const [addActionOpen, setAddActionOpen] = useState(false);
+  const [creatingInteraction, setCreatingInteraction] = useState(false);
+  const router = useRouter();
+
+  const handleNewInteraction = async () => {
+    setCreatingInteraction(true);
+    const supabase = createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      setCreatingInteraction(false);
+      return;
+    }
+    const { data, error } = await supabase
+      .from("interactions")
+      .insert({
+        participant_id: member.id,
+        manager_id: user.id,
+        scheduled_at: new Date().toISOString(),
+        type: "scheduled",
+      })
+      .select("id")
+      .single();
+    if (!error && data) {
+      router.push(`/interactions/${data.id}`);
+    } else {
+      toast.error("Failed to create interaction");
+      setCreatingInteraction(false);
+    }
+  };
 
   const handleAddActionItem = async (updates: {
     title: string | null;
@@ -83,7 +114,14 @@ export function MemberHeaderMenu({
           <MoreHorizontal className="h-4 w-4" />
           <span className="sr-only">More options</span>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-40">
+        <DropdownMenuContent align="end" className="w-44">
+          <DropdownMenuItem
+            onClick={handleNewInteraction}
+            disabled={creatingInteraction}
+          >
+            <Plus className="h-3 w-3" />
+            {creatingInteraction ? "Creating…" : "New interaction"}
+          </DropdownMenuItem>
           <DropdownMenuItem onClick={() => setAddActionOpen(true)}>
             <ListPlus className="h-3 w-3" />
             Add action item
