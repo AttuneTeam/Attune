@@ -73,13 +73,13 @@ export function ChatMessage({ message }: Props) {
                 const isBlock = className?.startsWith('language-')
                 if (isBlock) {
                   return (
-                    <code className="block rounded px-3 py-2 my-2 text-xs font-mono overflow-x-auto" style={{ background: 'rgba(0,0,0,0.06)' }}>
+                    <code className="block rounded px-3 py-2 my-2 text-xs font-mono overflow-x-auto" style={{ background: 'var(--color-surface-dim)' }}>
                       {children}
                     </code>
                   )
                 }
                 return (
-                  <code className="rounded px-1 py-0.5 text-xs font-mono" style={{ background: 'rgba(0,0,0,0.06)' }}>
+                  <code className="rounded px-1 py-0.5 text-xs font-mono" style={{ background: 'var(--color-surface-dim)' }}>
                     {children}
                   </code>
                 )
