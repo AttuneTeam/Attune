@@ -62,7 +62,7 @@ export async function GET() {
   });
 }
 
-export async function POST() {
+export async function POST(req: Request) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -70,16 +70,25 @@ export async function POST() {
   if (!user)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const body = await req.json().catch(() => ({}));
+  const clientDate = typeof body.date === "string" ? body.date : undefined;
+  const tzOffset = typeof body.tzOffset === "number" ? body.tzOffset : 0;
+
   const now = new Date();
-  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-  const todayEnd = new Date(now);
-  todayEnd.setHours(23, 59, 59, 999);
-  const todayStart = new Date(now);
-  todayStart.setHours(0, 0, 0, 0);
-  const yesterdayStart = new Date(todayStart);
-  yesterdayStart.setDate(yesterdayStart.getDate() - 1);
-  const yesterdayEnd = new Date(todayEnd);
-  yesterdayEnd.setDate(yesterdayEnd.getDate() - 1);
+  const today = clientDate ?? (() => {
+    const y = now.getUTCFullYear(), m = now.getUTCMonth() + 1, d = now.getUTCDate();
+    return `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+  })();
+
+  // Compute midnight-in-user-TZ as UTC instants.
+  // Date.UTC gives midnight UTC for the calendar date; adding tzOffset*60000 shifts
+  // to the user's local midnight (tzOffset is negative for UTC+ zones).
+  const [y, mo, d] = today.split("-").map(Number);
+  const todayStartMs = Date.UTC(y, mo - 1, d) + tzOffset * 60_000;
+  const todayStart = new Date(todayStartMs);
+  const todayEnd = new Date(todayStartMs + 86_400_000 - 1);
+  const yesterdayStart = new Date(todayStartMs - 86_400_000);
+  const yesterdayEnd = new Date(todayStartMs - 1);
 
   const [
     { data: reminders },

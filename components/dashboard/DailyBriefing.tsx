@@ -146,7 +146,14 @@ export function DailyBriefing({ userId }: { userId: string }) {
     setLoading(true);
     setError(false);
     try {
-      const res = await fetch("/api/ai/daily-briefing", { method: "POST" });
+      const res = await fetch("/api/ai/daily-briefing", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          date: format(new Date(), "yyyy-MM-dd"),
+          tzOffset: new Date().getTimezoneOffset(),
+        }),
+      });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       setBriefing(data.briefing);
