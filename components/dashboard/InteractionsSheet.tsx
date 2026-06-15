@@ -1,10 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { format, parseISO } from "date-fns";
-import { ArrowRight } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   Sheet,
   SheetContent,
@@ -36,19 +32,13 @@ interface Props {
   preview: PreviewItem[];
   totalThisMonth: number;
   totalMinutesThisMonth: number;
-}
-
-function sentimentVariant(score: number | null) {
-  if (score === null) return "outline" as const;
-  if (score >= 0.3) return "default" as const;
-  if (score >= -0.3) return "secondary" as const;
-  return "destructive" as const;
+  trigger: React.ReactElement;
 }
 
 export function InteractionsSheet({
-  preview,
   totalThisMonth,
   totalMinutesThisMonth,
+  trigger,
 }: Props) {
   const [interactions, setInteractions] = useState<any[] | null>(null);
   const [loading, setLoading] = useState(false);
@@ -71,28 +61,7 @@ export function InteractionsSheet({
 
   return (
     <Sheet onOpenChange={(open) => open && loadInteractions()}>
-      <div className="rounded-lg border bg-card p-5 space-y-4">
-        <div className="flex items-start justify-between gap-2">
-          <div>
-            <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">
-              Interactions this month
-            </p>
-            <p className="text-3xl font-bold">{totalThisMonth}</p>
-          </div>
-          <SheetTrigger
-            render={
-              <Button variant="outline" size="sm" className="text-xs h-7 gap-1">
-                View all <ArrowRight className="h-3 w-3" />
-              </Button>
-            }
-          />
-        </div>
-        {totalMinutesThisMonth > 0 && (
-          <p className="text-xs text-muted-foreground">
-            {formatHours(totalMinutesThisMonth)} in meetings
-          </p>
-        )}
-      </div>
+      <SheetTrigger render={trigger} />
 
       <SheetContent className="sm:max-w-2xl overflow-y-auto p-0 gap-0">
         <SheetHeader className="border-b px-6 py-4 sticky top-0 bg-popover">

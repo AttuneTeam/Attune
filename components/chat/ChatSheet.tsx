@@ -335,16 +335,11 @@ export function ChatPanel({ onClose, participantName }: Props) {
 
   return (
     <div
-      className="flex flex-col w-[440px] shrink-0 h-full border-l"
-      style={{ background: "#fcf9f2" }}
+      className="flex flex-col w-[440px] shrink-0 h-full border-l bg-background"
     >
       {/* Header */}
       <div
-        className="flex flex-row items-center justify-between px-4 py-3 shrink-0"
-        style={{
-          background: "#eae8de",
-          borderBottom: "1px solid rgba(0,0,0,0.08)",
-        }}
+        className="flex flex-row items-center justify-between px-4 py-3 shrink-0 bg-muted border-b border-border"
       >
         <div className="flex items-center gap-2 min-w-0">
           {view === "history" && (
@@ -450,11 +445,7 @@ export function ChatPanel({ onClose, participantName }: Props) {
       {/* Persona selector */}
       {view === "chat" && (
         <div
-          className="flex items-center px-3 py-2 shrink-0"
-          style={{
-            background: "#eae8de",
-            borderBottom: "1px solid rgba(0,0,0,0.08)",
-          }}
+          className="flex items-center px-3 py-2 shrink-0 bg-muted border-b border-border"
         >
           <Select
             value={personaId}

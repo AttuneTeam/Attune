@@ -17,7 +17,10 @@ import {
   FlaskConical,
   PanelLeftClose,
   PanelLeftOpen,
+  Sun,
+  Moon,
 } from "lucide-react";
+import { useTheme } from "@/components/ThemeProvider";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -60,6 +63,7 @@ export function Sidebar({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { theme, toggleTheme } = useTheme();
   const { close: closeMobileNav } = useMobileNav();
   const [userCollapsed, setUserCollapsed] = useState(defaultCollapsed);
   const [isMobile, setIsMobile] = useState(false);
@@ -502,10 +506,21 @@ export function Sidebar({
         {/* User footer */}
         <div
           className={cn(
-            "p-3 flex items-center gap-3",
-            collapsed && "justify-center",
+            "p-3 flex gap-3",
+            collapsed ? "flex-col items-center" : "items-center",
           )}
         >
+          {collapsed && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 shrink-0"
+              onClick={toggleTheme}
+              title="Toggle theme"
+            >
+              {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </Button>
+          )}
           <Link
             href="/account"
             className={cn(
@@ -530,15 +545,26 @@ export function Sidebar({
             )}
           </Link>
           {!collapsed && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 shrink-0"
-              onClick={handleSignOut}
-              title="Sign out"
-            >
-              <LogOut className="h-4 w-4" />
-            </Button>
+            <>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 shrink-0"
+                onClick={toggleTheme}
+                title="Toggle theme"
+              >
+                {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 shrink-0"
+                onClick={handleSignOut}
+                title="Sign out"
+              >
+                <LogOut className="h-4 w-4" />
+              </Button>
+            </>
           )}
         </div>
       </aside>
