@@ -8,7 +8,7 @@
 
 ---
 
-## Phase 1: Vitest Infrastructure
+## Phase 1: Vitest Infrastructure [checkpoint: 87db700]
 
 Establishes the runner. Cannot be test-first — the runner is what runs tests. Verified
 instead by proving the harness reports both failure and success.
@@ -82,7 +82,7 @@ instead by proving the harness reports both failure and success.
   - Plain `npm test` (no `CI=true`) exited 0 in 1s — confirms `vitest run` does not watch
   - After removal: suite exit 0, `tsc --noEmit` exit 0
 
-- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+- [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) (87db700)
 
 ---
 
