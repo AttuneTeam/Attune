@@ -119,13 +119,24 @@ that assert isolation.
   database reachability; with `SUPABASE_TEST_*` env vars set it returns true without
   contacting the stack.
 
-- [ ] Task: Isolation tests — `profiles`, `teams`, `team_members` (Red -> Green)
-  - [ ] **Red:** For each table, assert Manager A cannot SELECT, UPDATE, DELETE
+- [x] Task: Isolation tests — `profiles`, `teams`, `team_members` (Red -> Green) (747d67e)
+  - [x] **Red:** For each table, assert Manager A cannot SELECT, UPDATE, DELETE
         Manager B's rows, nor INSERT a row attributed to Manager B
-  - [ ] **Red:** Assert Manager A *can* perform all four operations on their own rows
-  - [ ] Run and confirm results reflect actual policy behaviour
-  - [ ] **Green:** Fix any RLS policy that fails — policy fixes go in a **new** migration,
+  - [x] **Red:** Assert Manager A *can* perform all four operations on their own rows
+  - [x] Run and confirm results reflect actual policy behaviour
+  - [x] **Green:** Fix any RLS policy that fails — policy fixes go in a **new** migration,
         never by editing an applied one
+
+  **Result: no policy bugs found.** `own_teams`, `own_reports` and the three `profiles`
+  policies all isolate correctly. No migration required.
+
+  **False-positive guard:** the foreign-INSERT assertion requires error code `42501`
+  specifically. The first `profiles` attempt inserted the victim's real id and failed
+  with `23505` (duplicate key) — it would have passed while proving nothing about RLS.
+
+  **Documented behaviour:** `profiles` has no DELETE policy, so nobody can delete a
+  profile including their own (rows cascade from `auth.users`). Recorded via the
+  `ownDeleteAllowed` flag rather than left as an unexplained gap.
 
 - [ ] Task: Isolation tests — `interactions`, `action_items`, `embeddings` (Red -> Green)
   - [ ] Same four negative and four positive assertions per table
