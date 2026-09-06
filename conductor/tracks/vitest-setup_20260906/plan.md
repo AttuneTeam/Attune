@@ -197,12 +197,31 @@ Establishes the two patterns future tracks copy: pure functions, and mocked exte
   survive as literal text. If link support is added, the test fails and forces a
   deliberate rewrite. Nested list items are recorded the same way.
 
-- [ ] Task: Test `lib/ai/prompts.ts` (Red -> Green)
-  - [ ] **Red:** `extractPlainText()` — nested nodes, empty doc, missing `content`,
+- [x] Task: Test `lib/ai/prompts.ts` (Red -> Green) (59c0bdb)
+  - [x] **Red:** `extractPlainText()` — nested nodes, empty doc, missing `content`,
         mixed node types
-  - [ ] **Red:** `formatTeamValues()` — empty array, missing description, missing keywords
-  - [ ] **Red:** The org-context formatter — partial and fully-populated input
-  - [ ] **Green:** Fix defects or confirm passing
+  - [x] **Red:** `formatTeamValues()` — empty array, missing description, missing keywords
+  - [x] **Red:** The org-context formatter — partial and fully-populated input
+  - [x] **Green:** Fix defects or confirm passing
+
+  **REAL BUG FOUND AND FIXED — the first genuine defect this track has surfaced.**
+  `extractPlainText` chose its join separator from the node being traversed rather
+  than from what that node's children are, inverting it at every level. Paragraphs
+  joined their own inline fragments with `\n`; the doc joined its paragraphs with `""`.
+
+  Before: `"Sam is \nblocked\n on review.Second para."`
+  After:  `"Sam is blocked on review.\nSecond para."`
+
+  Any sentence containing bold/italic/code was split mid-clause, and paragraph
+  boundaries vanished. That text is the input to six production call sites
+  (process-interaction, summarize, action-items, coaching-questions, team-coverage,
+  embeddings), so it quietly degraded every AI output and the search vectors.
+  Invisible to manual testing, the type checker and lint.
+
+  `formatTeamValues` and `formatOrgContext`: no defects (15 of 20 tests passed first run).
+
+  **Follow-up:** embeddings already stored were generated from the mangled text and
+  remain degraded until re-embedded. Recorded in the track index.
 
 - [ ] Task: Export and test `chunkText` (FR6) (Red -> Green)
   - [ ] **Red:** Write tests for chunk boundaries, text shorter than one chunk, and empty

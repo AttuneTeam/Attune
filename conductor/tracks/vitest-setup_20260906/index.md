@@ -33,3 +33,8 @@ Identified during implementation, to be planned separately:
     tree. Not a data leak (verified), but `parent_id` is `ON DELETE CASCADE`, so B
     deleting their initiative silently deletes A's row — one tenant destroying another's
     data. Needs a `WITH CHECK` on `parent_id` ownership or a trigger.
+-   **Re-embed historical interactions.** Vectors in the `embeddings` table were
+    generated before the `extractPlainText` fix (`59c0bdb`) and encode split
+    sentences with no paragraph boundaries. Newly embedded content is correct;
+    historical rows stay degraded until backfilled. Semantic search quality is
+    affected. This is a data migration and needs its own track.
