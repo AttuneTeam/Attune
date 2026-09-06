@@ -69,11 +69,18 @@ instead by proving the harness reports both failure and success.
   automatic `@types` inclusion, which would have silently dropped Node globals
   (`process`, `Buffer`). The directive is additive. ESLint needed no test override.
 
-- [ ] Task: Smoke test proving the harness works
-  - [ ] Write a temporary test that **fails**; run it and confirm a red result
-  - [ ] Invert it to pass; confirm green
-  - [ ] Confirm `CI=true npm test` exits 0 and does not hang in watch mode
-  - [ ] Remove the temporary test
+- [x] Task: Smoke test proving the harness works (verification only — no code committed)
+  - [x] Write a temporary test that **fails**; run it and confirm a red result
+  - [x] Invert it to pass; confirm green
+  - [x] Confirm `CI=true npm test` exits 0 and does not hang in watch mode
+  - [x] Remove the temporary test
+
+  **Evidence:**
+  - Red: exit 1, `AssertionError: expected 2 to be 3`, 1 failed | 1 passed
+  - Green: exit 0, 2 passed, 140ms
+  - The probe also imported via `@/lib/ai/markdownToTiptap`, proving alias resolution
+  - Plain `npm test` (no `CI=true`) exited 0 in 1s — confirms `vitest run` does not watch
+  - After removal: suite exit 0, `tsc --noEmit` exit 0
 
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
