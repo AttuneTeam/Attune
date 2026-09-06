@@ -59,10 +59,15 @@ instead by proving the harness reports both failure and success.
   specified by explicit decision; cleanup registered as a follow-up track in the
   track index.
 
-- [ ] Task: Verify type checking covers test files
-  - [ ] Confirm `.test.ts` files are included in `tsconfig.json`
-  - [ ] Add Vitest global types so `tsc --noEmit` passes on test files
-  - [ ] Run `npx tsc --noEmit` and confirm it passes
+- [x] Task: Verify type checking covers test files (87db700)
+  - [x] Confirm `.test.ts` files are included in `tsconfig.json` (already covered by `**/*.ts`)
+  - [x] Add Vitest global types so `tsc --noEmit` passes on test files
+  - [x] Run `npx tsc --noEmit` and confirm it passes
+
+  **Decision:** added `vitest-globals.d.ts` with a `/// <reference types="vitest/globals" />`
+  directive rather than `types: ["vitest/globals"]` in tsconfig. The `types` array replaces
+  automatic `@types` inclusion, which would have silently dropped Node globals
+  (`process`, `Buffer`). The directive is additive. ESLint needed no test override.
 
 - [ ] Task: Smoke test proving the harness works
   - [ ] Write a temporary test that **fails**; run it and confirm a red result
