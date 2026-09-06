@@ -181,13 +181,21 @@ that assert isolation.
 
 Establishes the two patterns future tracks copy: pure functions, and mocked externals.
 
-- [ ] Task: Test `lib/ai/markdownToTiptap.ts` (Red -> Green)
-  - [ ] **Red:** Tests for `markdownToTiptapJson()` — headings, ordered and unordered
+- [x] Task: Test `lib/ai/markdownToTiptap.ts` (Red -> Green) (75b74be)
+  - [x] **Red:** Tests for `markdownToTiptapJson()` — headings, ordered and unordered
         lists, bold/italic, code blocks, links
-  - [ ] **Red:** Edge cases — empty string, whitespace only, malformed markdown
-  - [ ] **Red:** Tests for `chatMessagesToTiptapJson()`
-  - [ ] Confirm failures are genuine (assertion failures, not import errors)
-  - [ ] **Green:** Fix any real defects the tests expose; otherwise confirm they pass
+  - [x] **Red:** Edge cases — empty string, whitespace only, malformed markdown
+  - [x] **Red:** Tests for `chatMessagesToTiptapJson()`
+  - [x] Confirm failures are genuine (assertion failures, not import errors)
+  - [x] **Green:** Fix any real defects the tests expose; otherwise confirm they pass
+
+  **Result: no defects found.** 23 tests, 156ms.
+
+  **Departure from plan:** links are not supported by the implementation at all —
+  `parseInline` handles bold/italic/code only. Rather than assert a non-existent
+  feature, links are covered under *known limitations*: `[text](url)` is asserted to
+  survive as literal text. If link support is added, the test fails and forces a
+  deliberate rewrite. Nested list items are recorded the same way.
 
 - [ ] Task: Test `lib/ai/prompts.ts` (Red -> Green)
   - [ ] **Red:** `extractPlainText()` — nested nodes, empty doc, missing `content`,
