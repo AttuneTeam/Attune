@@ -332,6 +332,10 @@ export function extractPlainText(jsonNotes: unknown): string {
     if (!node || typeof node !== "object") return "";
     const n = node as Record<string, unknown>;
     if (n.type === "text" && typeof n.text === "string") return n.text;
+    // A hard break (Shift+Enter) is a leaf carrying neither text nor content.
+    // It must still emit a separator: paragraphs join their children with "",
+    // so without this the words either side of the break merge into one.
+    if (n.type === "hardBreak") return "\n";
     if (Array.isArray(n.content)) {
       const parts = (n.content as unknown[]).map(traverse);
       // The separator depends on what the CHILDREN are, not what this node is.

@@ -68,6 +68,45 @@ describe("extractPlainText", () => {
     expect(extractPlainText(doc)).toBe("alpha\nbeta");
   });
 
+  it("turns a hard break into a newline rather than merging the words", () => {
+    // Shift+Enter in the editor produces a hardBreak: a leaf node with neither
+    // text nor content. Paragraphs join their children with "", so a hardBreak
+    // that yields "" silently concatenates the words either side of it.
+    const doc = {
+      type: "doc",
+      content: [
+        {
+          type: "paragraph",
+          content: [
+            { type: "text", text: "Line one" },
+            { type: "hardBreak" },
+            { type: "text", text: "Line two" },
+          ],
+        },
+      ],
+    };
+
+    expect(extractPlainText(doc)).toBe("Line one\nLine two");
+  });
+
+  it("keeps words apart when a hard break sits next to formatted text", () => {
+    const doc = {
+      type: "doc",
+      content: [
+        {
+          type: "paragraph",
+          content: [
+            { type: "text", text: "blocked", marks: [{ type: "bold" }] },
+            { type: "hardBreak" },
+            { type: "text", text: "since Tuesday" },
+          ],
+        },
+      ],
+    };
+
+    expect(extractPlainText(doc)).toBe("blocked\nsince Tuesday");
+  });
+
   it("handles deeply nested structures", () => {
     const doc = {
       type: "doc",

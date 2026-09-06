@@ -1,4 +1,4 @@
-import { assertIsolated } from "./isolation";
+import { assertMutuallyIsolated } from "./isolation";
 import { createTenant, isStackAvailable, SKIP_MESSAGE, type Tenant } from "./harness";
 
 const suite = isStackAvailable() ? describe : describe.skip;
@@ -19,7 +19,7 @@ suite("tenant isolation: core tables", () => {
   });
 
   it("isolates profiles", async () => {
-    await assertIsolated(a, b, {
+    await assertMutuallyIsolated(a, b, {
       table: "profiles",
       mutableColumn: "full_name",
       ownRow: (t) => ({ id: t.userId, full_name: "own-profile" }),
@@ -38,7 +38,7 @@ suite("tenant isolation: core tables", () => {
   });
 
   it("isolates teams", async () => {
-    await assertIsolated(a, b, {
+    await assertMutuallyIsolated(a, b, {
       table: "teams",
       mutableColumn: "name",
       ownRow: (t) => ({ name: "own team", manager_id: t.userId }),
@@ -49,7 +49,7 @@ suite("tenant isolation: core tables", () => {
   });
 
   it("isolates team_members", async () => {
-    await assertIsolated(a, b, {
+    await assertMutuallyIsolated(a, b, {
       table: "team_members",
       mutableColumn: "name",
       ownRow: (t) => ({ name: "own member", manager_id: t.userId }),

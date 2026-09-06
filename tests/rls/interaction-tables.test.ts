@@ -1,4 +1,4 @@
-import { assertIsolated } from "./isolation";
+import { assertMutuallyIsolated } from "./isolation";
 import { createTenant, isStackAvailable, SKIP_MESSAGE, type Tenant } from "./harness";
 
 const suite = isStackAvailable() ? describe : describe.skip;
@@ -27,7 +27,7 @@ suite("tenant isolation: interaction-scoped tables", () => {
   });
 
   it("isolates interactions", async () => {
-    await assertIsolated(a, b, {
+    await assertMutuallyIsolated(a, b, {
       table: "interactions",
       mutableColumn: "ai_summary",
       ownRow: (t) => ({ manager_id: t.userId, participant_id: t.seed.memberId }),
@@ -38,7 +38,7 @@ suite("tenant isolation: interaction-scoped tables", () => {
   });
 
   it("isolates action_items through the interaction join", async () => {
-    await assertIsolated(a, b, {
+    await assertMutuallyIsolated(a, b, {
       table: "action_items",
       mutableColumn: "description",
       ownRow: (t) => ({
@@ -69,16 +69,21 @@ suite("tenant isolation: interaction-scoped tables", () => {
       return (data as { id: string }).id;
     };
 
-    const aEmbeddingId = await seedEmbedding(a);
-    const bEmbeddingId = await seedEmbedding(b);
+    // Keyed by tenant, not captured as fixed ids: the isolation check runs in
+    // both directions, so these must resolve per tenant rather than always
+    // returning a's and b's rows respectively.
+    const embeddingIds: Record<string, string> = {
+      [a.label]: await seedEmbedding(a),
+      [b.label]: await seedEmbedding(b),
+    };
 
-    await assertIsolated(a, b, {
+    await assertMutuallyIsolated(a, b, {
       table: "embeddings",
       mutableColumn: "content",
       ownRow: (t) => ({ interaction_id: t.seed.interactionId, content: "own chunk" }),
       foreignRow: (v) => ({ interaction_id: v.seed.interactionId, content: "stolen chunk" }),
-      victimRowId: () => bEmbeddingId,
-      ownRowId: () => aEmbeddingId,
+      victimRowId: (v) => embeddingIds[v.label],
+      ownRowId: (t) => embeddingIds[t.label],
     });
   });
 

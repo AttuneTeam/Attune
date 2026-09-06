@@ -1,4 +1,4 @@
-import { assertIsolated } from "./isolation";
+import { assertMutuallyIsolated } from "./isolation";
 import { createTenant, isStackAvailable, SKIP_MESSAGE, type Tenant } from "./harness";
 
 const suite = isStackAvailable() ? describe : describe.skip;
@@ -19,7 +19,7 @@ suite("tenant isolation: strategic_initiatives", () => {
   });
 
   it("isolates strategic_initiatives", async () => {
-    await assertIsolated(a, b, {
+    await assertMutuallyIsolated(a, b, {
       table: "strategic_initiatives",
       mutableColumn: "title",
       ownRow: (t) => ({ manager_id: t.userId, title: "own initiative" }),

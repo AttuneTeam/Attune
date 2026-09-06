@@ -38,6 +38,23 @@ type IsolationCase = {
   ownInsertAllowed?: boolean;
 };
 
+/**
+ * Runs the full isolation check in BOTH directions.
+ *
+ * Prefer this over a single assertIsolated call. Checking only A-attacks-B
+ * leaves an asymmetric policy — one special-casing a particular user or role —
+ * able to pass, and it makes "isolated in both directions" an accurate claim
+ * rather than an assumed one.
+ */
+export async function assertMutuallyIsolated(
+  one: Tenant,
+  other: Tenant,
+  c: IsolationCase,
+): Promise<void> {
+  await assertIsolated(one, other, c);
+  await assertIsolated(other, one, c);
+}
+
 export async function assertIsolated(
   attacker: Tenant,
   victim: Tenant,
@@ -63,6 +80,12 @@ export async function assertIsolated(
     .update({ [c.mutableColumn]: "tampered-by-other-tenant" })
     .eq("id", victimId)
     .select("id");
+  // Distinguish "RLS denied it" from "the query failed". Without this, a renamed
+  // column would null out `data` and pass as a successful denial.
+  expect(
+    updated.error,
+    `${c.table}: UPDATE errored unexpectedly — ${updated.error?.message}`,
+  ).toBeNull();
   expect(
     updated.data ?? [],
     `${c.table}: LEAK — ${attacker.label} can UPDATE ${victim.label}'s row`,
@@ -84,6 +107,10 @@ export async function assertIsolated(
     .delete()
     .eq("id", victimId)
     .select("id");
+  expect(
+    deleted.error,
+    `${c.table}: DELETE errored unexpectedly — ${deleted.error?.message}`,
+  ).toBeNull();
   expect(
     deleted.data ?? [],
     `${c.table}: LEAK — ${attacker.label} can DELETE ${victim.label}'s row`,
