@@ -86,7 +86,7 @@ instead by proving the harness reports both failure and success.
 
 ---
 
-## Phase 2: Tenant Isolation Harness and Tests
+## Phase 2: Tenant Isolation Harness and Tests [checkpoint: 4fba681]
 
 The highest-value work in this track. Strict TDD: the harness is built to satisfy tests
 that assert isolation.
@@ -173,7 +173,7 @@ that assert isolation.
   deeply equal []` (1 failed | 13 passed). The policy was restored to the exact original
   and the suite returned to 14 passed. No migration file was touched.
 
-- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+- [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) (4fba681)
 
 ---
 
