@@ -252,9 +252,15 @@ Establishes the two patterns future tracks copy: pure functions, and mocked exte
   the right answer is a product decision, not a correctness fix. Pinned by an explicit
   test; recorded as a follow-up.
 
-- [ ] Task: Verify suite speed (NFR1)
-  - [ ] Time the non-RLS suite; confirm under 10 seconds
-  - [ ] If slower, investigate before proceeding
+- [x] Task: Verify suite speed (NFR1) (verification only — no code committed)
+  - [x] Time the non-RLS suite; confirm under 10 seconds
+  - [x] If slower, investigate before proceeding
+
+  **Result: comfortably within budget.** Three consecutive wall-clock runs of
+  `vitest run --project node` (including process startup): 1.53s, 0.85s, 0.89s.
+  Well under the 10s NFR1 ceiling, so the suite is usable inside a TDD loop.
+  The RLS project is excluded from this measure by design — it does real database
+  round-trips and is selected separately via `npm run test:rls`.
 
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
