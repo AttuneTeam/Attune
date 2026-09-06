@@ -223,11 +223,15 @@ Establishes the two patterns future tracks copy: pure functions, and mocked exte
   **Follow-up:** embeddings already stored were generated from the mangled text and
   remain degraded until re-embedded. Recorded in the track index.
 
-- [ ] Task: Export and test `chunkText` (FR6) (Red -> Green)
-  - [ ] **Red:** Write tests for chunk boundaries, text shorter than one chunk, and empty
+- [x] Task: Export and test `chunkText` (FR6) (Red -> Green) (76c1c01)
+  - [x] **Red:** Write tests for chunk boundaries, text shorter than one chunk, and empty
         input — these fail because the function is not exported
-  - [ ] **Green:** Export `chunkText` from `lib/ai/embeddings.ts` — behaviour unchanged
-  - [ ] Confirm `embedInteraction()` still compiles and behaves identically
+  - [x] **Green:** Export `chunkText` from `lib/ai/embeddings.ts` — behaviour unchanged
+  - [x] Confirm `embedInteraction()` still compiles and behaves identically
+
+  **Result: no defects.** 10 tests. Two deliberate behaviours pinned: fragments of
+  =<20 chars are discarded (short notes get no embedding at all), and a single
+  sentence over `CHUNK_SIZE` is never split.
 
 - [ ] Task: Test `lib/integrations/github.ts` with mocked `fetch` (Red -> Green)
   - [ ] **Red:** Successful response parsing
