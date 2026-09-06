@@ -13,10 +13,21 @@
 Establishes the runner. Cannot be test-first — the runner is what runs tests. Verified
 instead by proving the harness reports both failure and success.
 
-- [ ] Task: Install Vitest and dependencies
-  - [ ] Install `vitest`, `@vitest/coverage-v8`, `jsdom`, `@vitejs/plugin-react`
-  - [ ] Confirm no peer-dependency conflicts with React 19.2.4 / Next.js 16.2.1
-  - [ ] Record installed versions
+- [x] Task: Install Vitest and dependencies (96bd336)
+  - [x] Install `vitest`, `@vitest/coverage-v8`, `jsdom` (`@vitejs/plugin-react` dropped — see deviation)
+  - [x] Confirm no peer-dependency conflicts with React 19.2.4 / Next.js 16.2.1
+  - [x] Record installed versions
+
+  **Deviations:**
+  - `@vitejs/plugin-react` **not installed.** Its transitive `@rolldown/plugin-babel`
+    requires `@babel/core@^8`, conflicting with the tree's v7. The plugin exists only to
+    transform JSX for component tests, which `spec.md` places out of scope for this
+    track. Deferred to whichever track first adds component tests.
+  - `@types/node` upgraded `^20` -> `^24.13.3`. Vitest 5 requires `^22 || >=24`, and the
+    project already ran on Node v24.14.0, so the `^20` pin was a pre-existing mismatch
+    with the actual runtime. `npx tsc --noEmit` passes clean after the upgrade.
+
+  **Installed:** vitest@5.0.0, @vitest/coverage-v8@5.0.0, jsdom@29.1.1, @types/node@24.13.3
 
 - [ ] Task: Create `vitest.config.ts`
   - [ ] Resolve the `@/*` alias to match `tsconfig.json` paths
