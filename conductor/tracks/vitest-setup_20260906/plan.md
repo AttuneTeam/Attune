@@ -177,7 +177,7 @@ that assert isolation.
 
 ---
 
-## Phase 3: `lib/` Beachhead Tests
+## Phase 3: `lib/` Beachhead Tests [checkpoint: 5296331]
 
 Establishes the two patterns future tracks copy: pure functions, and mocked externals.
 
@@ -262,7 +262,7 @@ Establishes the two patterns future tracks copy: pure functions, and mocked exte
   The RLS project is excluded from this measure by design — it does real database
   round-trips and is selected separately via `npm run test:rls`.
 
-- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+- [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) (5296331)
 
 ---
 
