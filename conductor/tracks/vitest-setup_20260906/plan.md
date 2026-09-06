@@ -300,11 +300,23 @@ Establishes the two patterns future tracks copy: pure functions, and mocked exte
   rather than an error for blocked reads/writes, and assert error code `42501`
   specifically on a blocked INSERT.
 
-- [ ] Task: Full verification against acceptance criteria
-  - [ ] `CI=true npm test` exits 0
-  - [ ] `npm run check` runs all three gates in sequence
-  - [ ] `npx tsc --noEmit` passes with test files included
-  - [ ] `npm run lint` passes on test files
-  - [ ] Walk every acceptance criterion in `spec.md` and confirm it is met
+- [x] Task: Full verification against acceptance criteria (verification only)
+  - [x] `CI=true npm test` exits 0
+  - [x] `npm run check` runs all three gates in sequence
+  - [x] `npx tsc --noEmit` passes with test files included
+  - [x] `npm run lint` passes on test files
+  - [x] Walk every acceptance criterion in `spec.md` and confirm it is met
+
+  | AC | Criterion | Result |
+  |---|---|---|
+  | 1 | `CI=true npm test` exits 0 | PASS — 8 files, 86 tests, exit 0 |
+  | 2 | `npm run check` sequences lint, types, tests | PASS as specified — sequences correctly; exits 1 at lint on the 54 pre-existing errors, the agreed state |
+  | 3 | 7 core tables proven isolated | PASS — profiles, teams, team_members, interactions, action_items, embeddings, strategic_initiatives |
+  | 4 | Breaking a policy makes a test fail | PASS — verified in Phase 2; `own_teams` weakened to `USING (true)` produced `teams: LEAK — core-a can SELECT core-b's row` |
+  | 5 | Both testing patterns demonstrated | PASS — pure functions (markdownToTiptap, prompts, embeddings) and mocked external (`github.test.ts`, `vi.stubGlobal`) |
+  | 6 | `chunkText` exported and tested | PASS — exported, 10 tests |
+  | 7 | Non-RLS suite under 10s | PASS — 0.96s wall clock |
+  | 8 | `tsc --noEmit` passes with tests included | PASS — exit 0 |
+  | 9 | Docs reflect installed state | PASS — tech-stack.md, README.md and project-rules.md updated; no stale "not yet installed" text remains |
 
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
