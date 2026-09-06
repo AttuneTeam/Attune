@@ -332,10 +332,20 @@ export function extractPlainText(jsonNotes: unknown): string {
     if (!node || typeof node !== "object") return "";
     const n = node as Record<string, unknown>;
     if (n.type === "text" && typeof n.text === "string") return n.text;
+    // A hard break (Shift+Enter) is a leaf carrying neither text nor content.
+    // It must still emit a separator: paragraphs join their children with "",
+    // so without this the words either side of the break merge into one.
+    if (n.type === "hardBreak") return "\n";
     if (Array.isArray(n.content)) {
-      return (n.content as unknown[])
-        .map(traverse)
-        .join(n.type === "paragraph" || n.type === "heading" ? "\n" : "");
+      const parts = (n.content as unknown[]).map(traverse);
+      // The separator depends on what the CHILDREN are, not what this node is.
+      // A paragraph's children are inline fragments of one sentence (a bolded
+      // word splits a sentence into three text nodes), so they concatenate.
+      // Everything else holds block-level children, which each take their own
+      // line. Getting this backwards splits sentences mid-clause and runs
+      // paragraphs together — and this text feeds every AI prompt.
+      const holdsInlineChildren = n.type === "paragraph" || n.type === "heading";
+      return parts.join(holdsInlineChildren ? "" : "\n");
     }
     return "";
   }
