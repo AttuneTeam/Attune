@@ -5,7 +5,12 @@ import type { Json } from '@/lib/supabase/types'
 
 const CHUNK_SIZE = 500  // characters per chunk (roughly 100-125 tokens)
 
-function chunkText(text: string): string[] {
+/**
+ * Splits text into ~CHUNK_SIZE pieces on sentence boundaries.
+ * Exported for testing: chunk boundaries determine what semantic search can
+ * find, and that behaviour is worth pinning independently of the OpenAI call.
+ */
+export function chunkText(text: string): string[] {
   const sentences = text.split(/(?<=[.!?])\s+/)
   const chunks: string[] = []
   let current = ''
