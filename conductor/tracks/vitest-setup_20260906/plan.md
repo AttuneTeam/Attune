@@ -266,7 +266,7 @@ Establishes the two patterns future tracks copy: pure functions, and mocked exte
 
 ---
 
-## Phase 4: Documentation and Finalisation
+## Phase 4: Documentation and Finalisation [checkpoint: 9c03a6d]
 
 - [x] Task: Update `conductor/tech-stack.md` (d1c8fb9)
   - [x] Change Vitest from "decided, not yet installed" to installed, with version
@@ -319,4 +319,4 @@ Establishes the two patterns future tracks copy: pure functions, and mocked exte
   | 8 | `tsc --noEmit` passes with tests included | PASS — exit 0 |
   | 9 | Docs reflect installed state | PASS — tech-stack.md, README.md and project-rules.md updated; no stale "not yet installed" text remains |
 
-- [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
+- [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) (9c03a6d)
