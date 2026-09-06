@@ -161,11 +161,17 @@ that assert isolation.
   a follow-up. The behaviour is pinned by an assertion so any future fix forces a
   deliberate revisit.
 
-- [ ] Task: Prove the harness can fail (AC4)
-  - [ ] Temporarily weaken one RLS policy locally
-  - [ ] Confirm the corresponding test **fails**
-  - [ ] Restore the policy and confirm the test passes again
-  - [ ] Record the result — a suite that cannot fail proves nothing
+- [x] Task: Prove the harness can fail (AC4) (verification only — no code committed)
+  - [x] Temporarily weaken one RLS policy locally
+  - [x] Confirm the corresponding test **fails**
+  - [x] Restore the policy and confirm the test passes again
+  - [x] Record the result — a suite that cannot fail proves nothing
+
+  **Evidence:** `own_teams` was temporarily rewritten from `USING (manager_id = auth.uid())`
+  to `USING (true)` on the local database only. The suite failed immediately with
+  `AssertionError: teams: LEAK — core-a can SELECT core-b's row: expected [ Array(1) ] to
+  deeply equal []` (1 failed | 13 passed). The policy was restored to the exact original
+  and the suite returned to 14 passed. No migration file was touched.
 
 - [ ] Task: Phase Verification & Checkpoint (Refer to workflow.md)
 
