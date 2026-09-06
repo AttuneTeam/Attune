@@ -149,9 +149,17 @@ that assert isolation.
   would leak every manager's private todo list while all join-based tests still passed.
   Asserted in both directions.
 
-- [ ] Task: Isolation tests — `strategic_initiatives` (Red -> Green)
-  - [ ] Same assertions, including nested initiatives (migration 033)
-  - [ ] Fix failures in a new migration
+- [x] Task: Isolation tests — `strategic_initiatives` (Red -> Green) (4fba681)
+  - [x] Same assertions, including nested initiatives (migration 033)
+  - [x] Fix failures in a new migration — **none needed, no isolation bugs found**
+
+  **Finding (integrity, not confidentiality):** `managers_own_initiatives` checks only
+  `manager_id`, so manager A can insert a row *they own* whose `parent_id` points into
+  manager B's tree. Not a leak — A still cannot read B's rows, asserted explicitly. But
+  `parent_id` is `ON DELETE CASCADE`, so B deleting their initiative silently deletes
+  A's row. Outside this track's remit (proving and repairing *isolation*); recorded as
+  a follow-up. The behaviour is pinned by an assertion so any future fix forces a
+  deliberate revisit.
 
 - [ ] Task: Prove the harness can fail (AC4)
   - [ ] Temporarily weaken one RLS policy locally

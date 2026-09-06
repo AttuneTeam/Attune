@@ -28,3 +28,8 @@ Identified during implementation, to be planned separately:
     `spec.md`).
 -   **Component testing.** The `jsdom` project is configured but empty. Adding it
     requires resolving the `@vitejs/plugin-react` / `@babel/core@^8` peer conflict.
+-   **Constrain `strategic_initiatives.parent_id` to the caller's own rows.** The policy
+    checks only `manager_id`, so manager A can parent a row they own into manager B's
+    tree. Not a data leak (verified), but `parent_id` is `ON DELETE CASCADE`, so B
+    deleting their initiative silently deletes A's row — one tenant destroying another's
+    data. Needs a `WITH CHECK` on `parent_id` ownership or a trigger.
