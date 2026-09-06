@@ -15,3 +15,4 @@
 
 -   [Tracks Registry](./tracks.md)
 -   [Tracks Directory](./tracks/)
+-   [Archived Tracks](./archive/)
