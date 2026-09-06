@@ -2,9 +2,16 @@
   "id": "vitest-setup_20260906",
   "title": "Install Vitest and Establish Initial Test Suite",
   "type": "chore",
-  "status": "new",
+  "status": "complete",
   "created_at": "2026-09-06",
-  "updated_at": "2026-09-06",
+  "updated_at": "2026-09-07",
   "phases": 4,
-  "tasks": 19
+  "tasks": 19,
+  "completed_at": "2026-09-07",
+  "checkpoints": {
+    "Phase 1: Vitest Infrastructure": "87db700",
+    "Phase 2: Tenant Isolation Harness and Tests": "4fba681",
+    "Phase 3: lib/ Beachhead Tests": "5296331",
+    "Phase 4: Documentation and Finalisation": "9c03a6d"
+  }
 }
