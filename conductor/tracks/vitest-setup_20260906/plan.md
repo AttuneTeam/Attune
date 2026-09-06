@@ -268,15 +268,24 @@ Establishes the two patterns future tracks copy: pure functions, and mocked exte
 
 ## Phase 4: Documentation and Finalisation
 
-- [ ] Task: Update `conductor/tech-stack.md`
-  - [ ] Change Vitest from "decided, not yet installed" to installed, with version
-  - [ ] Replace the "Testing Position" note about it not being installed
-  - [ ] Confirm the E2E exclusion still reads as deliberate
+- [x] Task: Update `conductor/tech-stack.md` (d1c8fb9)
+  - [x] Change Vitest from "decided, not yet installed" to installed, with version
+  - [x] Replace the "Testing Position" note about it not being installed
+  - [x] Confirm the E2E exclusion still reads as deliberate
 
-- [ ] Task: Update `README.md`
-  - [ ] Add a Testing section — `npm test`, `npm run test:watch`, `npm run check`
-  - [ ] Document the `supabase start` prerequisite for RLS tests
-  - [ ] Note that RLS tests skip gracefully without a local stack
+  Also added the three-project table, the npm commands, a Testing Conventions section,
+  and a Known Testing Limitations section (async Server Components, blocked component
+  testing, `check` exiting 1).
+
+- [x] Task: Update `README.md` (37ed352)
+  - [x] Add a Testing section — `npm test`, `npm run test:watch`, `npm run check`
+  - [x] Document the `supabase start` prerequisite for RLS tests
+  - [x] Note that RLS tests skip gracefully without a local stack
+
+  **Observation:** the rest of `README.md` is still unmodified create-next-app
+  boilerplate — no mention of TeamLeader, Supabase, or the required environment
+  variables. Out of scope here; worth a small docs track alongside the
+  `ARCHITECTURE.md` drift recorded during setup.
 
 - [ ] Task: Document the testing conventions
   - [ ] Colocation as `<name>.test.ts`
