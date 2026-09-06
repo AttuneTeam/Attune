@@ -38,3 +38,8 @@ Identified during implementation, to be planned separately:
     sentences with no paragraph boundaries. Newly embedded content is correct;
     historical rows stay degraded until backfilled. Semantic search quality is
     affected. This is a data migration and needs its own track.
+-   **Make integration failure handling consistent.** `lib/integrations/github.ts`
+    returns `[]` for a non-ok HTTP response but lets a rejected `fetch` (DNS failure,
+    timeout, offline) propagate to the caller. `project-rules.md` requires graceful
+    degradation. Needs a product decision — silently returning `[]` also hides genuine
+    misconfiguration — and the same review applies to the other six adapters.

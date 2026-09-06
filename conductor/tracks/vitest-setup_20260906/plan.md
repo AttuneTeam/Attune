@@ -233,15 +233,24 @@ Establishes the two patterns future tracks copy: pure functions, and mocked exte
   =<20 chars are discarded (short notes get no embedding at all), and a single
   sentence over `CHUNK_SIZE` is never split.
 
-- [ ] Task: Test `lib/integrations/github.ts` with mocked `fetch` (Red -> Green)
-  - [ ] **Red:** Successful response parsing
-  - [ ] **Red:** API error response (4xx / 5xx)
-  - [ ] **Red:** Network failure — `fetch` rejects
-  - [ ] **Red:** Empty result set
-  - [ ] **Green:** Implement mocking with `vi.mock` / `vi.stubGlobal`
-  - [ ] **CRITICAL:** Assert `fetch` was called with the expected URL and headers, proving
+- [x] Task: Test `lib/integrations/github.ts` with mocked `fetch` (Red -> Green) (5296331)
+  - [x] **Red:** Successful response parsing
+  - [x] **Red:** API error response (4xx / 5xx)
+  - [x] **Red:** Network failure — `fetch` rejects
+  - [x] **Red:** Empty result set
+  - [x] **Green:** Implement mocking with `vi.mock` / `vi.stubGlobal`
+  - [x] **CRITICAL:** Assert `fetch` was called with the expected URL and headers, proving
         no real network call occurs (NFR3)
-  - [ ] Document this as the reference pattern for all integration tests
+  - [x] Document this as the reference pattern for all integration tests
+
+  **Result: no defects** in request construction or parsing. 19 tests.
+
+  **Finding (not fixed):** failure handling is inconsistent — a non-ok HTTP response
+  returns `[]`, but a rejected `fetch` (DNS, timeout, offline) propagates to the
+  caller. `project-rules.md` requires integrations to degrade gracefully. Left
+  unchanged deliberately: swallowing network errors also hides misconfiguration, so
+  the right answer is a product decision, not a correctness fix. Pinned by an explicit
+  test; recorded as a follow-up.
 
 - [ ] Task: Verify suite speed (NFR1)
   - [ ] Time the non-RLS suite; confirm under 10 seconds
