@@ -102,11 +102,36 @@ requirement, not a feature.
 
 ## 9. Testing
 
-- Vitest is the chosen runner (see `tech-stack.md`). It is **not yet installed** —
-  installing it is a prerequisite chore.
-- No E2E framework. UI is verified manually.
+Vitest 5 is installed and configured (`vitest.config.mts`). No E2E framework — UI is
+verified manually.
+
+```bash
+npm test           # everything, once
+npm run test:watch # while developing
+npm run test:rls   # tenant isolation only (needs `supabase start`)
+```
+
+- **Colocate** tests as `<name>.test.ts` beside their source. The one exception is
+  `tests/rls/`, whose tests assert cross-table policy behaviour and belong to no
+  single source file.
+- **Never call a real third-party API.** Stub `fetch` with `vi.stubGlobal` and assert
+  the outgoing URL and headers, so a regression to live calls fails loudly. Reference
+  pattern: `lib/integrations/github.test.ts`.
+- **Never use the service-role key in RLS tests.** It bypasses Row-Level Security
+  entirely, so every isolation assertion would pass while proving nothing. Use the anon
+  key with a real user session — `tests/rls/harness.ts` does this and asserts it.
+- **Assert that a denial is a denial.** Postgres RLS does not raise on a blocked
+  SELECT/UPDATE/DELETE; it silently narrows the row set. Assert *zero rows affected* and
+  confirm from the owner's side that nothing changed. Only a blocked INSERT raises —
+  assert error code `42501` specifically, or a mere constraint violation will pass for
+  the wrong reason.
+- **Assert the positive case too.** A policy denying everything to everyone passes every
+  negative test. Always check the owner can still reach their own rows.
+- Cover failure paths, not just success — error paths are where this product degrades.
 - Prioritise tests where manual verification cannot reach: **RLS and tenant isolation
   first**, then pure logic in `lib/`, then route-handler auth guards and error paths.
+- Async Server Components cannot be unit tested (Next.js 16 limitation); component
+  testing is not yet enabled.
 
 ## 10. Copy
 
