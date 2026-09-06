@@ -91,17 +91,33 @@ instead by proving the harness reports both failure and success.
 The highest-value work in this track. Strict TDD: the harness is built to satisfy tests
 that assert isolation.
 
-- [ ] Task: Build the two-tenant test harness (Red -> Green)
-  - [ ] **Red:** Write a test asserting the harness yields two authenticated clients for
+- [x] Task: Build the two-tenant test harness (Red -> Green) (4222481)
+  - [x] **Red:** Write a test asserting the harness yields two authenticated clients for
         two distinct managers, each with a distinct user id
-  - [ ] Confirm it fails
-  - [ ] **Green:** Implement the helper — create two users, sign both in, return anon
+  - [x] Confirm it fails (failed to import `./harness` — module did not exist)
+  - [x] **Green:** Implement the helper — create two users, sign both in, return anon
         clients carrying their sessions
-  - [ ] **CRITICAL:** Use the anon key with real user sessions. Never the service-role
+  - [x] **CRITICAL:** Use the anon key with real user sessions. Never the service-role
         key, which bypasses RLS and makes every isolation test pass vacuously
-  - [ ] Implement per-test seeding: team, team member, interaction, action item per manager
-  - [ ] Implement deterministic teardown so the suite is repeatable without `db:reset`
-  - [ ] Implement a graceful skip with a clear message when the local stack is unreachable (NFR4)
+  - [x] Implement per-test seeding: team, team member, interaction, action item per manager
+        (plus strategic initiative)
+  - [x] Implement deterministic teardown so the suite is repeatable without `db:reset`
+  - [x] Implement a graceful skip with a clear message when the local stack is unreachable (NFR4)
+
+  **Evidence:** 4 tests pass in 3.87s; two consecutive runs both exit 0; 0 leftover
+  test users after runs; with the Supabase CLI off `PATH` the suite reports
+  `1 skipped / 4 skipped` and exits 0.
+
+  **Blocker fixed:** `supabase start` failed on a port collision — `[analytics]` was
+  left at the default 54327 while every other teamleader port was shifted to 5433x,
+  colliding with the user's separate `home-base` stack. Moved to 54337 rather than
+  stopping the unrelated project.
+
+  **Also:** `vitest.config.ts` -> `.mts` to clear a Vite CommonJS/ESM warning.
+
+  **Known limitation:** `isStackAvailable()` checks credential readability, not
+  database reachability; with `SUPABASE_TEST_*` env vars set it returns true without
+  contacting the stack.
 
 - [ ] Task: Isolation tests — `profiles`, `teams`, `team_members` (Red -> Green)
   - [ ] **Red:** For each table, assert Manager A cannot SELECT, UPDATE, DELETE
