@@ -29,12 +29,21 @@ instead by proving the harness reports both failure and success.
 
   **Installed:** vitest@5.0.0, @vitest/coverage-v8@5.0.0, jsdom@29.1.1, @types/node@24.13.3
 
-- [ ] Task: Create `vitest.config.ts`
-  - [ ] Resolve the `@/*` alias to match `tsconfig.json` paths
-  - [ ] Enable globals so tests need no `describe`/`it` imports
-  - [ ] Define the `node` environment for `lib/`, API and RLS tests
-  - [ ] Define the `jsdom` environment for future component tests
-  - [ ] Exclude `node_modules`, `.next`, and `mcp/` from test discovery
+- [x] Task: Create `vitest.config.ts` (c5f5e8d)
+  - [x] Resolve the `@/*` alias to match `tsconfig.json` paths
+  - [x] Enable globals so tests need no `describe`/`it` imports
+  - [x] Define the `node` environment for `lib/`, API and RLS tests
+  - [x] Define the `jsdom` environment for future component tests
+  - [x] Exclude `node_modules`, `.next`, and `mcp/` from test discovery
+
+  **Refinement:** RLS split into its own project (still the `node` environment) so
+  `test:rls` is a `--project rls` selection, and so database tests can carry a 30s
+  timeout with `fileParallelism: false` without slowing the fast unit suite.
+  RLS tests live in `tests/rls/` rather than colocated — they assert cross-table
+  policy behaviour and belong to no single source file.
+
+  **Known limitation:** per the Next.js 16 Vitest guide, async Server Components
+  cannot be unit tested; Next recommends E2E, which is out of scope. Record in Phase 4.
 
 - [ ] Task: Add npm scripts
   - [ ] `test` — single run, honouring `CI=true`
