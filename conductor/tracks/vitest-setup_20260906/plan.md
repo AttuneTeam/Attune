@@ -45,11 +45,19 @@ instead by proving the harness reports both failure and success.
   **Known limitation:** per the Next.js 16 Vitest guide, async Server Components
   cannot be unit tested; Next recommends E2E, which is out of scope. Record in Phase 4.
 
-- [ ] Task: Add npm scripts
-  - [ ] `test` — single run, honouring `CI=true`
-  - [ ] `test:watch` — watch mode
-  - [ ] `test:rls` — tenant-isolation suite only
-  - [ ] `check` — `lint && tsc --noEmit && CI=true npm test`
+- [x] Task: Add npm scripts (8a332af)
+  - [x] `test` — single run, honouring `CI=true`
+  - [x] `test:watch` — watch mode
+  - [x] `test:rls` — tenant-isolation suite only
+  - [x] `check` — `lint && tsc --noEmit && npm test`
+
+  **Note:** `test` is defined as `vitest run` so a single non-watch pass is the
+  default rather than depending on `CI=true` being set. `CI=true npm test` still
+  behaves as `workflow.md` specifies.
+
+  **Known state:** `npm run check` exits 1 on 54 pre-existing lint errors. Shipped as
+  specified by explicit decision; cleanup registered as a follow-up track in the
+  track index.
 
 - [ ] Task: Verify type checking covers test files
   - [ ] Confirm `.test.ts` files are included in `tsconfig.json`
