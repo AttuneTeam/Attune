@@ -67,17 +67,31 @@ Credentials are stored **per tenant**, never as shared environment configuration
 |---|---|
 | Linting | ESLint 9 with `eslint-config-next` |
 | Type checking | `tsc --noEmit` (Next.js build) |
-| Unit / integration tests | **Vitest** — *decided, not yet installed* |
+| Unit / integration tests | **Vitest 5.0.0** (+ `@vitest/coverage-v8`, `jsdom`) |
 | E2E tests | None — deliberate exclusion |
 
 ### Testing Position
 
-**Vitest** is the chosen test runner: it consumes the existing TypeScript and ESM
-configuration natively, requires no Babel or transform layer, and runs fast enough to
-sit inside a TDD loop.
+**Vitest 5.0.0 is installed and operational** (track `vitest-setup_20260906`). It
+consumes the existing TypeScript and ESM configuration natively, requires no Babel or
+transform layer, and runs fast enough to sit inside a TDD loop — the fast suite
+completes in under a second.
 
-It is **not yet installed.** Adding it is a prerequisite chore before the workflow's
-test-first requirements can be met — see `workflow.md`.
+Configuration lives in `vitest.config.mts` (`.mts`, not `.ts`: the project has no
+`"type": "module"`, and a `.ts` config triggers a Vite CommonJS/ESM warning).
+
+**Three projects:**
+
+| Project | Environment | Files | Purpose |
+|---|---|---|---|
+| `node` | node | `lib/**/*.test.ts`, `app/**/*.test.ts` | Pure logic and route handlers, colocated |
+| `rls` | node | `tests/rls/**/*.test.ts` | Tenant isolation against a local Supabase stack |
+| `jsdom` | jsdom | `components/**/*.test.tsx` | Configured for future component tests; currently empty |
+
+`rls` is separate so it can carry a 30s timeout with `fileParallelism: false` without
+slowing the fast suite, and so `npm run test:rls` is a clean `--project rls` selection.
+
+**Commands:** `npm test` · `npm run test:watch` · `npm run test:rls` · `npm run check`
 
 **End-to-end testing is deliberately out of scope.** No Playwright, no Cypress. UI flows
 are verified manually. Consequently, Vitest coverage must carry more weight on the
@@ -89,6 +103,32 @@ things that cannot be caught by eye:
   markdown/Tiptap conversion
 - API route handlers — auth guards, input validation, error paths
 - Data transforms feeding charts and rollups
+
+### Testing Conventions
+
+- **Colocate** tests as `<name>.test.ts` beside their source. The exception is
+  `tests/rls/`, whose tests assert cross-table policy behaviour and belong to no single
+  source file.
+- **Never call a real third-party API.** Stub `fetch` with `vi.stubGlobal`; see
+  `lib/integrations/github.test.ts` for the reference pattern, which also asserts the
+  outgoing URL and headers so a regression to live calls fails loudly.
+- **Never use the service-role key in isolation tests.** It bypasses RLS entirely and
+  makes every assertion pass vacuously. Use the anon key with a real user session; the
+  harness asserts this.
+- **RLS tests skip, not fail**, when no local stack is reachable.
+- Test both success and failure paths; error paths are where this product degrades.
+
+### Known Testing Limitations
+
+- **Async Server Components cannot be unit tested.** Per the Next.js 16 Vitest guide
+  (`node_modules/next/dist/docs/01-app/02-guides/testing/vitest.md`), Vitest does not
+  support them and Next recommends E2E — which is out of scope here. Synchronous Server
+  and Client Components can still be tested once component testing is enabled.
+- **Component testing is not yet possible.** `@vitejs/plugin-react` cannot be installed:
+  its transitive `@rolldown/plugin-babel` requires `@babel/core@^8`, conflicting with
+  the tree's v7. The `jsdom` project is configured and waiting.
+- **`npm run check` currently exits 1** on 54 pre-existing ESLint errors, by explicit
+  decision. Tests and type checking are clean.
 
 ## Deployment
 
