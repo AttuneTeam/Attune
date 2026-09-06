@@ -287,11 +287,18 @@ Establishes the two patterns future tracks copy: pure functions, and mocked exte
   variables. Out of scope here; worth a small docs track alongside the
   `ARCHITECTURE.md` drift recorded during setup.
 
-- [ ] Task: Document the testing conventions
-  - [ ] Colocation as `<name>.test.ts`
-  - [ ] Never call real third-party APIs
-  - [ ] Never use the service-role key in isolation tests
-  - [ ] Priority order for what to test next
+- [x] Task: Document the testing conventions (9c03a6d)
+  - [x] Colocation as `<name>.test.ts`
+  - [x] Never call real third-party APIs
+  - [x] Never use the service-role key in isolation tests
+  - [x] Priority order for what to test next
+
+  Recorded in three places for three readers: `README.md` (a human cloning the repo),
+  `conductor/tech-stack.md` (an agent loading project context), and
+  `code_styleguides/project-rules.md` (an agent writing code — the file the quality
+  gates point at). Added two rules learned in Phase 2: assert *zero rows affected*
+  rather than an error for blocked reads/writes, and assert error code `42501`
+  specifically on a blocked INSERT.
 
 - [ ] Task: Full verification against acceptance criteria
   - [ ] `CI=true npm test` exits 0
