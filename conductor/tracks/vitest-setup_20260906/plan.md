@@ -320,3 +320,9 @@ Establishes the two patterns future tracks copy: pure functions, and mocked exte
   | 9 | Docs reflect installed state | PASS — tech-stack.md, README.md and project-rules.md updated; no stale "not yet installed" text remains |
 
 - [x] Task: Phase Verification & Checkpoint (Refer to workflow.md) (9c03a6d)
+
+---
+
+## Phase: Review Fixes
+
+- [x] Task: Apply review suggestions 0fa8dc8
