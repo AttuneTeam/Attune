@@ -138,11 +138,16 @@ that assert isolation.
   profile including their own (rows cascade from `auth.users`). Recorded via the
   `ownDeleteAllowed` flag rather than left as an unexplained gap.
 
-- [ ] Task: Isolation tests — `interactions`, `action_items`, `embeddings` (Red -> Green)
-  - [ ] Same four negative and four positive assertions per table
-  - [ ] Pay particular attention to tables isolated *indirectly*, via a join to the owning
+- [x] Task: Isolation tests — `interactions`, `action_items`, `embeddings` (Red -> Green) (455058f)
+  - [x] Same four negative and four positive assertions per table
+  - [x] Pay particular attention to tables isolated *indirectly*, via a join to the owning
         interaction rather than a direct `manager_id`
-  - [ ] Fix failures in a new migration
+  - [x] Fix failures in a new migration — **none needed, no bugs found**
+
+  **Extra test added:** personal action items (`interaction_id IS NULL`, migration 034)
+  are a second, distinct clause in the policy that no seeded row exercises. A bug there
+  would leak every manager's private todo list while all join-based tests still passed.
+  Asserted in both directions.
 
 - [ ] Task: Isolation tests — `strategic_initiatives` (Red -> Green)
   - [ ] Same assertions, including nested initiatives (migration 033)
