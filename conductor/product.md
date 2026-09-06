@@ -18,7 +18,9 @@ organisation. This is a first-class architectural constraint, not an aspiration:
 
 - **Multi-tenancy is non-negotiable.** Every table carries an ownership path back to a
   manager, and Row-Level Security enforces it at the database layer. No query may rely
-  on application code alone for isolation.
+  on application code alone for isolation. This is now enforced by tests: `tests/rls/`
+  proves, against a real database, that one manager cannot read or modify another's rows
+  across every tenant-scoped table. Any new table must be added to that suite.
 - **Onboarding must work with zero hand-holding.** A new manager signing up cold must
   reach value without a seed script, a migration, or a support conversation.
 - **Integrations are per-tenant.** Credentials for GitHub, Slack, Google Calendar and
