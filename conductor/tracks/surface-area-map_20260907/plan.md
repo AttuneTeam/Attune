@@ -326,22 +326,22 @@ area, so renaming rewrites every row and there is nowhere to record an order.
     - [x] Update `lib/supabase/types.ts`
     - [x] Confirm green
 
-- [~] Task: Read the map from domain rows **[T]**
-    - [ ] Write failing tests — the query joins domains, and grouping orders by the
+- [x] Task: Read the map from domain rows **[T]** `cfc924c`
+    - [x] Write failing tests — the query joins domains, and grouping orders by the
           manager's `sort_order` rather than alphabetically
-    - [ ] Confirm red
-    - [ ] Update `lib/map/queries.ts` and `lib/map/grouping.ts`; retire `compareDomains`
+    - [x] Confirm red
+    - [x] Update `lib/map/queries.ts` and `lib/map/grouping.ts`; retire `compareDomains`
           alphabetical ordering and the FR9 pending-group device, which an empty domain
           row now makes unnecessary
-    - [ ] Confirm green
+    - [x] Confirm green
 
-- [~] Task: Domain write API **[T]**
-    - [ ] Write failing tests — create, rename, reorder and delete; 401; Zod validation;
+- [x] Task: Domain write API **[T]** `cfc924c`
+    - [x] Write failing tests — create, rename, reorder and delete; 401; Zod validation;
           a name unique per manager; cross-tenant rejection; delete ungroups rather than
           removes
-    - [ ] Confirm red
-    - [ ] Implement the routes, reusing the `move_area` swap approach for domain order
-    - [ ] Confirm green, both success and failure paths
+    - [x] Confirm red
+    - [x] Implement the routes, reusing the `move_area` swap approach for domain order
+    - [x] Confirm green, both success and failure paths
 
 - [ ] Task: Domain dialog and controls **[V]**
     - [ ] Create and rename a domain in one dialog, reached from the header and from the
