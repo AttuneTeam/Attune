@@ -61,9 +61,12 @@ export async function fetchMapAreas(
     // (manager_id, kind) index usable and states the intent at the call site.
     .eq("manager_id", managerId)
     .eq("kind", "area")
-    // Parents before children, so the grouping transform -- which preserves
-    // input order -- nests correctly and renders the same way every visit.
+    // depth first, so the grouping transform -- which preserves input order --
+    // always sees a parent before its children. Then the manager's own order
+    // (FR9). created_at last, purely as a tiebreak: without it two areas
+    // sharing a position could render in a different order between requests.
     .order("depth", { ascending: true })
+    .order("sort_order", { ascending: true })
     .order("created_at", { ascending: true })
 
   if (error) return { ok: false, message: error.message }

@@ -244,6 +244,109 @@ suite("surface area columns", () => {
     expect((after.data as Row).owner_id).toBeNull();
   });
 
+  // ── Manual ordering (FR9) ───────────────────────────────────────────────
+
+  /** Reads a manager's areas in the order the map would render them. */
+  async function orderedTitles(t: Tenant, domain: string): Promise<string[]> {
+    const res = await t.client
+      .from("strategic_initiatives")
+      .select("title, sort_order")
+      .eq("kind", "area")
+      .eq("domain", domain)
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: true });
+    if (res.error) throw new Error(res.error.message);
+    return (res.data as Array<{ title: string }>).map((r) => r.title);
+  }
+
+  it("gives every new area a distinct position within its group", async () => {
+    // A shared DEFAULT would put every new area at the same position, and the
+    // order would then be decided by whatever the tiebreak happened to be --
+    // which is exactly the arbitrariness manual ordering exists to remove.
+    const domain = `order-distinct-${Date.now()}`;
+    for (const title of ["first", "second", "third"]) {
+      await createArea(a, { title, domain });
+    }
+    const res = await a.client
+      .from("strategic_initiatives")
+      .select("sort_order")
+      .eq("kind", "area")
+      .eq("domain", domain);
+    const positions = (res.data as Array<{ sort_order: number }>).map((r) => r.sort_order);
+    expect(new Set(positions).size, "two areas share a position").toBe(3);
+    expect(await orderedTitles(a, domain)).toEqual(["first", "second", "third"]);
+  });
+
+  it("swaps an area with its neighbour", async () => {
+    const domain = `order-swap-${Date.now()}`;
+    const firstId = await createArea(a, { title: "first", domain });
+    await createArea(a, { title: "second", domain });
+    await createArea(a, { title: "third", domain });
+
+    const down = await a.client.rpc("move_area", {
+      p_area_id: firstId,
+      p_direction: "down",
+    });
+    expect(down.error).toBeNull();
+    expect(await orderedTitles(a, domain)).toEqual(["second", "first", "third"]);
+
+    const up = await a.client.rpc("move_area", { p_area_id: firstId, p_direction: "up" });
+    expect(up.error).toBeNull();
+    expect(await orderedTitles(a, domain)).toEqual(["first", "second", "third"]);
+  });
+
+  it("does nothing at the ends of a group", async () => {
+    // A disabled control is the interface's job; the database still has to be
+    // safe when asked, and must not error or corrupt the order.
+    const domain = `order-ends-${Date.now()}`;
+    const firstId = await createArea(a, { title: "first", domain });
+    const lastId = await createArea(a, { title: "last", domain });
+
+    expect((await a.client.rpc("move_area", { p_area_id: firstId, p_direction: "up" })).error).toBeNull();
+    expect((await a.client.rpc("move_area", { p_area_id: lastId, p_direction: "down" })).error).toBeNull();
+    expect(await orderedTitles(a, domain)).toEqual(["first", "last"]);
+  });
+
+  it("orders each domain independently", async () => {
+    // sort_order is per sibling group, so moving something in one domain must
+    // not disturb another.
+    const left = `order-left-${Date.now()}`;
+    const right = `order-right-${Date.now()}`;
+    const leftFirst = await createArea(a, { title: "L1", domain: left });
+    await createArea(a, { title: "L2", domain: left });
+    await createArea(a, { title: "R1", domain: right });
+    await createArea(a, { title: "R2", domain: right });
+
+    await a.client.rpc("move_area", { p_area_id: leftFirst, p_direction: "down" });
+    expect(await orderedTitles(a, left)).toEqual(["L2", "L1"]);
+    expect(await orderedTitles(a, right), "the other domain was reordered").toEqual([
+      "R1",
+      "R2",
+    ]);
+  });
+
+  it("refuses to reorder another manager's areas", async () => {
+    // move_area runs as the caller, so RLS is what stops this -- asserted
+    // rather than assumed.
+    const domain = `order-tenant-${Date.now()}`;
+    const bFirst = await createArea(b, { title: "B1", domain });
+    await createArea(b, { title: "B2", domain });
+
+    const attempt = await a.client.rpc("move_area", {
+      p_area_id: bFirst,
+      p_direction: "down",
+    });
+    // Either a refusal or a silent no-op is acceptable; a reordering is not.
+    expect(
+      await orderedTitles(b, domain),
+      "DATA INTEGRITY — one manager reordered another manager's areas",
+    ).toEqual(["B1", "B2"]);
+    if (attempt.error === null) {
+      // A no-op is fine, but it must genuinely have done nothing.
+      expect(await orderedTitles(b, domain)).toEqual(["B1", "B2"]);
+    }
+  });
+
   it("cascades a deleted area's descendants, and only its own", async () => {
     // FR5 makes cascade deletion a routine action rather than a rare one, so
     // the behaviour the interface promises -- "removing this also removes its

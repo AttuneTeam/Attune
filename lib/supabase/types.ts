@@ -642,6 +642,12 @@ export type StrategicInitiative = {
   last_reviewed_at: string | null
   /** A team_members id. Null is meaningful: an unowned area surfaces on the map. */
   owner_id: string | null
+  /**
+   * Position within the sibling group — same manager, same parent, and for
+   * roots the same domain. Assigned by a trigger on insert; 0 is the
+   * "not set" sentinel, so a real position is always 1 or greater.
+   */
+  sort_order: number
   created_at: string
   updated_at: string
 }

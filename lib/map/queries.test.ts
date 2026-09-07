@@ -81,13 +81,17 @@ describe("fetchMapAreas", () => {
     ])
   })
 
-  it("orders by depth then creation so parents precede their children", async () => {
-    // The grouping transform preserves input order, so the ordering has to be
-    // right here or areas would shuffle between visits.
+  it("orders by depth, then the manager's own order, then creation", async () => {
+    // depth first so parents precede their children, which the grouping
+    // transform relies on. sort_order next, because FR9 makes the order the
+    // manager's to set. created_at last, purely as a tiebreak -- without it two
+    // areas sharing a position would render in an arbitrary order that could
+    // change between requests.
     const { client, queries } = fakeClient({ data: [], error: null })
     await fetchMapAreas(client, "manager-1")
     expect(queries[0].orders).toEqual([
       { column: "depth", ascending: true },
+      { column: "sort_order", ascending: true },
       { column: "created_at", ascending: true },
     ])
   })
