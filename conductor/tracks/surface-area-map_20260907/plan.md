@@ -180,7 +180,7 @@ is verified against manually inserted rows.
 
 ---
 
-## Phase 3 — Write Path: Capture, Confidence, Removal
+## Phase 3 — Write Path: Capture, Confidence, Removal [checkpoint: 13e5a60]
 
 The map becomes usable. After this phase you can populate it by hand and keep it current.
 
@@ -298,7 +298,7 @@ The map becomes usable. After this phase you can populate it by hand and keep it
           from `sm` upward, where they are what makes the group scannable
     - [x] Re-verified at 406px and at desktop width
 
-- [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
+- [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`) `13e5a60`
 
 ---
 
