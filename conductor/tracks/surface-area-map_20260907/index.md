@@ -48,3 +48,26 @@ Phase 1 closes a defect logged as a follow-up by the Vitest track: `parent_id` i
 `ON DELETE CASCADE` while the policy checks only `manager_id`, so one manager can parent
 a row into another's tree and a delete there destroys the first manager's row. This track
 makes cascade deletion routine, so the fix lands before any new nesting is built on it.
+
+## Follow-up Tracks
+
+Identified during implementation, to be planned separately:
+
+-   **Realise tonal layering in light mode.** `bg-card` and `bg-background` are the same
+    value in light (`#fcf9f2`), with the intended card colour commented out — already
+    recorded as Known Drift in `product-guidelines.md`. The map is the screen where it
+    costs most: its domain groups are invisible containers in light mode and rely
+    entirely on whitespace, while the olive dark theme shows the intended soft inset.
+    Deliberately not fixed inside this track — it affects every card in the product, so
+    it would change screens far outside the map's scope and make this branch much harder
+    to review.
+-   **Component testing for the map's interactions.** Enter-to-commit, Escape-to-cancel,
+    the confidence menu and the removal confirmation have no automated cover. The
+    `jsdom` Vitest project exists but is empty, and the Vitest track logged a peer
+    conflict (`@vitejs/plugin-react` vs `@babel/core@^8`) that must be resolved first.
+    Verified manually instead; worth automating before this surface grows.
+-   **Honest failure handling on `/initiatives`.** `fetchInitiatives` returns `[]` on a
+    failed query, so a broken load renders as "no initiatives". `/map` distinguishes the
+    two cases (`MapAreasResult`). Retrofitting that onto `/initiatives` is a behaviour
+    change to a screen already in use, so it was left alone here and asserted by test to
+    keep the current behaviour deliberate.
