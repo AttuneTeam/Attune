@@ -358,29 +358,29 @@ area, so renaming rewrites every row and there is nowhere to record an order.
 Depth behind progressive disclosure, and the connection to interactions that makes this
 Attune's map rather than a generic outline.
 
-- [ ] Task: Linked interactions query **[T]**
-    - [ ] Write failing tests in `lib/map/linkedInteractions.test.ts` — joins
+- [x] Task: Linked interactions query **[T]** `3778e0a`
+    - [x] Write failing tests in `lib/map/linkedInteractions.test.ts` — joins
           `interaction_initiative_signals` for one area, returns signal, note and date,
           scoped by `manager_id`, and returns empty rather than throwing when there are
           none
-    - [ ] Confirm red
-    - [ ] Implement `lib/map/linkedInteractions.ts`
-    - [ ] Confirm green
+    - [x] Confirm red
+    - [x] Implement `lib/map/linkedInteractions.ts`
+    - [x] Confirm green
 
-- [ ] Task: Owner assignment API, including self-ownership **[T]**
-    - [ ] Write failing tests — owner must be one of the caller's own `team_members`;
+- [x] Task: Owner assignment API, including self-ownership **[T]** `3778e0a`
+    - [x] Write failing tests — owner must be one of the caller's own `team_members`;
           another manager's member is rejected; owner can be cleared to null;
           assignment creates no action item and no notification record
-    - [ ] Write failing tests for self-ownership (FR8) — an area can be owned by the
+    - [x] Write failing tests for self-ownership (FR8) — an area can be owned by the
           manager, that is distinct from both a named owner and from nobody, and it does
           **not** carry the unowned attention mark
-    - [ ] Confirm red
-    - [ ] Add the self-ownership flag in a migration; deliberately not a `team_members`
+    - [x] Confirm red
+    - [x] Add the self-ownership flag in a migration; deliberately not a `team_members`
           row for the manager, which would surface them in the team list, coverage and
           pulse
-    - [ ] Extend the PATCH handler to accept `owner_id` and the self flag, rejecting
+    - [x] Extend the PATCH handler to accept `owner_id` and the self flag, rejecting
           both being set at once
-    - [ ] Confirm green
+    - [x] Confirm green
 
 - [ ] Task: Area detail panel **[V]**
     - [ ] Build `components/map/AreaDetailSheet.tsx` behind progressive disclosure
