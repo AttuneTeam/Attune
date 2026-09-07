@@ -28,6 +28,26 @@ export type DomainGroup<T extends GroupableArea = MapArea> = {
 }
 
 /**
+ * The order domain groups appear in: alphabetical, with the ungrouped bucket
+ * last.
+ *
+ * Exported because the map also renders domains that do not exist yet — a
+ * newly named group holds no areas until the first one is added. It has to
+ * slot into the position it will occupy once it is real, or it would jump the
+ * moment it stops being pending.
+ *
+ * Alphabetical rather than by attention: the order has to be predictable
+ * between visits, and a page that rearranges itself around what is wrong works
+ * against the calm surface product-guidelines.md asks for.
+ */
+export function compareDomains(a: string | null, b: string | null): number {
+  if (a === b) return 0
+  if (a === null) return 1
+  if (b === null) return -1
+  return a.localeCompare(b)
+}
+
+/**
  * True when following parent_id upward from this area revisits a node.
  *
  * The depth CHECK makes a cycle unreachable through the application, but a
@@ -97,12 +117,7 @@ export function groupAreasByDomain<T extends GroupableArea>(
   }
 
   return [...byDomain.entries()]
-    .sort(([a], [b]) => {
-      if (a === b) return 0
-      if (a === null) return 1
-      if (b === null) return -1
-      return a.localeCompare(b)
-    })
+    .sort(([a], [b]) => compareDomains(a, b))
     .map(([domain, groupRoots]) => ({
       domain,
       roots: groupRoots,

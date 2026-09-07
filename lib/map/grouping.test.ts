@@ -1,4 +1,5 @@
 import {
+  compareDomains,
   countDescendants,
   flattenAreas,
   groupAreasByDomain,
@@ -248,5 +249,29 @@ describe("countDescendants", () => {
     const root = { ...area({ id: "r" }), children: [child(), child()] }
     // 2 children + 4 grandchildren
     expect(countDescendants(root)).toBe(6)
+  })
+})
+
+describe("compareDomains", () => {
+  it("orders alphabetically", () => {
+    const sorted = ["Process", "Business", "People"].sort(compareDomains)
+    expect(sorted).toEqual(["Business", "People", "Process"])
+  })
+
+  it("puts the ungrouped bucket last", () => {
+    // It is a holding pen, not a priority.
+    expect([null, "Business"].sort(compareDomains)).toEqual(["Business", null])
+    expect(["Business", null].sort(compareDomains)).toEqual(["Business", null])
+  })
+
+  it("treats two ungrouped buckets as equal", () => {
+    expect(compareDomains(null, null)).toBe(0)
+  })
+
+  it("is exported so pending groups sort the same way as real ones", () => {
+    // A newly named domain has to slot into the same order it will occupy once
+    // it holds an area, or it would jump position the moment it becomes real.
+    const merged = ["Platform", null, "Business", "Delivery"].sort(compareDomains)
+    expect(merged).toEqual(["Business", "Delivery", "Platform", null])
   })
 })
