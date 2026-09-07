@@ -117,11 +117,16 @@ is verified against manually inserted rows.
           the FK hint and embed cardinality were additionally probed against the real
           database, and the route verified as 307 while an unknown route 404s
 
-- [ ] Task: Scope `/initiatives` to `kind = 'initiative'` **[T]**
-    - [ ] Write failing test asserting the initiatives query excludes areas
-    - [ ] Confirm red
-    - [ ] Add the filter in `app/(dashboard)/initiatives/page.tsx`
-    - [ ] Confirm green and confirm `/initiatives` behaviour is otherwise unchanged
+- [x] Task: Scope `/initiatives` to `kind = 'initiative'` **[T]** `33c21cd`
+    - [x] Write failing test asserting the initiatives query excludes areas — required
+          extracting the query to `lib/initiatives/queries.ts` to be assertable
+    - [x] Confirm red
+    - [x] Add the filter in `app/(dashboard)/initiatives/page.tsx`, and also to the
+          initiative editor's children query — an area parented under an initiative
+          would otherwise render there
+    - [x] Confirm green — 143/143 node, 164/164 full suite; `npm run build` succeeds
+          with both routes in the manifest. Rendering unchanged for a signed-in
+          manager is covered by the Phase 2 manual verification plan
 
 - [ ] Task: Map layout — domain groups and area rows **[V]**
     - [ ] Build `components/map/SurfaceAreaMapClient.tsx`
