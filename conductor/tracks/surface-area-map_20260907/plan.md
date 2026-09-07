@@ -78,12 +78,13 @@ closed before any new nesting is built on top of it.
     - [x] Refactor for clarity with tests as the safety net — boundary made inclusive;
           `spec.md` FR6 and AC 9 reworded from "more than" to "at least" to match
 
-- [ ] Task: Confidence ordering and coverage summary helpers **[T]**
-    - [ ] Write failing tests in `lib/map/coverage.test.ts` — confidence rank ordering,
-          per-domain distribution counts, empty domain, single area
-    - [ ] Confirm red
-    - [ ] Implement `lib/map/coverage.ts`
-    - [ ] Confirm green
+- [x] Task: Confidence ordering and coverage summary helpers **[T]** `5a413fd`
+    - [x] Write failing tests in `lib/map/coverage.test.ts` — confidence rank ordering,
+          per-domain distribution counts, empty domain, single area, plus the
+          per-domain attention count and the normalised coverage score
+    - [x] Confirm red
+    - [x] Implement `lib/map/coverage.ts`
+    - [x] Confirm green — 107/107 node, 128/128 full suite
 
 - [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
