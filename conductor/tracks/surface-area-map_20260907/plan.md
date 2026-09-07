@@ -156,11 +156,15 @@ is verified against manually inserted rows.
     - [ ] **Open:** collapsed sidebar tooltip and both themes — carried into the
           Phase 2 manual verification plan
 
-- [ ] Task: Empty state and domain starters **[V]**
-    - [ ] Write the empty state copy — plain, calm, British spelling, no exclamation marks
-    - [ ] Offer Platform, People, Business, Process as suggestions that write nothing
-          until acted on
-    - [ ] Verify both themes and all breakpoints
+- [x] Task: Empty state and domain starters **[V]** `58a6192`
+    - [x] Write the empty state copy — plain, calm, British spelling, no exclamation
+          marks; defines what an area is, and reads the threshold from
+          `STALENESS_THRESHOLD_DAYS` so the copy cannot drift from the behaviour
+    - [x] Offer Platform, People, Business, Process as suggestions that write nothing
+          until acted on — shipped as **text, not buttons**: capture is Phase 3, and a
+          control that looked actionable and did nothing would be worse than none
+    - [ ] **Open:** both themes and all breakpoints — carried into the Phase 2 manual
+          verification plan
 
 - [ ] Task: Domain group collapse persistence **[T]** + **[V]**
     - [ ] Write failing tests for the collapse-state serialisation helper
@@ -194,6 +198,9 @@ The map becomes usable. After this phase you can populate it by hand and keep it
     - [ ] Build `components/map/InlineAreaAdd.tsx` — Enter commits, input stays focused
           for the next entry, no page reload
     - [ ] Support adding a child area from a parent row, respecting the depth limit
+    - [ ] Make the empty state's starter domains actionable — they ship as text in
+          Phase 2 (`STARTER_DOMAINS` in `components/map/MapEmptyState.tsx`) and become
+          the quick-add's starting point here
     - [ ] Verify keyboard-only capture of several areas in a row
     - [ ] Verify both themes, all breakpoints, 44x44px touch targets
 
