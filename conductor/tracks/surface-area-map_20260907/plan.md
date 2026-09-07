@@ -128,19 +128,25 @@ is verified against manually inserted rows.
           with both routes in the manifest. Rendering unchanged for a signed-in
           manager is covered by the Phase 2 manual verification plan
 
-- [ ] Task: Map layout — domain groups and area rows **[V]**
-    - [ ] Build `components/map/SurfaceAreaMapClient.tsx`
-    - [ ] Build `components/map/DomainGroup.tsx` — large heading, coverage summary,
+- [x] Task: Map layout — domain groups and area rows **[V]** `13d8b59`
+    - [x] Build `components/map/SurfaceAreaMapClient.tsx`
+    - [x] Build `components/map/DomainGroup.tsx` — heading, coverage summary,
           separated by whitespace and surface shift only
-    - [ ] Build `components/map/AreaRow.tsx` — title, confidence, days since review,
+    - [x] Build `components/map/AreaRow.tsx` — title, confidence, review age,
           owner or its absence, on one line
-    - [ ] Indent child areas beneath parents to depth 2
-    - [ ] Apply the attention mark using `tertiary`, once per domain group as a count
-          rather than per row
-    - [ ] Extract any non-trivial logic into the tested `lib/map/` helpers
-    - [ ] Verify: light theme · olive dark theme · mobile, tablet, desktop · theme
-          tokens only, no literal hex · no 1px dividers or `<hr>` · keyboard accessible
-          with visible focus · loading and empty states handled
+    - [x] Indent child areas beneath parents to depth 2 — by margin alone, no guide lines
+    - [x] Apply the attention mark once per domain group as a count rather than per
+          row — but **not** in `tertiary`: one coral per domain is four on a typical
+          screen, so the group count is emphasised by weight and the single coral
+          figure sits in the page header
+    - [x] Extract any non-trivial logic into the tested `lib/map/` helpers —
+          `formatReviewAge()`, `filledCoverageDots()`
+    - [x] Verified statically: theme tokens only, no literal hex · no 1px dividers or
+          `<hr>` · visible focus ring · 44x44 toggle · aria-expanded/controls/sr-only ·
+          empty and failure states handled
+    - [ ] **Open:** light and olive dark themes, and the three breakpoints — could not
+          reach an authenticated session locally (see the git note); carried into the
+          Phase 2 manual verification plan
 
 - [ ] Task: Sidebar navigation entry **[V]**
     - [ ] Add the Map item to `navItems` in `components/Sidebar.tsx`
