@@ -14,7 +14,11 @@ import type { SupabaseClient } from "@supabase/supabase-js"
  * What lives here is the shape of the request the application makes.
  */
 
-export type QueryResult = { data: unknown; error: { message: string } | null }
+export type QueryResult = {
+  data: unknown
+  /** `code` carries the SQLSTATE, which routes map to HTTP status codes. */
+  error: { message: string; code?: string } | null
+}
 
 export type RecordedQuery = {
   table: string
@@ -29,9 +33,12 @@ export type RecordedQuery = {
   single: boolean
 }
 
+export type RecordedRpc = { fn: string; args: unknown }
+
 export type FakeSupabase = {
   client: SupabaseClient
   queries: RecordedQuery[]
+  rpcs: RecordedRpc[]
 }
 
 export type FakeSupabaseOptions = {
@@ -49,6 +56,7 @@ export function fakeSupabase(
   options: FakeSupabaseOptions = {},
 ): FakeSupabase {
   const queries: RecordedQuery[] = []
+  const rpcs: RecordedRpc[] = []
   const queue = Array.isArray(results) ? [...results] : null
   const single = Array.isArray(results) ? null : results
 
@@ -113,6 +121,10 @@ export function fakeSupabase(
   }
 
   const client = {
+    rpc(fn: string, args: unknown) {
+      rpcs.push({ fn, args })
+      return Promise.resolve(nextResult())
+    },
     auth: {
       getUser: async () => ({
         data: { user: options.user === undefined ? { id: "manager-1" } : options.user },
@@ -137,5 +149,5 @@ export function fakeSupabase(
   // The fake implements only the surface our code uses. Casting through unknown
   // keeps the production signatures honest — they take a real SupabaseClient —
   // without dragging in the full generic builder types.
-  return { client: client as unknown as SupabaseClient, queries }
+  return { client: client as unknown as SupabaseClient, queries, rpcs }
 }

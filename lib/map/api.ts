@@ -87,6 +87,17 @@ export function deleteArea(id: string): Promise<MutationResult> {
   return send(`/api/map/areas/${id}`, "DELETE")
 }
 
+/**
+ * Moves an area one place within its group.
+ *
+ * Direction rather than an absolute position: the client does not know its
+ * siblings' positions and should not have to, and letting it post a number
+ * invites two clients writing the same one.
+ */
+export function moveArea(id: string, direction: "up" | "down"): Promise<MutationResult> {
+  return send(`/api/map/areas/${id}/move`, "POST", { direction })
+}
+
 function pruneUndefined<T extends object>(input: T): Partial<T> {
   return Object.fromEntries(
     Object.entries(input).filter(([, value]) => value !== undefined),

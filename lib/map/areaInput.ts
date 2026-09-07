@@ -89,3 +89,14 @@ export function toAreaUpdate(
 
   return patch
 }
+
+/**
+ * Reordering is up or down by one place, never an absolute position. The
+ * client does not know its siblings' positions and should not have to: letting
+ * it post a number invites two clients writing the same one.
+ */
+export const moveAreaInput = z
+  .object({ direction: z.enum(["up", "down"]) })
+  .strict()
+
+export type MoveAreaInput = z.infer<typeof moveAreaInput>

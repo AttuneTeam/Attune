@@ -1,4 +1,4 @@
-import { createArea, deleteArea, updateArea } from "./api"
+import { createArea, deleteArea, moveArea, updateArea } from "./api"
 
 /**
  * The client side of the area endpoints.
@@ -122,5 +122,29 @@ describe("deleteArea", () => {
   it("reports a failure with a message", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({ error: "boom" }, 500)))
     expect(await deleteArea("area-1")).toEqual({ ok: false, message: "boom" })
+  })
+})
+
+describe("moveArea", () => {
+  it("posts a direction, not a position", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ ok: true }))
+    vi.stubGlobal("fetch", fetchMock)
+
+    expect(await moveArea("area-1", "down")).toEqual({ ok: true })
+    const [url, init] = fetchMock.mock.calls[0]
+    expect(url).toBe("/api/map/areas/area-1/move")
+    expect(init.method).toBe("POST")
+    expect(JSON.parse(init.body)).toEqual({ direction: "down" })
+  })
+
+  it("reports a failure with a message", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(jsonResponse({ error: "Area not found." }, 404)),
+    )
+    expect(await moveArea("gone", "up")).toEqual({
+      ok: false,
+      message: "Area not found.",
+    })
   })
 })
