@@ -1,17 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
-import { toast } from "sonner";
 import {
   persistCollapsedDomains,
   type CollapsedDomains,
 } from "@/lib/map/collapse";
-import { createDomain } from "@/lib/map/api";
 import type { DomainGroup as DomainGroupData, DomainRef } from "@/lib/map/grouping";
 import type { MapArea } from "@/lib/map/types";
 import { cn } from "@/lib/utils";
+import { DomainDialog } from "./DomainDialog";
 import { DomainGroup } from "./DomainGroup";
 import { MapEmptyState } from "./MapEmptyState";
 
@@ -40,10 +38,7 @@ export function SurfaceAreaMapClient({
   const [collapsed, setCollapsed] = useState<CollapsedDomains>(
     () => new Set(initialCollapsed),
   );
-  const [namingDomain, setNamingDomain] = useState(false);
-  const [newDomain, setNewDomain] = useState("");
-  const [saving, setSaving] = useState(false);
-  const router = useRouter();
+  const [creatingDomain, setCreatingDomain] = useState(false);
 
   function toggle(domainId: string | null) {
     // Computed outside the updater: persisting inside it would fire twice
@@ -53,22 +48,6 @@ export function SurfaceAreaMapClient({
     else next.add(domainId);
     setCollapsed(next);
     persistCollapsedDomains(next);
-  }
-
-  async function addDomain() {
-    const trimmed = newDomain.trim();
-    setNamingDomain(false);
-    setNewDomain("");
-    if (!trimmed || saving) return;
-
-    setSaving(true);
-    const result = await createDomain(trimmed);
-    setSaving(false);
-    if (!result.ok) {
-      toast.error(result.message);
-      return;
-    }
-    router.refresh();
   }
 
   const totalAreas = groups.reduce((sum, g) => sum + g.summary.total, 0);
@@ -102,49 +81,22 @@ export function SurfaceAreaMapClient({
         </div>
 
         {hasAnything && (
-          <div className="flex items-center">
-            {namingDomain ? (
-              <input
-                autoFocus
-                value={newDomain}
-                disabled={saving}
-                onChange={(e) => setNewDomain(e.target.value)}
-                onBlur={() => void addDomain()}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    void addDomain();
-                  }
-                  if (e.key === "Escape") {
-                    setNamingDomain(false);
-                    setNewDomain("");
-                  }
-                }}
-                placeholder="Domain name"
-                aria-label="Name the new domain"
-                className={cn(
-                  "min-h-11 rounded-md bg-transparent px-3 text-sm",
-                  "placeholder:text-muted-foreground/70",
-                  "focus:bg-accent/30 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
-                )}
-              />
-            ) : (
-              <button
-                type="button"
-                onClick={() => setNamingDomain(true)}
-                className={cn(
-                  "flex min-h-11 items-center gap-2 rounded-md px-3 text-[11px] font-medium",
-                  "text-muted-foreground transition-colors hover:bg-accent/30 hover:text-foreground",
-                  "focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
-                )}
-              >
-                <Plus className="size-3.5" />
-                New domain
-              </button>
+          <button
+            type="button"
+            onClick={() => setCreatingDomain(true)}
+            className={cn(
+              "flex min-h-11 items-center gap-2 rounded-md px-3 text-[11px] font-medium",
+              "text-muted-foreground transition-colors hover:bg-accent/30 hover:text-foreground",
+              "focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
             )}
-          </div>
+          >
+            <Plus className="size-3.5" />
+            New domain
+          </button>
         )}
       </header>
+
+      <DomainDialog open={creatingDomain} onOpenChange={setCreatingDomain} />
 
       {!hasAnything ? (
         <MapEmptyState />
@@ -158,6 +110,8 @@ export function SurfaceAreaMapClient({
               domains={domains}
               expanded={!collapsed.has(group.domainId)}
               onToggle={() => toggle(group.domainId)}
+              isFirst={group.domainId === domains[0]?.id}
+              isLast={group.domainId === domains[domains.length - 1]?.id}
             />
           ))}
         </div>

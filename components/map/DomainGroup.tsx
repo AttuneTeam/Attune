@@ -1,6 +1,18 @@
 "use client";
 
-import { ChevronRight } from "lucide-react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { ArrowDown, ArrowUp, ChevronRight, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { toast } from "sonner";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { deleteDomain, moveDomain } from "@/lib/map/api";
+import { DomainDialog } from "./DomainDialog";
 import { cn } from "@/lib/utils";
 import { COVERAGE_DOTS, filledCoverageDots } from "@/lib/map/coverage";
 import type { DomainGroup as DomainGroupData, DomainRef } from "@/lib/map/grouping";
@@ -28,6 +40,8 @@ export function DomainGroup({
   onToggle,
   now,
   domains,
+  isFirst,
+  isLast,
 }: {
   group: DomainGroupData<MapArea>;
   expanded: boolean;
@@ -35,7 +49,26 @@ export function DomainGroup({
   now?: Date;
   /** Every domain on the map, so a row can offer to move an area elsewhere. */
   domains: readonly DomainRef[];
+  isFirst: boolean;
+  isLast: boolean;
 }) {
+  const [renaming, setRenaming] = useState(false);
+  const [confirmingRemoval, setConfirmingRemoval] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const router = useRouter();
+
+  async function run(action: () => Promise<{ ok: boolean; message?: string }>) {
+    if (busy) return;
+    setBusy(true);
+    const result = await action();
+    setBusy(false);
+    if (!result.ok) {
+      toast.error(result.message ?? "That could not be saved.");
+      return;
+    }
+    setConfirmingRemoval(false);
+    router.refresh();
+  }
   // Keyed by id so a domain literally named "ungrouped" cannot collide with
   // the ungrouped bucket.
   const bodyId = `domain-${group.domainId ?? "none"}`;
@@ -75,6 +108,59 @@ export function DomainGroup({
           Coverage {filledCoverageDots(summary.score)} of {COVERAGE_DOTS}
         </span>
 
+        {group.domainId !== null && (
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={
+                <button
+                  type="button"
+                  title={`Actions for ${group.domain}`}
+                  className={cn(
+                    "relative flex size-7 items-center justify-center rounded-md",
+                    "before:absolute before:-inset-2 before:content-['']",
+                    "text-muted-foreground/50 transition-colors",
+                    "hover:bg-accent/30 hover:text-foreground",
+                    "focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
+                  )}
+                >
+                  <MoreHorizontal className="size-4" />
+                  <span className="sr-only">Actions for {group.domain}</span>
+                </button>
+              }
+            />
+            <DropdownMenuContent>
+              <DropdownMenuItem onClick={() => setRenaming(true)}>
+                <Pencil className="size-3.5" />
+                Rename
+              </DropdownMenuItem>
+              {/* Disabled at the ends rather than hidden: a control that
+                  vanishes makes the manager wonder what they did wrong. */}
+              <DropdownMenuItem
+                disabled={isFirst}
+                onClick={() => void run(() => moveDomain(group.domainId!, "up"))}
+              >
+                <ArrowUp className="size-3.5" />
+                Move up
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                disabled={isLast}
+                onClick={() => void run(() => moveDomain(group.domainId!, "down"))}
+              >
+                <ArrowDown className="size-3.5" />
+                Move down
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => setConfirmingRemoval(true)}
+                className="text-destructive"
+              >
+                <Trash2 className="size-3.5" />
+                Remove
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+
         <span className="ml-auto flex shrink-0 items-baseline gap-3 whitespace-nowrap text-[11px]">
           <span className="text-muted-foreground">
             {summary.total} {summary.total === 1 ? "area" : "areas"}
@@ -90,6 +176,59 @@ export function DomainGroup({
           )}
         </span>
       </div>
+
+      {group.domainId !== null && (
+        <DomainDialog
+          open={renaming}
+          onOpenChange={setRenaming}
+          domain={{ id: group.domainId, name: group.domain ?? "" }}
+        />
+      )}
+
+      {confirmingRemoval && (
+        <div
+          className="mt-2 flex flex-wrap items-center gap-3 rounded-md bg-surface-dim px-3 py-2"
+          onKeyDown={(e) => {
+            if (e.key === "Escape") setConfirmingRemoval(false);
+          }}
+        >
+          <p className="text-[11px] text-muted-foreground">
+            {/* States what survives, not just what goes. Removing a heading
+                must never read as though it removes the territory. */}
+            {summary.total === 0
+              ? `Remove "${group.domain}"?`
+              : `Remove "${group.domain}"? The ${
+                  summary.total === 1 ? "area" : `${summary.total} areas`
+                } in it stay on the map, ungrouped.`}
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              autoFocus
+              disabled={busy}
+              onClick={() => void run(() => deleteDomain(group.domainId!))}
+              className={cn(
+                "min-h-11 rounded-md px-3 text-[11px] font-medium text-destructive",
+                "hover:bg-accent/30 disabled:opacity-50",
+                "focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
+              )}
+            >
+              {busy ? "Removing" : "Remove"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setConfirmingRemoval(false)}
+              className={cn(
+                "min-h-11 rounded-md px-3 text-[11px] text-muted-foreground",
+                "hover:bg-accent/30 hover:text-foreground",
+                "focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
+              )}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       {expanded && (
         <div
