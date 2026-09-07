@@ -98,7 +98,7 @@ function SubInitiativeList({
     supabase
       .from("strategic_initiatives")
       .select(
-        "id, title, status, updated_at, depth, parent_id, manager_id, description, tags, domain, horizon, source_chat_id, created_at",
+        "id, title, status, updated_at, depth, parent_id, manager_id, description, tags, domain, horizon, source_chat_id, created_at, kind, confidence, last_reviewed_at, owner_id",
       )
       .eq("parent_id", parentId)
       .order("created_at", { ascending: true })

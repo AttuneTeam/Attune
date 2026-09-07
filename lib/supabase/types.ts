@@ -610,6 +610,20 @@ export type WorkshopSession = {
   created_at: string
 }
 
+/**
+ * Separates the Surface Area Map's areas from strategic initiatives. Both share
+ * one tree, one RLS policy and one set of interaction signals; `kind` is what
+ * decides which lens a row belongs to. Defaults to 'initiative' in the database
+ * so rows written without it keep their existing meaning.
+ */
+export type InitiativeKind = 'area' | 'initiative'
+
+/**
+ * How well the manager holds an area — not progress on a task. Ordered from
+ * least to most held; `lib/map/coverage.ts` owns the ranking.
+ */
+export type AreaConfidence = 'unknown' | 'aware' | 'understood' | 'owned'
+
 export type StrategicInitiative = {
   id: string
   manager_id: string
@@ -622,6 +636,12 @@ export type StrategicInitiative = {
   source_chat_id: string | null
   parent_id: string | null
   depth: number
+  kind: InitiativeKind
+  confidence: AreaConfidence
+  /** Null means never reviewed — the staleness signal falls back to created_at. */
+  last_reviewed_at: string | null
+  /** A team_members id. Null is meaningful: an unowned area surfaces on the map. */
+  owner_id: string | null
   created_at: string
   updated_at: string
 }
