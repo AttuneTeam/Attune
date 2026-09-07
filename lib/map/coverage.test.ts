@@ -1,5 +1,7 @@
 import {
   CONFIDENCE_ORDER,
+  COVERAGE_DOTS,
+  filledCoverageDots,
   compareByConfidence,
   confidenceRank,
   summariseCoverage,
@@ -141,5 +143,29 @@ describe("summariseCoverage", () => {
     expect(summary.attention).toBe(0)
     expect(summary.score).toBeNull()
     expect(summary.counts).toEqual({ unknown: 0, aware: 0, understood: 0, owned: 0 })
+  })
+})
+
+describe("filledCoverageDots", () => {
+  it("fills none for a wholly unknown domain and all for a fully owned one", () => {
+    expect(filledCoverageDots(0)).toBe(0)
+    expect(filledCoverageDots(1)).toBe(COVERAGE_DOTS)
+  })
+
+  it("rounds to the nearest dot", () => {
+    expect(filledCoverageDots(0.5)).toBe(2)
+    expect(filledCoverageDots(0.6)).toBe(2)
+    expect(filledCoverageDots(0.7)).toBe(3)
+  })
+
+  it("fills none for an empty domain", () => {
+    // score is null there. Drawing a partial indicator would imply a coverage
+    // level for areas that do not exist.
+    expect(filledCoverageDots(null)).toBe(0)
+  })
+
+  it("never exceeds the dot count or goes negative", () => {
+    expect(filledCoverageDots(1.5)).toBe(COVERAGE_DOTS)
+    expect(filledCoverageDots(-1)).toBe(0)
   })
 })

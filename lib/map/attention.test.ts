@@ -2,6 +2,7 @@ import {
   STALENESS_THRESHOLD_DAYS,
   attentionReasons,
   daysSinceReview,
+  formatReviewAge,
   isStale,
   needsAttention,
   type AttentionInput,
@@ -167,5 +168,26 @@ describe("needsAttention", () => {
   it("defaults to the current time when none is supplied", () => {
     // The production call sites pass no clock; only the tests do.
     expect(needsAttention({ created_at: new Date().toISOString(), last_reviewed_at: null, owner_id: "m" })).toBe(false)
+  })
+})
+
+describe("formatReviewAge", () => {
+  it("says so plainly when an area has never been reviewed", () => {
+    // Showing "40d" for a never-reviewed area would imply it was reviewed 40
+    // days ago. It was captured then and never looked at since, which is a
+    // different and more useful thing to know.
+    expect(
+      formatReviewAge({ created_at: daysBefore(40), last_reviewed_at: null, owner_id: "m" }, NOW),
+    ).toBe("never reviewed")
+  })
+
+  it("uses words for the two most recent days", () => {
+    expect(formatReviewAge(area({ last_reviewed_at: daysBefore(0) }), NOW)).toBe("today")
+    expect(formatReviewAge(area({ last_reviewed_at: daysBefore(1) }), NOW)).toBe("yesterday")
+  })
+
+  it("counts days beyond that", () => {
+    expect(formatReviewAge(area({ last_reviewed_at: daysBefore(2) }), NOW)).toBe("2d")
+    expect(formatReviewAge(area({ last_reviewed_at: daysBefore(24) }), NOW)).toBe("24d")
   })
 })

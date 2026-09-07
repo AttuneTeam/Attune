@@ -86,3 +86,18 @@ export function summariseCoverage(
     score: areas.length === 0 ? null : rankTotal / (areas.length * MAX_RANK),
   }
 }
+
+/** Slots in the compact per-domain coverage indicator. */
+export const COVERAGE_DOTS = 4
+
+/**
+ * How many dots to fill for a domain's coverage score.
+ *
+ * An empty domain scores null and fills none: drawing a partial indicator
+ * would imply a coverage level for areas that do not exist. Clamped at both
+ * ends so a future scoring change cannot render more dots than there are.
+ */
+export function filledCoverageDots(score: number | null): number {
+  if (score === null) return 0
+  return Math.min(COVERAGE_DOTS, Math.max(0, Math.round(score * COVERAGE_DOTS)))
+}

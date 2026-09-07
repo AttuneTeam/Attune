@@ -87,3 +87,20 @@ export function attentionReasons(
 export function needsAttention(area: AttentionInput, now: Date = new Date()): boolean {
   return attentionReasons(area, now).length > 0
 }
+
+/**
+ * The review age as the map states it on a row.
+ *
+ * A never-reviewed area says so rather than reporting its age since capture:
+ * "40d" would imply it was reviewed forty days ago, when in fact it has never
+ * been looked at. That is a different and more useful thing for the manager to
+ * know, and it is the honest reading of a null last_reviewed_at.
+ */
+export function formatReviewAge(area: AttentionInput, now: Date = new Date()): string {
+  if (area.last_reviewed_at === null) return "never reviewed"
+
+  const days = daysSinceReview(area, now)
+  if (days === 0) return "today"
+  if (days === 1) return "yesterday"
+  return `${days}d`
+}
