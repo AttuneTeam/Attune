@@ -61,6 +61,14 @@ Identified during implementation, to be planned separately:
     Deliberately not fixed inside this track — it affects every card in the product, so
     it would change screens far outside the map's scope and make this branch much harder
     to review.
+-   **Anchor `sr-only` labels app-wide.** Tailwind's `sr-only` is
+    `position: absolute`; without a positioned ancestor it resolves against the
+    document rather than the scroll container, silently extending page height. This
+    produced a second scrollbar on `/map` (fixed in-track by positioning each label's
+    parent). Existing usages elsewhere sit inside dialogs and sheets, which are already
+    positioned, so nothing else is broken today — but the next long list with per-row
+    labels will hit it. A `position: relative` on `main` in `DashboardShell` would
+    immunise the whole app; that is a shared-layout change and wants its own track.
 -   **Component testing for the map's interactions.** Enter-to-commit, Escape-to-cancel,
     the confidence menu and the removal confirmation have no automated cover. The
     `jsdom` Vitest project exists but is empty, and the Vitest track logged a peer
