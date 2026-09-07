@@ -244,6 +244,54 @@ suite("surface area columns", () => {
     expect((after.data as Row).owner_id).toBeNull();
   });
 
+  it("cascades a deleted area's descendants, and only its own", async () => {
+    // FR5 makes cascade deletion a routine action rather than a rare one, so
+    // the behaviour the interface promises -- "removing this also removes its
+    // 2 children" -- is asserted against real Postgres, not assumed from the
+    // foreign key definition.
+    const parentId = await createArea(a, { title: "A's parent area" });
+    const childId = await createArea(a, { title: "A's child", parent_id: parentId });
+    const grandchildId = await createArea(a, {
+      title: "A's grandchild",
+      parent_id: childId,
+    });
+    // An unrelated area of A's, to prove the cascade is not over-broad.
+    const siblingId = await createArea(a, { title: "A's unrelated area" });
+    // And one of B's, to prove it cannot reach across the tenant boundary.
+    const bId = await createArea(b, { title: "B's area" });
+
+    const removed = await a.client
+      .from("strategic_initiatives")
+      .delete()
+      .eq("id", parentId)
+      .select("id");
+    expect(removed.data, "could not delete own parent area").toHaveLength(1);
+
+    const gone = await a.client
+      .from("strategic_initiatives")
+      .select("id")
+      .in("id", [childId, grandchildId]);
+    expect(
+      gone.data,
+      "descendants survived their parent being deleted -- FR5's child count would be a lie",
+    ).toEqual([]);
+
+    const sibling = await a.client
+      .from("strategic_initiatives")
+      .select("id")
+      .eq("id", siblingId);
+    expect(sibling.data, "an unrelated area was cascaded away").toHaveLength(1);
+
+    const bSurvived = await b.client
+      .from("strategic_initiatives")
+      .select("id")
+      .eq("id", bId);
+    expect(
+      bSurvived.data,
+      "DATA LOSS — one manager's delete reached another manager's area",
+    ).toHaveLength(1);
+  });
+
   it("allows a manager's own team member as owner, and allows clearing it", async () => {
     // The guard above must not break the feature it protects.
     const areaId = await createArea(a);

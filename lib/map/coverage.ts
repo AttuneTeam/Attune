@@ -15,12 +15,12 @@ import { needsAttention, type AttentionInput } from "./attention"
  * Least held to most held. The direction is load-bearing: rank 0 is the thin
  * end, so a low score means a thin domain rather than a well-covered one.
  */
-export const CONFIDENCE_ORDER: readonly AreaConfidence[] = [
+export const CONFIDENCE_ORDER = [
   "unknown",
   "aware",
   "understood",
   "owned",
-] as const
+] as const satisfies readonly AreaConfidence[]
 
 export function confidenceRank(confidence: AreaConfidence): number {
   return CONFIDENCE_ORDER.indexOf(confidence)

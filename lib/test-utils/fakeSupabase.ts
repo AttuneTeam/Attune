@@ -1,22 +1,28 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 
 /**
- * A Supabase client that records the builder chain instead of talking to a
+ * A Supabase client that records what was asked of it instead of talking to a
  * database.
  *
- * The properties worth asserting about our list queries are structural: which
- * table, which filters, which ordering, and — most importantly — how many
- * queries were issued. A real database proves none of those cheaply, and a
- * mocked one that silently accepted a wrong filter would prove the opposite of
- * what we want. Shape assertions belong here; behaviour against real RLS
- * belongs in tests/rls/.
+ * The properties worth asserting about our queries and writes are structural:
+ * which table, which operation, which filters, what payload, and — often most
+ * importantly — how many round trips were made. A real database proves none of
+ * those cheaply.
+ *
+ * This is deliberately not a substitute for tests/rls/. Anything that depends
+ * on a policy actually being enforced belongs there, against real Postgres.
+ * What lives here is the shape of the request the application makes.
  */
 
 export type QueryResult = { data: unknown; error: { message: string } | null }
 
 export type RecordedQuery = {
   table: string
+  op: "select" | "insert" | "update" | "delete"
+  /** Column list passed to .select(), if any. */
   select: string | null
+  /** Row(s) handed to .insert() or .update(). */
+  payload: unknown
   filters: Array<{ column: string; value: unknown }>
   orders: Array<{ column: string; ascending?: boolean }>
   /** Set when the chain ended in .single() or .maybeSingle(). */
@@ -28,8 +34,33 @@ export type FakeSupabase = {
   queries: RecordedQuery[]
 }
 
-export function fakeSupabase(result: QueryResult): FakeSupabase {
+export type FakeSupabaseOptions = {
+  /** The signed-in user. Pass null to simulate an unauthenticated request. */
+  user?: { id: string } | null
+}
+
+/**
+ * `results` may be a single result reused by every query, or a queue consumed
+ * one query at a time — which is what lets a route that looks up a parent and
+ * then inserts be driven through both steps.
+ */
+export function fakeSupabase(
+  results: QueryResult | QueryResult[],
+  options: FakeSupabaseOptions = {},
+): FakeSupabase {
   const queries: RecordedQuery[] = []
+  const queue = Array.isArray(results) ? [...results] : null
+  const single = Array.isArray(results) ? null : results
+
+  const nextResult = (): QueryResult => {
+    if (single) return single
+    return (
+      queue!.shift() ?? {
+        data: null,
+        error: { message: "fakeSupabase: ran out of queued results" },
+      }
+    )
+  }
 
   function chainFor(record: RecordedQuery) {
     const chain = {
@@ -37,12 +68,30 @@ export function fakeSupabase(result: QueryResult): FakeSupabase {
         record.select = columns
         return chain
       },
+      insert(payload: unknown) {
+        record.op = "insert"
+        record.payload = payload
+        return chain
+      },
+      update(payload: unknown) {
+        record.op = "update"
+        record.payload = payload
+        return chain
+      },
+      delete() {
+        record.op = "delete"
+        return chain
+      },
       eq(column: string, value: unknown) {
         record.filters.push({ column, value })
         return chain
       },
-      order(column: string, options?: { ascending?: boolean }) {
-        record.orders.push({ column, ascending: options?.ascending })
+      in(column: string, value: unknown) {
+        record.filters.push({ column, value })
+        return chain
+      },
+      order(column: string, opts?: { ascending?: boolean }) {
+        record.orders.push({ column, ascending: opts?.ascending })
         return chain
       },
       single() {
@@ -57,17 +106,25 @@ export function fakeSupabase(result: QueryResult): FakeSupabase {
         onfulfilled?: ((value: QueryResult) => TResult1 | PromiseLike<TResult1>) | null,
         onrejected?: ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null,
       ): PromiseLike<TResult1 | TResult2> {
-        return Promise.resolve(result).then(onfulfilled, onrejected)
+        return Promise.resolve(nextResult()).then(onfulfilled, onrejected)
       },
     }
     return chain
   }
 
   const client = {
+    auth: {
+      getUser: async () => ({
+        data: { user: options.user === undefined ? { id: "manager-1" } : options.user },
+        error: null,
+      }),
+    },
     from(table: string) {
       const record: RecordedQuery = {
         table,
+        op: "select",
         select: null,
+        payload: undefined,
         filters: [],
         orders: [],
         single: false,
@@ -77,8 +134,8 @@ export function fakeSupabase(result: QueryResult): FakeSupabase {
     },
   }
 
-  // The fake implements only the surface our queries use. Casting through
-  // unknown keeps the production signatures honest — they take a real
-  // SupabaseClient — without dragging in the full generic builder types.
+  // The fake implements only the surface our code uses. Casting through unknown
+  // keeps the production signatures honest — they take a real SupabaseClient —
+  // without dragging in the full generic builder types.
   return { client: client as unknown as SupabaseClient, queries }
 }
