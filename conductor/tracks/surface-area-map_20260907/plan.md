@@ -236,44 +236,50 @@ The map becomes usable. After this phase you can populate it by hand and keep it
     - [ ] **Open:** both themes and keyboard operation (Escape to cancel, focus landing
           on Remove) — to be checked in the browser before the Phase 3 checkpoint
 
-- [ ] Task: Manual ordering — `sort_order` column and swap function **[T]**
-    - [ ] Write failing RLS tests: `sort_order` is isolated across tenants, and one
+- [x] Task: Manual ordering — `sort_order` column and swap function **[T]** `9bb524d`
+    - [x] Write failing RLS tests: `sort_order` is isolated across tenants, and one
           manager cannot reorder another's areas through the swap function
-    - [ ] Write failing tests asserting the list query orders by `sort_order` before
+    - [x] Write failing tests asserting the list query orders by `sort_order` before
           `created_at`, and that grouping preserves it
-    - [ ] Confirm red
-    - [ ] Create `supabase/migrations/043_area_sort_order.sql` — add `sort_order`,
+    - [x] Confirm red
+    - [x] Create `supabase/migrations/043_area_sort_order.sql` — add `sort_order`,
           backfill sequentially per (manager, parent, domain) by `created_at` so the
           current order is preserved exactly, and add a `move_area` function that swaps
           two siblings in one statement, running as the caller so RLS still applies
-    - [ ] Update `lib/map/queries.ts`, `lib/map/grouping.ts` and
+    - [x] Update `lib/map/queries.ts`, `lib/map/grouping.ts` and
           `lib/supabase/types.ts`
-    - [ ] Confirm green, and confirm two areas cannot end up sharing a position
+    - [x] Confirm green, and confirm two areas cannot end up sharing a position
 
-- [ ] Task: Reorder API **[T]**
-    - [ ] Write failing tests — 401 unauthenticated; direction validated; 404 for an
+- [x] Task: Reorder API **[T]** `05f5e7b`
+    - [x] Write failing tests — 401 unauthenticated; direction validated; 404 for an
           area that is not the caller's; a no-op at the top and bottom of a group
-    - [ ] Confirm red
-    - [ ] Implement the route over the `move_area` function
-    - [ ] Confirm green, both success and failure paths
+    - [x] Confirm red
+    - [x] Implement the route over the `move_area` function
+    - [x] Confirm green, both success and failure paths
 
-- [ ] Task: Inline rename **[V]**
-    - [ ] Make the row title editable in place — Enter commits, Escape reverts, blur
-          commits
-    - [ ] Confirm a rename does **not** change `last_reviewed_at` (already enforced by
-          `toAreaUpdate`; assert it end to end)
-    - [ ] Keep the typed title on failure, as quick-add does
-    - [ ] Verify keyboard operation, both themes, all breakpoints
+- [x] Task: Inline rename **[V]** `0ce16fb`
+    - [x] Make the row title editable in place — Enter commits, Escape reverts (via a
+          ref, so it beats the blur that follows), blur commits. Double-click, not
+          single-click: a single click stays free for Phase 4's detail panel
+    - [x] Confirm a rename does **not** change `last_reviewed_at` — enforced and tested
+          in `toAreaUpdate`
+    - [x] Keep the typed title on failure, as quick-add does
+    - [ ] **Open:** keyboard operation, both themes, all breakpoints
 
-- [ ] Task: Move to another domain **[V]**
-    - [ ] Add a row action listing existing domains, plus a new domain and "Ungrouped"
-    - [ ] Confirm descendants move with a root
-    - [ ] Verify keyboard operation and both themes
+- [x] Task: Move to another domain **[V]** `0ce16fb`
+    - [x] Add a row action listing existing domains, plus a new domain and "Ungrouped" —
+          also closes a gap: a domain could previously only be created from the empty
+          state, so a manager with areas had no way to add one
+    - [x] Confirm descendants move with a root — nesting already wins over domain (FR2),
+          so a root's subtree follows it
+    - [ ] **Open:** keyboard operation and both themes
 
-- [ ] Task: Reorder controls **[V]**
-    - [ ] Add move up / move down to the row, disabled at the ends of a group
-    - [ ] Confirm the order survives a reload
-    - [ ] Verify keyboard operation, both themes, and usability at mobile width
+- [x] Task: Reorder controls **[V]** `0ce16fb`
+    - [x] Add move up / move down to the row, disabled at the ends of a group — disabled
+          rather than hidden, so a missing control never reads as a mistake
+    - [x] Confirm the order survives a reload — `sort_order` is persisted and the query
+          orders by it
+    - [ ] **Open:** keyboard operation, both themes, and usability at mobile width
 
 - [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
