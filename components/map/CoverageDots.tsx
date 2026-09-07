@@ -28,7 +28,11 @@ export function CoverageDots({
           key={i}
           className={cn(
             "size-1.5 rounded-full",
-            i < filled ? "bg-primary" : "bg-muted",
+            // The empty state has to be visible or the indicator reads as
+            // "two dots" rather than "two of four" -- and in light mode the
+            // muted surface is nearly the card colour, so bg-muted disappeared
+            // entirely. A translucent foreground reads in both themes.
+            i < filled ? "bg-primary" : "bg-foreground/20",
           )}
         />
       ))}
