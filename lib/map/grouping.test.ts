@@ -39,6 +39,7 @@ function area(overrides: Partial<GroupableArea> = {}): GroupableArea {
     last_reviewed_at: daysBefore(1),
     created_at: daysBefore(10),
     owner_id: "member-1",
+    owned_by_manager: false,
     ...overrides,
   }
 }

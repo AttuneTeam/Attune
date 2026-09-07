@@ -27,6 +27,7 @@ export type MapArea = Pick<
   | "last_reviewed_at"
   | "created_at"
   | "owner_id"
+  | "owned_by_manager"
 > & {
   /** Resolved in the same query as the area — see FR2's single-query rule. */
   owner: AreaOwner | null

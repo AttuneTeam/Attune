@@ -28,6 +28,7 @@ export const MAP_AREA_SELECT = [
   "last_reviewed_at",
   "created_at",
   "owner_id",
+  "owned_by_manager",
   "owner:team_members!strategic_initiatives_owner_id_fkey(id, name)",
 ].join(", ")
 

@@ -28,6 +28,7 @@ function area(overrides: Partial<AttentionInput> = {}): AttentionInput {
     created_at: daysBefore(400),
     last_reviewed_at: daysBefore(0),
     owner_id: "member-1",
+    owned_by_manager: false,
     ...overrides,
   }
 }
@@ -95,13 +96,13 @@ describe("isStale", () => {
     // An area captured a year ago but reviewed yesterday is current. Reading
     // created_at first would flag every long-lived area permanently.
     expect(
-      isStale({ created_at: daysBefore(400), last_reviewed_at: daysBefore(1), owner_id: "m" }, NOW),
+      isStale({ created_at: daysBefore(400), last_reviewed_at: daysBefore(1), owner_id: "m", owned_by_manager: false }, NOW),
     ).toBe(false)
   })
 
   it("ages from created_at when never reviewed", () => {
     expect(
-      isStale({ created_at: daysBefore(40), last_reviewed_at: null, owner_id: "m" }, NOW),
+      isStale({ created_at: daysBefore(40), last_reviewed_at: null, owner_id: "m", owned_by_manager: false }, NOW),
     ).toBe(true)
   })
 
@@ -109,7 +110,7 @@ describe("isStale", () => {
     // Capture must not immediately produce a screen full of coral. An area
     // added this morning is not neglected.
     expect(
-      isStale({ created_at: daysBefore(0), last_reviewed_at: null, owner_id: null }, NOW),
+      isStale({ created_at: daysBefore(0), last_reviewed_at: null, owner_id: null, owned_by_manager: false }, NOW),
     ).toBe(false)
   })
 })
@@ -127,6 +128,28 @@ describe("attentionReasons", () => {
 
   it("reports an absent owner", () => {
     expect(attentionReasons(area({ owner_id: null }), NOW)).toEqual(["unowned"])
+  })
+
+  it("does NOT report an area the manager owns themselves as unowned", () => {
+    // FR8. Many areas on a personal map are nobody else's. Without this,
+    // "unowned" would mean both "mine" and "nobody's", and the column that
+    // exists to answer "what should I delegate?" would answer nothing.
+    expect(
+      attentionReasons(area({ owner_id: null, owned_by_manager: true }), NOW),
+    ).toEqual([])
+    expect(
+      needsAttention(area({ owner_id: null, owned_by_manager: true }), NOW),
+    ).toBe(false)
+  })
+
+  it("still reports staleness on an area the manager owns", () => {
+    // Owning something is not the same as having looked at it.
+    expect(
+      attentionReasons(
+        area({ owner_id: null, owned_by_manager: true, last_reviewed_at: daysBefore(40) }),
+        NOW,
+      ),
+    ).toEqual(["stale"])
   })
 
   it("reports both conditions together", () => {
@@ -167,7 +190,7 @@ describe("needsAttention", () => {
 
   it("defaults to the current time when none is supplied", () => {
     // The production call sites pass no clock; only the tests do.
-    expect(needsAttention({ created_at: new Date().toISOString(), last_reviewed_at: null, owner_id: "m" })).toBe(false)
+    expect(needsAttention({ created_at: new Date().toISOString(), last_reviewed_at: null, owner_id: "m", owned_by_manager: false })).toBe(false)
   })
 })
 
@@ -177,7 +200,7 @@ describe("formatReviewAge", () => {
     // days ago. It was captured then and never looked at since, which is a
     // different and more useful thing to know.
     expect(
-      formatReviewAge({ created_at: daysBefore(40), last_reviewed_at: null, owner_id: "m" }, NOW),
+      formatReviewAge({ created_at: daysBefore(40), last_reviewed_at: null, owner_id: "m", owned_by_manager: false }, NOW),
     ).toBe("never reviewed")
   })
 

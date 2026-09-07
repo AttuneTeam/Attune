@@ -31,8 +31,20 @@ export type AttentionReason = "stale" | "unowned"
  */
 export type AttentionInput = Pick<
   StrategicInitiative,
-  "created_at" | "last_reviewed_at" | "owner_id"
+  "created_at" | "last_reviewed_at" | "owner_id" | "owned_by_manager"
 >
+
+/**
+ * An area is unowned only when nobody holds it — not merely when no team
+ * member does.
+ *
+ * FR8: many areas on a personal map are the manager's own. Treating those as
+ * unowned would make the mark mean both "mine" and "nobody's", and the column
+ * exists precisely to separate them.
+ */
+function isUnowned(area: AttentionInput): boolean {
+  return area.owner_id === null && !area.owned_by_manager
+}
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000
 
@@ -79,7 +91,7 @@ export function attentionReasons(
 ): AttentionReason[] {
   const reasons: AttentionReason[] = []
   if (isStale(area, now)) reasons.push("stale")
-  if (!area.owner_id) reasons.push("unowned")
+  if (isUnowned(area)) reasons.push("unowned")
   return reasons
 }
 

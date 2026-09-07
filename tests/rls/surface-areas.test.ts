@@ -395,6 +395,55 @@ suite("surface area columns", () => {
     ).toHaveLength(1);
   });
 
+  it("refuses an area owned by both the manager and a team member", async () => {
+    // FR8 keeps "mine" and "nobody's" distinguishable. Two owners at once would
+    // leave the interface deciding which to believe, and the two answers mean
+    // opposite things for delegation. Enforced in the database so no caller can
+    // route around it.
+    const both = await a.client
+      .from("strategic_initiatives")
+      .insert({
+        manager_id: a.userId,
+        title: "two owners",
+        kind: "area",
+        owner_id: a.seed.memberId,
+        owned_by_manager: true,
+      })
+      .select("id");
+    expect(both.error, "an area accepted two owners at once").not.toBeNull();
+    expect(both.error?.code, "rejected, but not by the CHECK constraint").toBe("23514");
+  });
+
+  it("lets the manager own an area themselves", async () => {
+    const areaId = await createArea(a, { owned_by_manager: true });
+    const row = await a.client
+      .from("strategic_initiatives")
+      .select("owner_id, owned_by_manager")
+      .eq("id", areaId)
+      .single();
+    expect(row.error).toBeNull();
+    expect((row.data as Row).owned_by_manager).toBe(true);
+    expect((row.data as Row).owner_id).toBeNull();
+  });
+
+  it("isolates the self-ownership flag", async () => {
+    const areaId = await createArea(b, { owned_by_manager: true });
+    const tampered = await a.client
+      .from("strategic_initiatives")
+      .update({ owned_by_manager: false })
+      .eq("id", areaId)
+      .select("id");
+    expect(tampered.error).toBeNull();
+    expect(tampered.data ?? [], "LEAK — one manager cleared another's ownership").toEqual([]);
+
+    const untouched = await b.client
+      .from("strategic_initiatives")
+      .select("owned_by_manager")
+      .eq("id", areaId)
+      .single();
+    expect((untouched.data as Row).owned_by_manager).toBe(true);
+  });
+
   it("allows a manager's own team member as owner, and allows clearing it", async () => {
     // The guard above must not break the feature it protects.
     const areaId = await createArea(a);

@@ -30,6 +30,7 @@ function input(
     created_at: daysBefore(1),
     last_reviewed_at: daysBefore(1),
     owner_id: "member-1",
+    owned_by_manager: false,
     ...overrides,
   }
 }

@@ -45,6 +45,8 @@ export const updateAreaInput = z
     domain_id: domainId.optional(),
     confidence: confidence.optional(),
     owner_id: z.string().uuid().nullable().optional(),
+    /** The manager holds this area themselves (FR8). */
+    owned_by_manager: z.boolean().optional(),
     /**
      * "I looked at this and nothing had changed." Only ever an explicit true —
      * there is no way to un-review something, so `false` is a caller bug.
@@ -55,6 +57,13 @@ export const updateAreaInput = z
   .refine((body) => Object.keys(body).length > 0, {
     message: "Nothing to update.",
   })
+  // An area has one owner or none. The database enforces this too, but a
+  // caller sending both is confused, and a constraint violation is a worse
+  // answer than a sentence.
+  .refine(
+    (body) => !(body.owner_id != null && body.owned_by_manager === true),
+    { message: "An area is owned by you or by someone else, not both." },
+  )
 
 export type UpdateAreaInput = z.infer<typeof updateAreaInput>
 
@@ -79,7 +88,17 @@ export function toAreaUpdate(
 
   if (input.title !== undefined) patch.title = input.title
   if (input.domain_id !== undefined) patch.domain_id = input.domain_id
-  if (input.owner_id !== undefined) patch.owner_id = input.owner_id
+  // Assigning one owner clears the other. Left to the caller this would be two
+  // round trips with a moment in between where the area has two owners, which
+  // the database would reject anyway.
+  if (input.owner_id !== undefined) {
+    patch.owner_id = input.owner_id
+    if (input.owner_id !== null) patch.owned_by_manager = false
+  }
+  if (input.owned_by_manager !== undefined) {
+    patch.owned_by_manager = input.owned_by_manager
+    if (input.owned_by_manager) patch.owner_id = null
+  }
   if (input.confidence !== undefined) patch.confidence = input.confidence
 
   if (input.confidence !== undefined || input.reviewed) {

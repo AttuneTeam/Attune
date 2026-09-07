@@ -661,6 +661,12 @@ export type StrategicInitiative = {
   /** A team_members id. Null is meaningful: an unowned area surfaces on the map. */
   owner_id: string | null
   /**
+   * The manager holds this area themselves. Mutually exclusive with `owner_id`
+   * at the database level — an area has one owner or none, and "mine" and
+   * "nobody's" must stay distinguishable (FR8).
+   */
+  owned_by_manager: boolean
+  /**
    * Position within the sibling group — same manager, same parent, and for
    * roots the same domain. Assigned by a trigger on insert; 0 is the
    * "not set" sentinel, so a real position is always 1 or greater.

@@ -178,9 +178,13 @@ describe("toAreaUpdate", () => {
   })
 
   it("combines a confidence change with other fields", () => {
+    // owned_by_manager is cleared alongside: assigning a team member means the
+    // area is no longer the manager's own, and leaving both set would violate
+    // the single-owner constraint on the next unrelated write.
     expect(toAreaUpdate({ confidence: "owned", owner_id: "m1" }, NOW)).toEqual({
       confidence: "owned",
       owner_id: "m1",
+      owned_by_manager: false,
       last_reviewed_at: NOW.toISOString(),
     })
   })
@@ -190,5 +194,58 @@ describe("toAreaUpdate", () => {
     for (const forbidden of ["kind", "manager_id", "depth", "parent_id", "reviewed"]) {
       expect(forbidden in patch, `${forbidden} leaked into the patch`).toBe(false)
     }
+  })
+})
+
+describe("self-ownership (FR8)", () => {
+  it("accepts the manager as the owner", () => {
+    expect(updateAreaInput.safeParse({ owned_by_manager: true }).success).toBe(true)
+    expect(updateAreaInput.safeParse({ owned_by_manager: false }).success).toBe(true)
+  })
+
+  it("refuses an area owned by both the manager and a team member", () => {
+    // The database rejects it too, but a constraint violation is a worse
+    // answer to the caller than a sentence.
+    expect(
+      updateAreaInput.safeParse({
+        owner_id: "6f1c9b34-4a2e-4c8f-9d21-1b2c3d4e5f60",
+        owned_by_manager: true,
+      }).success,
+    ).toBe(false)
+  })
+
+  it("allows clearing the owner while marking it the manager's", () => {
+    expect(
+      updateAreaInput.safeParse({ owner_id: null, owned_by_manager: true }).success,
+    ).toBe(true)
+  })
+
+  it("clears the manager when a team member is assigned", () => {
+    // Otherwise the two flags disagree until something else writes, and the
+    // database constraint would reject the next unrelated update.
+    const patch = toAreaUpdate(
+      { owner_id: "6f1c9b34-4a2e-4c8f-9d21-1b2c3d4e5f60" },
+      NOW,
+    )
+    expect(patch).toEqual({
+      owner_id: "6f1c9b34-4a2e-4c8f-9d21-1b2c3d4e5f60",
+      owned_by_manager: false,
+    })
+  })
+
+  it("clears a team member when the manager takes it on", () => {
+    expect(toAreaUpdate({ owned_by_manager: true }, NOW)).toEqual({
+      owned_by_manager: true,
+      owner_id: null,
+    })
+  })
+
+  it("does not stamp a review for an ownership change", () => {
+    // Deciding who holds something is not looking at it.
+    expect("last_reviewed_at" in toAreaUpdate({ owned_by_manager: true }, NOW)).toBe(false)
+  })
+
+  it("leaves both alone when clearing the owner entirely", () => {
+    expect(toAreaUpdate({ owner_id: null }, NOW)).toEqual({ owner_id: null })
   })
 })

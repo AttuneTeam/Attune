@@ -22,7 +22,14 @@ export type DomainRef = {
 /** The minimum an area must carry to be grouped, nested and summarised. */
 export type GroupableArea = Pick<
   MapArea,
-  "id" | "domain_id" | "parent_id" | "confidence" | "last_reviewed_at" | "created_at" | "owner_id"
+  | "id"
+  | "domain_id"
+  | "parent_id"
+  | "confidence"
+  | "last_reviewed_at"
+  | "created_at"
+  | "owner_id"
+  | "owned_by_manager"
 >
 
 export type AreaNode<T extends GroupableArea> = T & { children: AreaNode<T>[] }
