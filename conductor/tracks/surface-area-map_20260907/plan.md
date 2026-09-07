@@ -302,7 +302,58 @@ The map becomes usable. After this phase you can populate it by hand and keep it
 
 ---
 
-## Phase 4 — Area Detail: Notes, Owner, Linked Conversations
+## Phase 4 — Domains as First-Class Entities
+
+Raised by the manager after Phase 3: create a domain from a dialog, rename a domain,
+reorder domains. All three are one problem — a domain is a text string repeated on every
+area, so renaming rewrites every row and there is nowhere to record an order.
+
+- [ ] Task: `map_domains` table and area reference **[T]**
+    - [ ] Write failing RLS tests for the new table — one manager cannot read, write or
+          delete another's domains, and cannot point an area at another's domain
+    - [ ] Write failing tests for the backfill shape and for deletion leaving areas
+          in place, ungrouped
+    - [ ] Confirm red
+    - [ ] Create the migration — `map_domains` (manager, name, sort_order), a
+          `domain_id` reference on `strategic_initiatives`, RLS on the new table, and an
+          ownership trigger mirroring 041/042 so an area cannot reference another
+          manager's domain
+    - [ ] Backfill a row per distinct (manager, domain) and set `domain_id`
+    - [ ] Keep the `domain` text column written alongside for one release — `workflow.md`
+          forbids dropping a column in the release that stops using it
+    - [ ] `ON DELETE SET NULL`, so removing a domain ungroups its areas rather than
+          deleting them
+    - [ ] Update `lib/supabase/types.ts`
+    - [ ] Confirm green
+
+- [ ] Task: Read the map from domain rows **[T]**
+    - [ ] Write failing tests — the query joins domains, and grouping orders by the
+          manager's `sort_order` rather than alphabetically
+    - [ ] Confirm red
+    - [ ] Update `lib/map/queries.ts` and `lib/map/grouping.ts`; retire `compareDomains`
+          alphabetical ordering and the FR9 pending-group device, which an empty domain
+          row now makes unnecessary
+    - [ ] Confirm green
+
+- [ ] Task: Domain write API **[T]**
+    - [ ] Write failing tests — create, rename, reorder and delete; 401; Zod validation;
+          a name unique per manager; cross-tenant rejection; delete ungroups rather than
+          removes
+    - [ ] Confirm red
+    - [ ] Implement the routes, reusing the `move_area` swap approach for domain order
+    - [ ] Confirm green, both success and failure paths
+
+- [ ] Task: Domain dialog and controls **[V]**
+    - [ ] Create and rename a domain in one dialog, reached from the header and from the
+          domain heading
+    - [ ] Move a domain up and down, disabled at the ends
+    - [ ] Delete a domain, stating plainly that its areas become ungrouped rather than
+          being removed
+    - [ ] Verify keyboard operation, both themes, all breakpoints
+
+- [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
+
+## Phase 5 — Area Detail: Notes, Owner, Linked Conversations
 
 Depth behind progressive disclosure, and the connection to interactions that makes this
 Attune's map rather than a generic outline.
@@ -316,12 +367,19 @@ Attune's map rather than a generic outline.
     - [ ] Implement `lib/map/linkedInteractions.ts`
     - [ ] Confirm green
 
-- [ ] Task: Owner assignment API **[T]**
+- [ ] Task: Owner assignment API, including self-ownership **[T]**
     - [ ] Write failing tests — owner must be one of the caller's own `team_members`;
           another manager's member is rejected; owner can be cleared to null;
           assignment creates no action item and no notification record
+    - [ ] Write failing tests for self-ownership (FR8) — an area can be owned by the
+          manager, that is distinct from both a named owner and from nobody, and it does
+          **not** carry the unowned attention mark
     - [ ] Confirm red
-    - [ ] Extend the PATCH handler to accept `owner_id`
+    - [ ] Add the self-ownership flag in a migration; deliberately not a `team_members`
+          row for the manager, which would surface them in the team list, coverage and
+          pulse
+    - [ ] Extend the PATCH handler to accept `owner_id` and the self flag, rejecting
+          both being set at once
     - [ ] Confirm green
 
 - [ ] Task: Area detail panel **[V]**
@@ -336,6 +394,8 @@ Attune's map rather than a generic outline.
 - [ ] Task: Owner picker **[V]**
     - [ ] Build the picker over existing `team_members`, covering both direct reports
           and stakeholders via `relationship`
+    - [ ] Offer "Me" as a first-class choice — many areas on a personal map are the
+          manager's own
     - [ ] Allow clearing the owner
     - [ ] Confirm the unowned attention mark clears and reappears correctly
     - [ ] Verify both themes and keyboard operation
@@ -351,7 +411,7 @@ Attune's map rather than a generic outline.
 
 ---
 
-## Phase 5 — AI Brain Dump
+## Phase 6 — AI Brain Dump
 
 Bulk capture. Deliberately last: the map is fully usable without it, and building it
 against a working map means the accept path has somewhere real to land.
@@ -398,7 +458,7 @@ against a working map means the accept path has somewhere real to land.
 
 ---
 
-## Phase 6 — Hardening and Documentation
+## Phase 7 — Hardening and Documentation
 
 - [ ] Task: Accessibility and responsive pass **[V]**
     - [ ] Complete the whole map flow keyboard-only: navigate, add, set confidence,

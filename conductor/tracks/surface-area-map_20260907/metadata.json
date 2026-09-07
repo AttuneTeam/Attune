@@ -5,8 +5,8 @@
   "status": "in_progress",
   "created_at": "2026-09-07",
   "updated_at": "2026-09-08",
-  "phases": 6,
-  "tasks": 41,
+  "phases": 7,
+  "tasks": 46,
   "branch": "feature/surface-area-map",
   "checkpoints": {
     "Phase 1 \u2014 Data Foundation": "5a413fd",

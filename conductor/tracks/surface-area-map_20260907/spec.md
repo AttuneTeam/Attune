@@ -171,6 +171,15 @@ indicator.
 
 - An owner is chosen from the manager's existing `team_members`, which already includes
   both direct reports and stakeholders via the `relationship` column.
+- **The manager can also own an area themselves.** Many areas on a personal map are
+  nobody else's, and without this "unowned" would have to mean both "mine" and
+  "nobody's". Held as an explicit flag on the area rather than a `team_members` row for
+  the manager: a self row would surface them in the team list, 1-on-1 coverage and team
+  pulse, each of which would then need teaching to exclude them. Three states stay
+  distinguishable — mine, someone else's, nobody's — which is precisely the delegation
+  question the column exists to answer.
+- An area owned by the manager counts as owned, so it does not carry the unowned
+  attention mark (FR6).
 - Assigning an owner is a delegation record for the manager's own thinking. It is not
   surfaced to the owner, does not notify anyone, and does not create an action item.
   Nothing here may read as monitoring a person.
@@ -205,6 +214,27 @@ earlier decision to rely on it.
 - **Domain groups remain alphabetical**, with the ungrouped bucket last. Domains are a
   text column rather than rows, so giving them an order needs a model they do not have;
   that stays out of scope.
+
+### FR10 — Domains as first-class entities
+
+Added after Phase 3: the manager asked to create a domain from a dialog, rename a
+domain, and reorder domains. All three are the same problem. A domain is currently a
+text string repeated on every area in it, so renaming means rewriting every row, and
+there is nowhere at all to record an order.
+
+- Domains become rows: a per-manager table carrying a name and an explicit order.
+- Areas reference a domain rather than repeating its name.
+- A domain can be created, renamed and reordered from the map, and the changes are
+  visible everywhere at once because there is one row to change.
+- Domain order becomes the manager's, replacing the alphabetical rule in FR2 and FR9.
+- Deleting a domain does **not** delete its areas. They become ungrouped — losing a
+  heading must never lose the territory underneath it.
+- An empty domain is now expressible, so the pending-group device from FR9 can retire.
+
+**Migration constraint.** `workflow.md` forbids dropping a column in the same release
+that stops using it, because migrations run before the application deploys. The text
+column is therefore kept and written alongside the reference for one release, and
+removed in a later one.
 
 ## Non-Functional Requirements
 
@@ -271,7 +301,12 @@ built, not after.
 17. Areas can be reordered within their group by the manager, the order survives a
     reload, and two areas can never occupy the same position.
 18. Reordering and moving are both operable by keyboard and usable at mobile width.
-19. `npm run lint`, `npx tsc --noEmit` and `CI=true npm test` all pass.
+19. An area can be owned by the manager themselves, shown distinctly from both a named
+    owner and from nobody, and it does not carry the unowned attention mark.
+20. Domains can be created, renamed and reordered, and a rename is visible on every
+    area in that domain without touching those rows individually.
+21. Deleting a domain leaves its areas in place, ungrouped.
+22. `npm run lint`, `npx tsc --noEmit` and `CI=true npm test` all pass.
 
 ---
 
@@ -288,8 +323,10 @@ built, not after.
 - **Re-parenting an area by moving it.** FR9 moves areas between domains, not under a
   different parent. `parent_id` on update stays refused, since changing it requires
   recalculating depth for a whole subtree and guarding against cycles.
-- **Ordering domain groups.** Domains are a text column, not rows, so they have nowhere
-  to carry an order. Alphabetical stands.
+- **File attachments on areas.** Resumes and documents were raised and deliberately
+  deferred: Phase 4's notes editor and linked interactions cover progress and context
+  first, and storage brings a tenant-isolation surface separate from table RLS that
+  needs its own policies and tests. Revisit once the notes have been used in anger.
 - **Markdown import/export.** Considered and deferred; a candidate follow-up track once
   the map has been in real use.
 - **Interaction signals driving attention.** Explicitly excluded per FR6. Revisit only
