@@ -95,13 +95,14 @@ closed before any new nesting is built on top of it.
 The map becomes visible and navigable. Still read-only — no capture yet, so this phase
 is verified against manually inserted rows.
 
-- [ ] Task: Area grouping and nesting transform **[T]**
-    - [ ] Write failing tests in `lib/map/grouping.test.ts` — group flat rows by
+- [x] Task: Area grouping and nesting transform **[T]** `cf061e8`
+    - [x] Write failing tests in `lib/map/grouping.test.ts` — group flat rows by
           `domain`; nest children under parents to depth 2; orphaned child whose parent
-          is absent; area with null `domain`; stable ordering
-    - [ ] Confirm red
-    - [ ] Implement `lib/map/grouping.ts`
-    - [ ] Confirm green
+          is absent; area with null `domain`; stable ordering; plus a parent cycle, a
+          child whose domain differs from its parent's, and subtree-wide summaries
+    - [x] Confirm red
+    - [x] Implement `lib/map/grouping.ts` and `lib/map/types.ts`
+    - [x] Confirm green — 121/121 node, 142/142 full suite
 
 - [ ] Task: `/map` route and data query **[T]**
     - [ ] Write failing test for the query builder helper — filters `kind = 'area'`,
