@@ -148,10 +148,13 @@ is verified against manually inserted rows.
           reach an authenticated session locally (see the git note); carried into the
           Phase 2 manual verification plan
 
-- [ ] Task: Sidebar navigation entry **[V]**
-    - [ ] Add the Map item to `navItems` in `components/Sidebar.tsx`
-    - [ ] Verify the active state uses the project's colour-only treatment
-    - [ ] Verify collapsed sidebar tooltip and both themes
+- [x] Task: Sidebar navigation entry **[V]** `540e948`
+    - [x] Add the Map item to `navItems` in `components/Sidebar.tsx` — placed after
+          Home, since the map is a daily surface
+    - [x] Verify the active state uses the project's colour-only treatment — inherited
+          from `navItems`, no new styling added
+    - [ ] **Open:** collapsed sidebar tooltip and both themes — carried into the
+          Phase 2 manual verification plan
 
 - [ ] Task: Empty state and domain starters **[V]**
     - [ ] Write the empty state copy — plain, calm, British spelling, no exclamation marks
