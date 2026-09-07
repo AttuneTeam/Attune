@@ -132,7 +132,11 @@ export function AreaRow({
       {/* The row is exactly as tall as its 44x44 actions: aligning centrally
           rather than on the baseline keeps the vertical rhythm tight, and the
           touch targets come for free from the row height. */}
-      <div className="flex min-h-11 items-center gap-4 rounded-md px-3 transition-colors hover:bg-accent/30">
+      {/* Wraps below sm: the title takes a full line and the metadata follows
+          underneath. Kept on one line at desktop widths, where the fixed
+          columns are what make confidence, review age and owner scannable
+          down the group. */}
+      <div className="flex min-h-11 flex-wrap items-center gap-x-4 gap-y-1 rounded-md px-3 py-1 transition-colors hover:bg-accent/30 sm:flex-nowrap sm:py-0">
         {renaming ? (
           <input
             autoFocus
@@ -154,7 +158,7 @@ export function AreaRow({
             }}
             aria-label={`Rename ${area.title}`}
             className={cn(
-              "min-w-0 flex-1 rounded-md bg-transparent text-sm",
+              "min-w-0 flex-1 basis-full rounded-md bg-transparent text-sm sm:basis-auto",
               "focus:bg-accent/30 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
               "disabled:opacity-50",
             )}
@@ -168,14 +172,14 @@ export function AreaRow({
           <p
             onDoubleClick={startRename}
             title="Double-click to rename"
-            className="min-w-0 flex-1 truncate text-sm"
+            className="min-w-0 flex-1 basis-full truncate text-sm sm:basis-auto"
             style={indent}
           >
             {area.title}
           </p>
         )}
 
-        <div className="flex shrink-0 items-center gap-3">
+        <div className="flex min-w-0 shrink-0 items-center gap-2 sm:gap-3">
           <ConfidenceControl
             areaId={area.id}
             areaTitle={area.title}
@@ -186,14 +190,14 @@ export function AreaRow({
               spending the coral the header needs. */}
           <span
             className={cn(
-              "w-24 text-right text-[11px] tabular-nums",
+              "shrink-0 text-right text-[11px] tabular-nums sm:w-24",
               stale ? "text-foreground" : "text-muted-foreground",
             )}
           >
             {formatReviewAge(area, now)}
           </span>
 
-          <span className="w-28 truncate text-right text-[11px] text-muted-foreground">
+          <span className="min-w-0 flex-1 truncate text-right text-[11px] text-muted-foreground sm:w-28 sm:flex-none">
             {area.owner ? area.owner.name : "unowned"}
           </span>
 

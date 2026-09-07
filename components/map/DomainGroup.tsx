@@ -42,7 +42,7 @@ export function DomainGroup({
 
   return (
     <section>
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
         <button
           type="button"
           onClick={onToggle}
@@ -73,7 +73,7 @@ export function DomainGroup({
           Coverage {filledCoverageDots(summary.score)} of {COVERAGE_DOTS}
         </span>
 
-        <span className="ml-auto flex items-baseline gap-3 text-[11px]">
+        <span className="ml-auto flex shrink-0 items-baseline gap-3 whitespace-nowrap text-[11px]">
           <span className="text-muted-foreground">
             {summary.total} {summary.total === 1 ? "area" : "areas"}
           </span>
