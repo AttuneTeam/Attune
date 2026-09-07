@@ -16,18 +16,24 @@ Schema and pure logic first, so every later phase builds on a tested base. Nothi
 user-facing ships in this phase. The known `parent_id` cross-tenant cascade defect is
 closed before any new nesting is built on top of it.
 
-- [ ] Task: Close the `parent_id` cross-tenant cascade defect **[T]**
-    - [ ] Write a failing RLS test proving manager A cannot set `parent_id` to a row
-          owned by manager B
-    - [ ] Write a failing test proving manager B deleting their own row cannot cascade
-          away a row owned by manager A
-    - [ ] Run `CI=true npm test` and confirm both fail (red)
-    - [ ] Add a `WITH CHECK` on `parent_id` ownership, or an equivalent trigger, in
-          `supabase/migrations/041_surface_areas.sql`
-    - [ ] Confirm green
-    - [ ] Confirm existing initiative nesting on `/initiatives` still works
-    - [ ] Remove this item from the follow-up list in
-          `conductor/archive/vitest-setup_20260906/index.md`
+- [x] Task: Close the `parent_id` cross-tenant cascade defect **[T]** `b75ae1c`
+    - [x] Write a failing RLS test proving manager A cannot set `parent_id` to a row
+          owned by manager B — covers both the INSERT and the UPDATE path, the only
+          two ways the coupling can be created
+    - [x] Write a failing test proving manager B deleting their own row cannot cascade
+          away a row owned by manager A — discharged by proving the coupling cannot be
+          created at all, plus a regression guard that own-tree cascading still works
+    - [x] Run `CI=true npm test` and confirm both fail (red)
+    - [x] Add a `WITH CHECK` on `parent_id` ownership, or an equivalent trigger, in
+          `supabase/migrations/041_initiative_parent_ownership.sql` — a trigger, since
+          an RLS policy cannot subquery its own table without infinite recursion
+    - [x] Confirm green — 15/15 rls, 89/89 full suite
+    - [ ] Confirm existing initiative nesting on `/initiatives` still works — DB layer
+          proven by the regression test; UI check deferred to the Phase 1 manual
+          verification plan
+    - [x] Remove this item from the follow-up list in
+          `conductor/archive/vitest-setup_20260906/index.md` — moved to a
+          "Resolved Follow-ups" section so the record stays honest
 
 - [ ] Task: Extend `strategic_initiatives` with area columns **[T]**
     - [ ] Read `tests/rls/initiatives.test.ts`, `tests/rls/harness.ts` and
@@ -37,7 +43,7 @@ closed before any new nesting is built on top of it.
     - [ ] Write failing RLS test: `owner_id` cannot be set to another manager's
           `team_members` row
     - [ ] Run `CI=true npm test` and confirm the new tests fail (red)
-    - [ ] Create `supabase/migrations/041_surface_areas.sql` — add `kind`,
+    - [ ] Create `supabase/migrations/042_surface_areas.sql` — add `kind`,
           `confidence`, `last_reviewed_at`, `owner_id`, all nullable or defaulted
     - [ ] Add `CHECK` constraints for `kind` and `confidence`
     - [ ] Add index on `(manager_id, kind)`
@@ -300,7 +306,7 @@ against a working map means the accept path has somewhere real to land.
     - [ ] `npm run lint` passes with no errors
     - [ ] `npx tsc --noEmit` passes with no `any` and no `@ts-ignore`
     - [ ] `CI=true npm test` passes, RLS suite included
-    - [ ] Migration 041 confirmed additive and backwards-compatible with the deployed app
+    - [ ] Migration 042 confirmed additive and backwards-compatible with the deployed app
     - [ ] No new environment variables required
     - [ ] Confirm the product boundary holds: no due dates, no statuses, no board
           semantics crept in during implementation
