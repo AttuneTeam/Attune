@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { formatReviewAge, isStale } from "@/lib/map/attention";
 import type { AreaNode } from "@/lib/map/grouping";
 import type { MapArea } from "@/lib/map/types";
+import { ConfidenceControl } from "./ConfidenceControl";
 import { InlineAreaAdd } from "./InlineAreaAdd";
 
 /**
@@ -17,25 +18,6 @@ import { InlineAreaAdd } from "./InlineAreaAdd";
  * says nothing at all. Where a row does want noticing, it gets tonal weight
  * (full-strength foreground instead of muted) rather than colour.
  */
-
-const CONFIDENCE_LABEL: Record<MapArea["confidence"], string> = {
-  unknown: "Unknown",
-  aware: "Aware",
-  understood: "Understood",
-  owned: "Owned",
-};
-
-/**
- * `unknown` sits on the muted surface rather than the secondary one: it is the
- * absence of a judgement, and giving it the same chip weight as a real
- * confidence level would overstate it.
- */
-const CONFIDENCE_CHIP: Record<MapArea["confidence"], string> = {
-  unknown: "bg-muted text-muted-foreground",
-  aware: "bg-secondary text-secondary-foreground",
-  understood: "bg-secondary text-secondary-foreground",
-  owned: "bg-secondary text-secondary-foreground",
-};
 
 /** Matches the depth CHECK on the table: roots, children, grandchildren. */
 const MAX_DEPTH = 2;
@@ -62,14 +44,11 @@ export function AreaRow({
         <p className="min-w-0 flex-1 truncate text-sm">{area.title}</p>
 
         <div className="flex shrink-0 items-baseline gap-3">
-          <span
-            className={cn(
-              "rounded-full px-2 py-0.5 text-[11px] font-medium",
-              CONFIDENCE_CHIP[area.confidence],
-            )}
-          >
-            {CONFIDENCE_LABEL[area.confidence]}
-          </span>
+          <ConfidenceControl
+            areaId={area.id}
+            areaTitle={area.title}
+            confidence={area.confidence}
+          />
 
           {/* Tonal emphasis, not colour: a stale row reads heavier without
               spending the coral that the domain count needs. */}
