@@ -216,13 +216,17 @@ The map becomes usable. After this phase you can populate it by hand and keep it
     - [ ] **Open:** keyboard-only capture of several areas in a row, both themes, all
           breakpoints — to be checked in the browser before the Phase 3 checkpoint
 
-- [ ] Task: Confidence control and review affordance **[V]**
-    - [ ] Build `components/map/ConfidenceControl.tsx` — set inline from the row without
-          opening anything
-    - [ ] `Select` handlers must accept `string | null` per the project's API notes
-    - [ ] Add the separate reviewed affordance that touches `last_reviewed_at` only
-    - [ ] Verify the days-since-review figure updates immediately
-    - [ ] Verify both themes and keyboard operation
+- [x] Task: Confidence control and review affordance **[V]** `0c743bc`
+    - [x] Build `components/map/ConfidenceControl.tsx` — the chip is the control, set
+          inline from the row without opening anything
+    - [x] Used `DropdownMenu` rather than `Select`, so the `string | null` handler
+          caveat does not apply; the menu also carries the review action
+    - [x] Add the separate reviewed affordance that touches `last_reviewed_at` only —
+          a labelled menu item, deliberately **not** a click on the staleness figure,
+          where a stray click would silently destroy the signal
+    - [ ] **Open:** the days-since-review figure updating immediately, both themes,
+          and keyboard operation of the menu — to be checked in the browser before the
+          Phase 3 checkpoint
 
 - [ ] Task: Area removal with child count **[V]**
     - [ ] Build inline removal on the row — no modal, and no JavaScript `confirm()`
