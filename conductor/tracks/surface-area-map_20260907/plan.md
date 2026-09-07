@@ -166,10 +166,15 @@ is verified against manually inserted rows.
     - [ ] **Open:** both themes and all breakpoints — carried into the Phase 2 manual
           verification plan
 
-- [ ] Task: Domain group collapse persistence **[T]** + **[V]**
-    - [ ] Write failing tests for the collapse-state serialisation helper
-    - [ ] Confirm red, implement, confirm green
-    - [ ] Wire it into `DomainGroup` and verify state survives a reload
+- [x] Task: Domain group collapse persistence **[T]** + **[V]** `8398428`
+    - [x] Write failing tests for the collapse-state serialisation helper — including
+          malformed JSON, wrong-shape JSON, non-string entries, the size cap, and a
+          domain named "ungrouped" colliding with the ungrouped bucket
+    - [x] Confirm red, implement, confirm green — 184/184 full suite
+    - [x] Wire it into `DomainGroup` — cookie read server-side so the first paint is
+          already correct; round-trip verified through the real helpers
+    - [ ] **Open:** confirm the state survives a browser reload — carried into the
+          Phase 2 manual verification plan
 
 - [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
