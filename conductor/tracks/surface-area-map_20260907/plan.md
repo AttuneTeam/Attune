@@ -228,10 +228,13 @@ The map becomes usable. After this phase you can populate it by hand and keep it
           and keyboard operation of the menu — to be checked in the browser before the
           Phase 3 checkpoint
 
-- [ ] Task: Area removal with child count **[V]**
-    - [ ] Build inline removal on the row — no modal, and no JavaScript `confirm()`
-    - [ ] State the child count before removing a parent
-    - [ ] Verify both themes and keyboard operation
+- [x] Task: Area removal with child count **[V]** `3b4cce7`
+    - [x] Build inline removal on the row — a line beneath the row, no modal, no
+          JavaScript `confirm()` (grepped: no `alert`/`confirm`/`prompt` calls)
+    - [x] State the child count before removing a parent — `countDescendants()` walks
+          the whole subtree, with copy pluralised properly
+    - [ ] **Open:** both themes and keyboard operation (Escape to cancel, focus landing
+          on Remove) — to be checked in the browser before the Phase 3 checkpoint
 
 - [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
