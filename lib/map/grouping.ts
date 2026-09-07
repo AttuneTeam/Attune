@@ -123,3 +123,18 @@ export function flattenAreas<T extends GroupableArea>(
 function collect<T extends GroupableArea>(nodes: readonly AreaNode<T>[]): AreaNode<T>[] {
   return nodes.flatMap((node) => [node, ...collect(node.children)])
 }
+
+/**
+ * How many areas sit beneath this one, at any depth.
+ *
+ * Used by the removal affordance, which tells the manager the number before
+ * acting. Removal cascades (parent_id is ON DELETE CASCADE), so this figure is
+ * the difference between an informed action and a nasty surprise — and it has
+ * to count the whole subtree, not just direct children.
+ */
+export function countDescendants<T extends GroupableArea>(node: AreaNode<T>): number {
+  return node.children.reduce(
+    (total, child) => total + 1 + countDescendants(child),
+    0,
+  )
+}

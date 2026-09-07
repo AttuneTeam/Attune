@@ -1,4 +1,9 @@
-import { flattenAreas, groupAreasByDomain, type GroupableArea } from "./grouping"
+import {
+  countDescendants,
+  flattenAreas,
+  groupAreasByDomain,
+  type GroupableArea,
+} from "./grouping"
 
 /**
  * Turning a flat query result into the map's shape: domains as territories,
@@ -211,5 +216,37 @@ describe("flattenAreas", () => {
 
   it("is empty for no groups", () => {
     expect(flattenAreas([])).toEqual([])
+  })
+})
+
+describe("countDescendants", () => {
+  function node(id: string, children: ReturnType<typeof area>[] = []) {
+    return { ...area({ id }), children: children.map((c) => ({ ...c, children: [] })) }
+  }
+
+  it("counts nothing for a leaf", () => {
+    expect(countDescendants(node("leaf"))).toBe(0)
+  })
+
+  it("counts direct children", () => {
+    expect(countDescendants(node("root", [area(), area()]))).toBe(2)
+  })
+
+  it("counts the whole subtree, not just one level", () => {
+    // The removal copy promises a number, and cascade deletion makes that
+    // number the difference between an informed action and a nasty surprise.
+    // Counting one level would under-report it.
+    const grandchild = { ...area({ id: "gc" }), children: [] }
+    const child = { ...area({ id: "c" }), children: [grandchild] }
+    const root = { ...area({ id: "r" }), children: [child] }
+    expect(countDescendants(root)).toBe(2)
+  })
+
+  it("counts a wide and deep tree", () => {
+    const leaf = () => ({ ...area(), children: [] })
+    const child = () => ({ ...area(), children: [leaf(), leaf()] })
+    const root = { ...area({ id: "r" }), children: [child(), child()] }
+    // 2 children + 4 grandchildren
+    expect(countDescendants(root)).toBe(6)
   })
 })
