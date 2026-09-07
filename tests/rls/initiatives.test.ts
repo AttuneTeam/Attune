@@ -67,17 +67,17 @@ suite("tenant isolation: strategic_initiatives", () => {
     ).toEqual([]);
   });
 
-  it("documents cross-tenant parent_id attachment", async () => {
-    // The policy checks only manager_id, so nothing stops A from creating a row
-    // they own whose parent_id points into B's tree. This is NOT a data leak —
-    // A still cannot read B's rows, and B's own queries filter by manager_id so
-    // the foreign child never appears to them.
+  it("rejects a parent_id owned by another manager", async () => {
+    // parent_id is ON DELETE CASCADE, so a row parented into another manager's
+    // tree is destroyed when that manager deletes their own row. The RLS policy
+    // checks only manager_id and therefore cannot see this: A owns the child, so
+    // the write is legitimately theirs to make.
     //
-    // It is, however, a cross-tenant integrity coupling: because parent_id is
-    // ON DELETE CASCADE, B deleting their initiative would silently delete A's
-    // row. Asserted here so the behaviour is recorded and any future change to
-    // it is deliberate rather than accidental.
-    const attached = await a.client
+    // INSERT and UPDATE are the only two ways to create the coupling. Blocking
+    // both is what makes cross-tenant cascade destruction impossible — there is
+    // no third path by which A's row can come to hang off B's tree.
+
+    const inserted = await a.client
       .from("strategic_initiatives")
       .insert({
         manager_id: a.userId,
@@ -85,22 +85,104 @@ suite("tenant isolation: strategic_initiatives", () => {
         parent_id: b.seed.initiativeId,
         depth: 1,
       })
+      .select("id");
+    expect(
+      inserted.error,
+      "INTEGRITY — a row can still be INSERTed with a parent_id owned by another manager",
+    ).not.toBeNull();
+    expect(
+      inserted.error?.code,
+      `rejected, but by ${inserted.error?.code} rather than insufficient_privilege (42501)`,
+    ).toBe("42501");
+
+    // The UPDATE path: create a legitimate row, then try to re-parent it across
+    // the tenant boundary.
+    const own = await a.client
+      .from("strategic_initiatives")
+      .insert({ manager_id: a.userId, title: "A's own row" })
       .select("id")
       .single();
+    expect(own.error).toBeNull();
+    const ownId = (own.data as { id: string }).id;
 
+    const updated = await a.client
+      .from("strategic_initiatives")
+      .update({ parent_id: b.seed.initiativeId, depth: 1 })
+      .eq("id", ownId)
+      .select("id");
     expect(
-      attached.error,
-      "parent_id now rejects cross-tenant references — update this test and the finding it documents",
-    ).toBeNull();
+      updated.error,
+      "INTEGRITY — an existing row can still be re-parented under another manager's row",
+    ).not.toBeNull();
+    expect(updated.error?.code).toBe("42501");
 
-    // Confirm the important part: this grants A no read access to B's data.
+    // The row must be untouched, not partially written.
+    const after = await a.client
+      .from("strategic_initiatives")
+      .select("parent_id")
+      .eq("id", ownId)
+      .single();
+    expect((after.data as { parent_id: string | null }).parent_id).toBeNull();
+  });
+
+  it("still allows nesting and cascading within a manager's own tree", async () => {
+    // The guard above must not break intended nesting. This is the regression
+    // that matters: over-restricting parent_id would silently disable the map's
+    // entire hierarchy.
     const parent = await a.client
       .from("strategic_initiatives")
+      .insert({ manager_id: a.userId, title: "A's parent" })
       .select("id")
-      .eq("id", b.seed.initiativeId);
+      .single();
+    expect(parent.error, "over-restrictive — cannot create a root row").toBeNull();
+    const parentId = (parent.data as { id: string }).id;
+
+    const child = await a.client
+      .from("strategic_initiatives")
+      .insert({
+        manager_id: a.userId,
+        title: "A's child",
+        parent_id: parentId,
+        depth: 1,
+      })
+      .select("id")
+      .single();
     expect(
-      parent.data,
-      "LEAK — parenting into another tenant's tree exposed the parent row",
+      child.error,
+      "over-restrictive — a manager cannot nest under their own row",
+    ).toBeNull();
+    const childId = (child.data as { id: string }).id;
+
+    const grandchild = await a.client
+      .from("strategic_initiatives")
+      .insert({
+        manager_id: a.userId,
+        title: "A's grandchild",
+        parent_id: childId,
+        depth: 2,
+      })
+      .select("id")
+      .single();
+    expect(
+      grandchild.error,
+      "over-restrictive — a manager cannot nest to depth 2 under their own rows",
+    ).toBeNull();
+
+    // Deleting the root must still cascade away the manager's own descendants.
+    const removed = await a.client
+      .from("strategic_initiatives")
+      .delete()
+      .eq("id", parentId)
+      .select("id");
+    expect(removed.data, "cannot delete own root row").toHaveLength(1);
+
+    const survivors = await a.client
+      .from("strategic_initiatives")
+      .select("id")
+      .in("id", [childId, (grandchild.data as { id: string }).id]);
+    expect(
+      survivors.data,
+      "own descendants were not cascaded away by deleting their root",
     ).toEqual([]);
   });
 });
