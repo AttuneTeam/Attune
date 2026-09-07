@@ -35,24 +35,33 @@ closed before any new nesting is built on top of it.
           `conductor/archive/vitest-setup_20260906/index.md` — moved to a
           "Resolved Follow-ups" section so the record stays honest
 
-- [ ] Task: Extend `strategic_initiatives` with area columns **[T]**
-    - [ ] Read `tests/rls/initiatives.test.ts`, `tests/rls/harness.ts` and
+- [x] Task: Extend `strategic_initiatives` with area columns **[T]** `91a6b40`
+    - [x] Read `tests/rls/initiatives.test.ts`, `tests/rls/harness.ts` and
           `tests/rls/isolation.ts` to match existing naming and style
-    - [ ] Write failing RLS tests: manager A cannot read or write manager B's rows via
-          `kind`, `confidence`, `last_reviewed_at` or `owner_id`
-    - [ ] Write failing RLS test: `owner_id` cannot be set to another manager's
-          `team_members` row
-    - [ ] Run `CI=true npm test` and confirm the new tests fail (red)
-    - [ ] Create `supabase/migrations/042_surface_areas.sql` — add `kind`,
+    - [x] Write failing RLS tests: manager A cannot read or write manager B's rows via
+          `kind`, `confidence`, `last_reviewed_at` or `owner_id` — new file
+          `tests/rls/surface-areas.test.ts`
+    - [x] Write failing RLS test: `owner_id` cannot be set to another manager's
+          `team_members` row — INSERT and UPDATE paths, plus a guard that a manager's
+          own member is still accepted and clearable
+    - [x] Run `CI=true npm test` and confirm the new tests fail (red) — 6 failed / 15
+          passed, after strengthening one that first passed for the wrong reason
+    - [x] Create `supabase/migrations/042_surface_areas.sql` — add `kind`,
           `confidence`, `last_reviewed_at`, `owner_id`, all nullable or defaulted
-    - [ ] Add `CHECK` constraints for `kind` and `confidence`
-    - [ ] Add index on `(manager_id, kind)`
-    - [ ] Confirm no existing migration file was edited
-    - [ ] Apply with `npm run db:migrate` and confirm the new tests pass (green)
-    - [ ] Update `lib/supabase/types.ts` — `strategic_initiatives` Row/Insert/Update and
-          the `StrategicInitiative` export
-    - [ ] Add `AreaConfidence` and `InitiativeKind` union types
-    - [ ] Verify existing rows are unchanged and `/initiatives` still loads
+    - [x] Add `CHECK` constraints for `kind` and `confidence` — named, and asserted by
+          SQLSTATE 23514 rather than merely "errored"
+    - [x] Add index on `(manager_id, kind)`
+    - [x] Confirm no existing migration file was edited — `git diff HEAD` over
+          `supabase/migrations/` was empty
+    - [x] Apply with `npm run db:migrate` and confirm the new tests pass (green) —
+          21/21 rls, 95/95 full suite
+    - [x] Update `lib/supabase/types.ts` — the hand-written `StrategicInitiative`
+          export (this table is not in the generated `Database` block)
+    - [x] Add `AreaConfidence` and `InitiativeKind` union types
+    - [x] Verify existing rows are unchanged — 15 rows, all `initiative` / `unknown`,
+          none reviewed, none owned, zero cross-manager references
+    - [ ] Confirm `/initiatives` still loads — deferred to the Phase 1 manual
+          verification plan
 
 - [ ] Task: Attention and staleness helpers **[T]**
     - [ ] Write failing tests in `lib/map/attention.test.ts` covering: stale via
