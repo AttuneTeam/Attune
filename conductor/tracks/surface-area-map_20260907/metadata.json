@@ -2,11 +2,13 @@
   "id": "surface-area-map_20260907",
   "title": "Surface Area Map",
   "type": "feature",
-  "status": "new",
+  "status": "in_progress",
   "created_at": "2026-09-07",
   "updated_at": "2026-09-07",
   "phases": 6,
   "tasks": 34,
   "branch": "feature/surface-area-map",
-  "checkpoints": {}
+  "checkpoints": {
+    "Phase 1 \u2014 Data Foundation": "5a413fd"
+  }
 }
