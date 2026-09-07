@@ -302,7 +302,7 @@ The map becomes usable. After this phase you can populate it by hand and keep it
 
 ---
 
-## Phase 4 — Domains as First-Class Entities
+## Phase 4 — Domains as First-Class Entities [checkpoint: 97d397d]
 
 Raised by the manager after Phase 3: create a domain from a dialog, rename a domain,
 reorder domains. All three are one problem — a domain is a text string repeated on every
@@ -351,7 +351,7 @@ area, so renaming rewrites every row and there is nowhere to record an order.
           being removed
     - [ ] **Open:** keyboard operation, both themes, all breakpoints
 
-- [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
+- [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`) `97d397d`
 
 ## Phase 5 — Area Detail: Notes, Owner, Linked Conversations
 
@@ -490,5 +490,12 @@ against a working map means the accept path has somewhere real to land.
     - [ ] No new environment variables required
     - [ ] Confirm the product boundary holds: no due dates, no statuses, no board
           semantics crept in during implementation
+
+- [ ] Task: Drop the retiring `domain` text column **[T]**
+    - [ ] Confirm nothing reads `strategic_initiatives.domain` for areas any more
+    - [ ] Remove the name-resolution writes from the area and domain routes
+    - [ ] Migration dropping the column, in a release after 044 shipped — the
+          two-release rule in `workflow.md`
+    - [ ] Update `lib/supabase/types.ts` and confirm green
 
 - [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
