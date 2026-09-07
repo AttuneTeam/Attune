@@ -281,6 +281,23 @@ The map becomes usable. After this phase you can populate it by hand and keep it
           orders by it
     - [ ] **Open:** keyboard operation, both themes, and usability at mobile width
 
+- [x] Task: Create a new domain from the map **[V]** `e07fa18`
+    - [x] Add a page-level "New domain" control — names a group and shows it
+          immediately with its own quick-add
+    - [x] The domain becomes real when its first area lands; no empty rows are written
+    - [x] Drop a pending group once the real one exists, so it never renders twice
+    - [x] Share one domain-ordering rule between the transform and the pending groups —
+          `compareDomains` extracted and tested
+    - [ ] **Open:** keyboard operation and both themes
+
+- [x] Task: Repair the map layout at mobile width **[V]** `d0417d0`
+    - [x] Found by rendering at 406px: titles collapsed to zero width, owner clipped,
+          page scrolling horizontally — three responsive-checklist violations on a
+          screen that had already passed the static audit
+    - [x] Rows wrap below `sm` with the title on its own line; fixed columns retained
+          from `sm` upward, where they are what makes the group scannable
+    - [x] Re-verified at 406px and at desktop width
+
 - [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
 ---
