@@ -42,7 +42,7 @@ export function DomainGroup({
 
   return (
     <section>
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+      <div className="relative flex flex-wrap items-center gap-x-2 gap-y-1">
         <button
           type="button"
           onClick={onToggle}
@@ -51,7 +51,8 @@ export function DomainGroup({
           // 44x44 minimum touch target, met by the padding rather than by
           // stretching the icon.
           className={cn(
-            "-ml-2 flex size-11 shrink-0 items-center justify-center rounded-md",
+            // relative anchors the sr-only label inside — see ConfidenceControl.
+            "relative -ml-2 flex size-11 shrink-0 items-center justify-center rounded-md",
             "text-muted-foreground transition-colors hover:bg-accent/30 hover:text-foreground",
             "focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
           )}

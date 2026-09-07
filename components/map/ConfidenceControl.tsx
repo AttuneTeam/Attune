@@ -83,7 +83,12 @@ export function ConfidenceControl({
             disabled={saving}
             title="Set how well you hold this area"
             className={cn(
-              "rounded-full px-2 py-0.5 text-[11px] font-medium transition-colors",
+              // relative anchors the sr-only label below. Tailwind's sr-only is
+              // position:absolute, and with no positioned ancestor it resolves
+              // against the initial containing block -- extending the document
+              // rather than the scroll container, which put a second scrollbar
+              // on the page.
+              "relative rounded-full px-2 py-0.5 text-[11px] font-medium transition-colors",
               "hover:opacity-80 disabled:opacity-50",
               "focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
               CONFIDENCE_CHIP[confidence],
