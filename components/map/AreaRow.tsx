@@ -189,6 +189,7 @@ export function AreaRow({
           {/* Tonal emphasis, not colour: a stale row reads heavier without
               spending the coral the header needs. */}
           <span
+            title="When you last reviewed this area"
             className={cn(
               "shrink-0 text-right text-[11px] tabular-nums sm:w-24",
               stale ? "text-foreground" : "text-muted-foreground",
@@ -197,7 +198,10 @@ export function AreaRow({
             {formatReviewAge(area, now)}
           </span>
 
-          <span className="min-w-0 flex-1 truncate text-right text-[11px] text-muted-foreground sm:w-28 sm:flex-none">
+          <span
+            title="Who owns this area"
+            className="min-w-0 flex-1 truncate text-right text-[11px] text-muted-foreground sm:w-28 sm:flex-none"
+          >
             {area.owner ? area.owner.name : "unowned"}
           </span>
 

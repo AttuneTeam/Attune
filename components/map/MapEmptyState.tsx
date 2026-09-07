@@ -24,7 +24,7 @@ export function MapEmptyState() {
   const [domain, setDomain] = useState<string | null>(null);
 
   return (
-    <div className="mt-10 rounded-lg bg-card p-6 sm:p-8">
+    <div className="mt-6 rounded-lg bg-card p-5 sm:p-6">
       <h2 className="font-heading text-lg tracking-tight">Nothing mapped yet</h2>
 
       <p className="mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground">

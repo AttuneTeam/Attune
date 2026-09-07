@@ -96,7 +96,7 @@ export function DomainGroup({
           // theme this reads as a soft inset; in light, where the surface
           // levels currently share a value (see product-guidelines.md, Known
           // Drift), the whitespace does the work instead.
-          className="mt-3 space-y-1 rounded-lg bg-card p-6"
+          className="mt-2 space-y-0.5 rounded-lg bg-card p-2 sm:p-3"
         >
           {group.roots.map((area, i) => (
             <AreaRow

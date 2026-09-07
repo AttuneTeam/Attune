@@ -112,9 +112,13 @@ export function ConfidenceControl({
 
         <DropdownMenuSeparator />
 
+        {/* Names the column it changes. "Mark as reviewed" left the manager
+            guessing what was being recorded; the map tracks when each area was
+            last looked at, and anything untouched for the staleness threshold
+            surfaces on its own. */}
         <DropdownMenuItem onClick={() => void apply({ reviewed: true })}>
           <Eye className="size-3.5" />
-          Mark as reviewed
+          Reviewed today
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

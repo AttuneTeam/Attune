@@ -61,7 +61,11 @@ export function AreaRowMenu({
             type="button"
             title={`Actions for ${areaTitle}`}
             className={cn(
-              "flex size-11 items-center justify-center rounded-md",
+              // Small enough not to dominate the row, but the pointer target
+              // stays 44x44 through an invisible inset pseudo-element -- the
+              // guideline is about what you can hit, not what you can see.
+              "relative flex size-7 items-center justify-center rounded-md",
+              "before:absolute before:-inset-2 before:content-['']",
               "text-muted-foreground/50 transition-colors",
               "hover:bg-accent/30 hover:text-foreground",
               "focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
