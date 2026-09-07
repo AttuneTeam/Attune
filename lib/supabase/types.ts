@@ -611,6 +611,24 @@ export type WorkshopSession = {
 }
 
 /**
+ * A domain on the Surface Area Map — a territory heading.
+ *
+ * A row rather than a string repeated on every area, so it can be renamed once
+ * and ordered by the manager. Areas reference it by `domain_id`; the older
+ * `domain` text column is still written for one release, since migrations run
+ * before the application deploys.
+ */
+export type MapDomain = {
+  id: string
+  manager_id: string
+  name: string
+  /** The manager's own order. Assigned by trigger on insert; 1 or greater. */
+  sort_order: number
+  created_at: string
+  updated_at: string
+}
+
+/**
  * Separates the Surface Area Map's areas from strategic initiatives. Both share
  * one tree, one RLS policy and one set of interaction signals; `kind` is what
  * decides which lens a row belongs to. Defaults to 'initiative' in the database
@@ -648,6 +666,12 @@ export type StrategicInitiative = {
    * "not set" sentinel, so a real position is always 1 or greater.
    */
   sort_order: number
+  /**
+   * The domain this area belongs to (migration 044). Null means ungrouped,
+   * which is a real state rather than an error. Supersedes `domain`, which is
+   * kept in step for one release and then removed.
+   */
+  domain_id: string | null
   created_at: string
   updated_at: string
 }
