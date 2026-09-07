@@ -18,6 +18,7 @@ import { COVERAGE_DOTS, filledCoverageDots } from "@/lib/map/coverage";
 import type { DomainGroup as DomainGroupData, DomainRef } from "@/lib/map/grouping";
 import type { MapArea } from "@/lib/map/types";
 import { AreaRow } from "./AreaRow";
+import type { OwnerOption } from "./AreaOwnerPicker";
 import { CoverageDots } from "./CoverageDots";
 import { InlineAreaAdd } from "./InlineAreaAdd";
 
@@ -40,6 +41,7 @@ export function DomainGroup({
   onToggle,
   now,
   domains,
+  members,
   isFirst,
   isLast,
 }: {
@@ -49,6 +51,7 @@ export function DomainGroup({
   now?: Date;
   /** Every domain on the map, so a row can offer to move an area elsewhere. */
   domains: readonly DomainRef[];
+  members: readonly OwnerOption[];
   isFirst: boolean;
   isLast: boolean;
 }) {
@@ -245,6 +248,7 @@ export function DomainGroup({
               area={area}
               now={now}
               domains={domains}
+              members={members}
               isFirst={i === 0}
               isLast={i === group.roots.length - 1}
             />

@@ -27,9 +27,16 @@ export default async function MapPage() {
   // Two constant-size queries in parallel: the areas, and the domains. The
   // domains are not derived from the areas because an empty domain must still
   // appear (FR10).
-  const [result, domains] = await Promise.all([
+  const [result, domains, members] = await Promise.all([
     fetchMapAreas(supabase, user.id),
     fetchMapDomains(supabase, user.id),
+    // Assignable owners for the detail panel. Reports and stakeholders alike —
+    // the manager themselves is a flag on the area, not a row here (FR8).
+    supabase
+      .from("team_members")
+      .select("id, name")
+      .eq("manager_id", user.id)
+      .order("name"),
   ]);
 
   // An empty map and a map that failed to load must not look the same.
@@ -55,6 +62,7 @@ export default async function MapPage() {
     <SurfaceAreaMapClient
       groups={groupAreasByDomain(result.areas, domains)}
       domains={domains}
+      members={members.data ?? []}
       initialCollapsed={[...collapsed]}
     />
   );

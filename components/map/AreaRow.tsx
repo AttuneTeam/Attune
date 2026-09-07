@@ -8,6 +8,8 @@ import { formatReviewAge, isStale } from "@/lib/map/attention";
 import { countDescendants, type AreaNode, type DomainRef } from "@/lib/map/grouping";
 import type { MapArea } from "@/lib/map/types";
 import { createDomain, deleteArea, moveArea, updateArea } from "@/lib/map/api";
+import { AreaDetailSheet, type AreaDetail } from "./AreaDetailSheet";
+import type { OwnerOption } from "./AreaOwnerPicker";
 import { AreaRowMenu } from "./AreaRowMenu";
 import { ConfidenceControl } from "./ConfidenceControl";
 import { InlineAreaAdd } from "./InlineAreaAdd";
@@ -38,6 +40,7 @@ export function AreaRow({
   area,
   now,
   domains,
+  members,
   isFirst,
   isLast,
 }: {
@@ -45,6 +48,8 @@ export function AreaRow({
   now?: Date;
   /** Every domain on the map, so this area can be sent to one. */
   domains: readonly DomainRef[];
+  /** Assignable owners, for the detail panel's picker. */
+  members: readonly OwnerOption[];
   isFirst: boolean;
   isLast: boolean;
 }) {
@@ -54,6 +59,9 @@ export function AreaRow({
   const [removing, setRemoving] = useState(false);
   const [renaming, setRenaming] = useState(false);
   const [draft, setDraft] = useState(area.title);
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [detail, setDetail] = useState<AreaDetail | null>(null);
+  const [loadingDetail, setLoadingDetail] = useState(false);
   const [namingDomain, setNamingDomain] = useState(false);
   const [newDomain, setNewDomain] = useState("");
   const [busy, setBusy] = useState(false);
@@ -131,6 +139,27 @@ export function AreaRow({
     router.refresh();
   }
 
+  /**
+   * Loads the panel's contents in response to the click that asked for them.
+   * Deliberately not an effect: there is nothing to synchronise with, and the
+   * effect version needed cancellation bookkeeping and tripped the project's
+   * set-state-in-effect rule.
+   */
+  async function openDetail() {
+    setDetailOpen(true);
+    if (detail || loadingDetail) return;
+    setLoadingDetail(true);
+    try {
+      const res = await fetch(`/api/map/areas/${area.id}/detail`);
+      if (!res.ok) throw new Error(String(res.status));
+      setDetail((await res.json()) as AreaDetail);
+    } catch {
+      toast.error("Could not load this area.");
+    } finally {
+      setLoadingDetail(false);
+    }
+  }
+
   async function remove() {
     if (removing) return;
     setRemoving(true);
@@ -182,18 +211,23 @@ export function AreaRow({
             style={indent}
           />
         ) : (
-          /* Double-click, not click: a single click has to stay free for the
-             detail panel, and a title that jumps into an editor whenever it is
-             touched feels twitchy. The menu's Rename is the discoverable and
-             keyboard-reachable path, so nothing depends on the double-click. */
-          <p
-            onDoubleClick={startRename}
-            title="Double-click to rename"
-            className="min-w-0 flex-1 basis-full truncate text-sm sm:basis-auto"
+          /* The title opens the detail panel — the primary thing you want from
+             a row. Renaming lives in the menu rather than on a double-click:
+             two meanings on one target is how you end up renaming something
+             you meant to open. */
+          <button
+            type="button"
+            onClick={() => void openDetail()}
+            title={`Open ${area.title}`}
+            className={cn(
+              "min-w-0 flex-1 basis-full truncate rounded-md text-left text-sm sm:basis-auto",
+              "hover:text-foreground",
+              "focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
+            )}
             style={indent}
           >
             {area.title}
-          </p>
+          </button>
         )}
 
         <div className="flex min-w-0 shrink-0 items-center gap-2 sm:gap-3">
@@ -219,7 +253,7 @@ export function AreaRow({
             title="Who owns this area"
             className="min-w-0 flex-1 truncate text-right text-[11px] text-muted-foreground sm:w-28 sm:flex-none"
           >
-            {area.owner ? area.owner.name : "unowned"}
+            {area.owned_by_manager ? "Me" : (area.owner?.name ?? "unowned")}
           </span>
 
           <AreaRowMenu
@@ -229,6 +263,7 @@ export function AreaRow({
             canNest={canNest}
             canMoveUp={!isFirst}
             canMoveDown={!isLast}
+            onOpen={() => void openDetail()}
             onRename={startRename}
             onAddChild={() => setAddingChild(true)}
             onRemove={() => setConfirmingRemoval(true)}
@@ -240,6 +275,15 @@ export function AreaRow({
           />
         </div>
       </div>
+
+      <AreaDetailSheet
+        area={area}
+        members={members}
+        detail={detail}
+        loading={loadingDetail}
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+      />
 
       {namingDomain && (
         <div className="flex items-center gap-2 px-3" style={indent}>
@@ -330,6 +374,7 @@ export function AreaRow({
           area={child}
           now={now}
           domains={domains}
+          members={members}
           isFirst={i === 0}
           isLast={i === area.children.length - 1}
         />

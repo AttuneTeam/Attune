@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowDown, ArrowUp, MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, MoreHorizontal, PanelRight, Pencil, Plus, Trash2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,6 +31,7 @@ export function AreaRowMenu({
   canNest,
   canMoveUp,
   canMoveDown,
+  onOpen,
   onRename,
   onAddChild,
   onRemove,
@@ -45,6 +46,7 @@ export function AreaRowMenu({
   canNest: boolean;
   canMoveUp: boolean;
   canMoveDown: boolean;
+  onOpen: () => void;
   onRename: () => void;
   onAddChild: () => void;
   onRemove: () => void;
@@ -78,6 +80,10 @@ export function AreaRowMenu({
         }
       />
       <DropdownMenuContent>
+        <DropdownMenuItem onClick={onOpen}>
+          <PanelRight className="size-3.5" />
+          Open
+        </DropdownMenuItem>
         <DropdownMenuItem onClick={onRename}>
           <Pencil className="size-3.5" />
           Rename

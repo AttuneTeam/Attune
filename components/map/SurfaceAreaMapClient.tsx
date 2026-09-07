@@ -9,6 +9,7 @@ import {
 import type { DomainGroup as DomainGroupData, DomainRef } from "@/lib/map/grouping";
 import type { MapArea } from "@/lib/map/types";
 import { cn } from "@/lib/utils";
+import type { OwnerOption } from "./AreaOwnerPicker";
 import { DomainDialog } from "./DomainDialog";
 import { DomainGroup } from "./DomainGroup";
 import { MapEmptyState } from "./MapEmptyState";
@@ -29,10 +30,13 @@ import { MapEmptyState } from "./MapEmptyState";
 export function SurfaceAreaMapClient({
   groups,
   domains,
+  members,
   initialCollapsed = [],
 }: {
   groups: DomainGroupData<MapArea>[];
   domains: DomainRef[];
+  /** Assignable owners for the detail panel's picker. */
+  members: OwnerOption[];
   initialCollapsed?: (string | null)[];
 }) {
   const [collapsed, setCollapsed] = useState<CollapsedDomains>(
@@ -108,6 +112,7 @@ export function SurfaceAreaMapClient({
               key={group.domainId ?? "ungrouped"}
               group={group}
               domains={domains}
+              members={members}
               expanded={!collapsed.has(group.domainId)}
               onToggle={() => toggle(group.domainId)}
               isFirst={group.domainId === domains[0]?.id}
