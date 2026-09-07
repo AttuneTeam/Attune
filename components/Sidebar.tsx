@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
+  Map as MapIcon,
   Users,
   LogOut,
   Settings,
@@ -38,6 +39,7 @@ import { useMobileNav } from "@/components/layout/MobileNavContext";
 
 const navItems = [
   { href: "/dashboard", label: "Home", icon: LayoutDashboard },
+  { href: "/map", label: "Map", icon: MapIcon },
   // { href: "/team-pulse", label: "Team", icon: Activity },
   // { href: "/initiatives", label: "Initiatives", icon: Target },
   // { href: "/workshop", label: "Workshop", icon: FlaskConical },
