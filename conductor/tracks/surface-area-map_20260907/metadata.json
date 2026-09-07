@@ -1,0 +1,12 @@
+{
+  "id": "surface-area-map_20260907",
+  "title": "Surface Area Map",
+  "type": "feature",
+  "status": "new",
+  "created_at": "2026-09-07",
+  "updated_at": "2026-09-07",
+  "phases": 6,
+  "tasks": 34,
+  "branch": "feature/surface-area-map",
+  "checkpoints": {}
+}

@@ -1,0 +1,50 @@
+# Track: Surface Area Map
+
+**ID:** `surface-area-map_20260907`
+**Type:** Feature
+**Status:** New
+**Branch:** `feature/surface-area-map`
+
+## Documents
+
+-   [Specification](./spec.md)
+-   [Implementation Plan](./plan.md)
+-   [Metadata](./metadata.json)
+
+## Project Context
+
+-   [Project Index](../../index.md)
+
+## Summary
+
+A compact map of the whole territory a manager is accountable for, built on the existing
+`strategic_initiatives` tree rather than a new model. Adds two axes the tree lacks —
+**confidence** (`unknown` → `aware` → `understood` → `owned`) and **coverage** (when an
+area was last reviewed, and whether anyone owns it) — so the map visibly decays and
+surfaces what has been quietly neglected.
+
+Capture is inline type-and-Enter, plus an AI brain dump that proposes a grouped tree from
+unstructured text and writes nothing until accepted. Opening an area shows the
+interactions that touched it, tagged `advances` / `reinforces` / `threatens` via
+migration 040 — the reason this belongs in Attune rather than in Trello.
+
+## Key Decisions
+
+-   **Shared table, not a new one.** `kind` (`'area' | 'initiative'`) discriminates.
+    Reuses existing nesting, RLS and interaction signals; an area can graduate into an
+    initiative later without a migration.
+-   **Attention is staleness and ownership only.** Confidence level and negative
+    interaction signals deliberately do **not** drive the attention mark. A freshly
+    captured area marked `unknown` is an honest entry, not a problem.
+-   **Not a task board.** No due dates, statuses, swimlanes or drag-to-status.
+    Commitments belong in action items. This boundary keeps the feature inside the
+    "not project or ticket management" non-goal in `product.md`.
+-   **AI proposes, never writes.** The brain dump's suggestions are editable and
+    discardable; nothing reaches the database without explicit acceptance.
+
+## Carried-Over Defect
+
+Phase 1 closes a defect logged as a follow-up by the Vitest track: `parent_id` is
+`ON DELETE CASCADE` while the policy checks only `manager_id`, so one manager can parent
+a row into another's tree and a delete there destroys the first manager's row. This track
+makes cascade deletion routine, so the fix lands before any new nesting is built on it.
