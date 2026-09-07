@@ -7,6 +7,7 @@ import type { DomainGroup as DomainGroupData } from "@/lib/map/grouping";
 import type { MapArea } from "@/lib/map/types";
 import { AreaRow } from "./AreaRow";
 import { CoverageDots } from "./CoverageDots";
+import { InlineAreaAdd } from "./InlineAreaAdd";
 
 /**
  * One territory on the map.
@@ -94,15 +95,14 @@ export function DomainGroup({
           // Drift), the whitespace does the work instead.
           className="mt-3 space-y-1 rounded-lg bg-card p-6"
         >
-          {group.roots.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              Nothing here yet.
-            </p>
-          ) : (
-            group.roots.map((area) => (
-              <AreaRow key={area.id} area={area} now={now} />
-            ))
-          )}
+          {group.roots.map((area) => (
+            <AreaRow key={area.id} area={area} now={now} />
+          ))}
+
+          {/* Capture lives at the foot of the group it adds to, so the domain
+              is implied by where you are typing rather than chosen from a
+              dropdown. */}
+          <InlineAreaAdd domain={group.domain} className="mt-1" />
         </div>
       )}
     </section>

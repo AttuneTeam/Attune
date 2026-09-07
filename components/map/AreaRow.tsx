@@ -1,7 +1,12 @@
+"use client";
+
+import { useState } from "react";
+import { Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatReviewAge, isStale } from "@/lib/map/attention";
 import type { AreaNode } from "@/lib/map/grouping";
 import type { MapArea } from "@/lib/map/types";
+import { InlineAreaAdd } from "./InlineAreaAdd";
 
 /**
  * One area on the map, plus its descendants.
@@ -32,6 +37,9 @@ const CONFIDENCE_CHIP: Record<MapArea["confidence"], string> = {
   owned: "bg-secondary text-secondary-foreground",
 };
 
+/** Matches the depth CHECK on the table: roots, children, grandchildren. */
+const MAX_DEPTH = 2;
+
 export function AreaRow({
   area,
   now,
@@ -40,6 +48,8 @@ export function AreaRow({
   now?: Date;
 }) {
   const stale = isStale(area, now);
+  const [addingChild, setAddingChild] = useState(false);
+  const canNest = area.depth < MAX_DEPTH;
 
   return (
     <div>
@@ -75,8 +85,40 @@ export function AreaRow({
           <span className="w-28 truncate text-right text-[11px] text-muted-foreground">
             {area.owner ? area.owner.name : "unowned"}
           </span>
+
+          {/* Actions sit at low contrast until hovered or focused: the row is
+              for reading first. They stay reachable by keyboard and are always
+              rendered, since a hover-only control is unusable on touch. */}
+          <div className="flex items-center">
+            {canNest && (
+              <button
+                type="button"
+                onClick={() => setAddingChild((open) => !open)}
+                aria-expanded={addingChild}
+                title="Add an area beneath this one"
+                className={cn(
+                  "flex size-11 items-center justify-center rounded-md",
+                  "text-muted-foreground/50 transition-colors",
+                  "hover:bg-accent/30 hover:text-foreground",
+                  "focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
+                )}
+              >
+                <Plus className="size-3.5" />
+                <span className="sr-only">Add an area beneath {area.title}</span>
+              </button>
+            )}
+          </div>
         </div>
       </div>
+
+      {addingChild && (
+        <div className="ml-6 mt-1">
+          <InlineAreaAdd
+            parentId={area.id}
+            placeholder={`Add beneath ${area.title}`}
+          />
+        </div>
+      )}
 
       {area.children.length > 0 && (
         // Indented by whitespace alone. No guide lines, no left border.

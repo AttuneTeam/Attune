@@ -1,4 +1,9 @@
+"use client";
+
+import { useState } from "react";
 import { STALENESS_THRESHOLD_DAYS } from "@/lib/map/attention";
+import { cn } from "@/lib/utils";
+import { InlineAreaAdd } from "./InlineAreaAdd";
 
 /**
  * What a manager sees before they have mapped anything.
@@ -7,14 +12,17 @@ import { STALENESS_THRESHOLD_DAYS } from "@/lib/map/attention";
  * else on the page can. It says it in the product's voice — a peer explaining
  * the idea once, plainly — rather than as onboarding chirp.
  *
- * The suggested domains are text, not buttons. Capture arrives in Phase 3
- * (spec.md FR4), and a control that looked actionable and did nothing would be
- * worse than none. They become the quick-add's starting point once there is a
- * quick-add to start.
+ * The starter domains pick where the first area lands. They are a suggestion,
+ * not a taxonomy: domains are free text, and a manager who wants "Board" or
+ * "Delivery" should not feel they are working around the product.
  */
 export const STARTER_DOMAINS = ["Platform", "People", "Business", "Process"] as const;
 
 export function MapEmptyState() {
+  // null means ungrouped, which is a legitimate place to start — capture must
+  // never be blocked on choosing a heading first.
+  const [domain, setDomain] = useState<string | null>(null);
+
   return (
     <div className="mt-10 rounded-lg bg-card p-6 sm:p-8">
       <h2 className="font-heading text-lg tracking-tight">Nothing mapped yet</h2>
@@ -32,20 +40,43 @@ export function MapEmptyState() {
 
       <div className="mt-8">
         <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
-          Domains to start from
+          Start in
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
-          {STARTER_DOMAINS.map((domain) => (
-            <span
-              key={domain}
-              className="rounded-full bg-secondary px-3 py-1 text-[11px] font-medium text-secondary-foreground"
-            >
-              {domain}
-            </span>
-          ))}
+          {STARTER_DOMAINS.map((starter) => {
+            const active = domain === starter;
+            return (
+              <button
+                key={starter}
+                type="button"
+                aria-pressed={active}
+                onClick={() => setDomain(active ? null : starter)}
+                className={cn(
+                  "min-h-11 rounded-full px-4 text-[11px] font-medium transition-colors",
+                  "focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
+                  active
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-secondary text-secondary-foreground hover:bg-accent",
+                )}
+              >
+                {starter}
+              </button>
+            );
+          })}
         </div>
+
+        <div className="mt-4 max-w-xl">
+          <InlineAreaAdd
+            domain={domain}
+            placeholder={
+              domain ? `Add an area to ${domain}` : "Add your first area"
+            }
+          />
+        </div>
+
         <p className="mt-3 text-xs text-muted-foreground">
-          Yours may be different — a domain is just a heading you choose.
+          Yours may be different — a domain is just a heading you choose, and you can
+          leave it off entirely.
         </p>
       </div>
     </div>
