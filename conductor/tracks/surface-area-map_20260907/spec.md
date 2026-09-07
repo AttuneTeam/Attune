@@ -137,9 +137,10 @@ head, or notes from a handover call — and proposes a grouped tree of areas.
 
 Exactly two conditions mark an area as worth a look:
 
-1. **Stale** — `last_reviewed_at` (falling back to `created_at` when null) is more than
+1. **Stale** — `last_reviewed_at` (falling back to `created_at` when null) is at least
    the staleness threshold ago. Threshold is a single named constant in `lib/`, set to
-   21 days.
+   21 days. The boundary is inclusive so the interface can say "not reviewed in 21 days"
+   and mean it; an exclusive boundary would flag on day 22 while the label read 21.
 2. **Unowned** — `owner_id` is null.
 
 Deliberately excluded: confidence level and interaction signals do **not** drive
@@ -221,7 +222,7 @@ built, not after.
    untouched.
 8. Changing an area's confidence updates `last_reviewed_at`, and the reviewed affordance
    updates it without changing confidence.
-9. An area stale beyond 21 days or with no owner is marked as worth a look. An area
+9. An area unreviewed for 21 days or more, or with no owner, is marked as worth a look. An area
    marked `unknown`, recently reviewed and owned, is **not**.
 10. Removing an area removes its children, having stated the child count first.
 11. An area detail shows its notes, auto-saving without a Save button, and lists linked
