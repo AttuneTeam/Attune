@@ -1,14 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { formatReviewAge, isStale } from "@/lib/map/attention";
 import { countDescendants, type AreaNode } from "@/lib/map/grouping";
 import type { MapArea } from "@/lib/map/types";
-import { deleteArea } from "@/lib/map/api";
+import { deleteArea, moveArea, updateArea } from "@/lib/map/api";
+import { AreaRowMenu } from "./AreaRowMenu";
 import { ConfidenceControl } from "./ConfidenceControl";
 import { InlineAreaAdd } from "./InlineAreaAdd";
 
@@ -16,16 +16,16 @@ import { InlineAreaAdd } from "./InlineAreaAdd";
  * One area on the map, plus its descendants.
  *
  * The row states facts, it does not raise alarms. Per FR6 the coral attention
- * mark lives once on the page header, never on the rows — `tertiary` is a
- * scalpel, and a screen where a third of the rows are coral says nothing at
- * all. Where a row wants noticing it gets tonal weight (full-strength
- * foreground instead of muted) rather than colour.
+ * mark lives once on the page header, never on the rows: tertiary is a scalpel,
+ * and a screen where a third of the rows are coral says nothing at all. Where a
+ * row wants noticing it gets tonal weight (full-strength foreground instead of
+ * muted) rather than colour.
  *
  * Nesting is expressed as padding on the title, not as a wrapping indented
- * container. Wrapping narrows every descendant row, which pushed the metadata
- * columns progressively leftward and made an intentional hierarchy read as a
- * ragged one. Indenting only the title keeps confidence, review age and owner
- * in true columns down the whole group.
+ * container. Wrapping narrowed every descendant row, pushing the metadata
+ * columns progressively leftward so an intentional hierarchy read as a ragged
+ * one. Indenting only the title keeps confidence, review age and owner in true
+ * columns down the whole group.
  */
 
 /** Matches the depth CHECK on the table: roots, children, grandchildren. */
@@ -34,23 +34,91 @@ const MAX_DEPTH = 2;
 /** One indent step, in pixels. Applied to the title alone. */
 const INDENT = 24;
 
-export function AreaRow({ area, now }: { area: AreaNode<MapArea>; now?: Date }) {
+export function AreaRow({
+  area,
+  now,
+  domains,
+  isFirst,
+  isLast,
+}: {
+  area: AreaNode<MapArea>;
+  now?: Date;
+  /** Every domain on the map, so this area can be sent to one. */
+  domains: (string | null)[];
+  isFirst: boolean;
+  isLast: boolean;
+}) {
   const stale = isStale(area, now);
   const [addingChild, setAddingChild] = useState(false);
   const [confirmingRemoval, setConfirmingRemoval] = useState(false);
   const [removing, setRemoving] = useState(false);
+  const [renaming, setRenaming] = useState(false);
+  const [draft, setDraft] = useState(area.title);
+  const [namingDomain, setNamingDomain] = useState(false);
+  const [newDomain, setNewDomain] = useState("");
+  const [busy, setBusy] = useState(false);
+  // Escape has to beat the blur that follows it, or cancelling would commit.
+  const cancelledRef = useRef(false);
+
   const canNest = area.depth < MAX_DEPTH;
   const descendants = countDescendants(area);
   const router = useRouter();
-
   const indent = { paddingLeft: area.depth * INDENT };
+
+  async function run(action: () => Promise<{ ok: boolean; message?: string }>) {
+    if (busy) return;
+    setBusy(true);
+    const result = await action();
+    setBusy(false);
+    if (!result.ok) {
+      toast.error(result.message ?? "That could not be saved.");
+      return false;
+    }
+    router.refresh();
+    return true;
+  }
+
+  function startRename() {
+    setDraft(area.title);
+    cancelledRef.current = false;
+    setRenaming(true);
+  }
+
+  async function commitRename() {
+    if (cancelledRef.current) {
+      cancelledRef.current = false;
+      setRenaming(false);
+      setDraft(area.title);
+      return;
+    }
+    const trimmed = draft.trim();
+    if (!trimmed || trimmed === area.title) {
+      setRenaming(false);
+      setDraft(area.title);
+      return;
+    }
+    setRenaming(false);
+    const ok = await run(() => updateArea(area.id, { title: trimmed }));
+    // Reopen with the text intact rather than discarding what was typed.
+    if (!ok) setRenaming(true);
+  }
+
+  async function commitNewDomain() {
+    const trimmed = newDomain.trim();
+    if (!trimmed) {
+      setNamingDomain(false);
+      return;
+    }
+    setNamingDomain(false);
+    setNewDomain("");
+    await run(() => updateArea(area.id, { domain: trimmed }));
+  }
 
   async function remove() {
     if (removing) return;
     setRemoving(true);
     const result = await deleteArea(area.id);
     setRemoving(false);
-
     if (!result.ok) {
       toast.error(result.message);
       setConfirmingRemoval(false);
@@ -65,9 +133,47 @@ export function AreaRow({ area, now }: { area: AreaNode<MapArea>; now?: Date }) 
           rather than on the baseline keeps the vertical rhythm tight, and the
           touch targets come for free from the row height. */}
       <div className="flex min-h-11 items-center gap-4 rounded-md px-3 transition-colors hover:bg-accent/30">
-        <p className="min-w-0 flex-1 truncate text-sm" style={indent}>
-          {area.title}
-        </p>
+        {renaming ? (
+          <input
+            autoFocus
+            value={draft}
+            disabled={busy}
+            onChange={(e) => setDraft(e.target.value)}
+            onBlur={() => void commitRename()}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                void commitRename();
+              }
+              if (e.key === "Escape") {
+                e.preventDefault();
+                cancelledRef.current = true;
+                setRenaming(false);
+                setDraft(area.title);
+              }
+            }}
+            aria-label={`Rename ${area.title}`}
+            className={cn(
+              "min-w-0 flex-1 rounded-md bg-transparent text-sm",
+              "focus:bg-accent/30 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
+              "disabled:opacity-50",
+            )}
+            style={indent}
+          />
+        ) : (
+          /* Double-click, not click: a single click has to stay free for the
+             detail panel, and a title that jumps into an editor whenever it is
+             touched feels twitchy. The menu's Rename is the discoverable and
+             keyboard-reachable path, so nothing depends on the double-click. */
+          <p
+            onDoubleClick={startRename}
+            title="Double-click to rename"
+            className="min-w-0 flex-1 truncate text-sm"
+            style={indent}
+          >
+            {area.title}
+          </p>
+        )}
 
         <div className="flex shrink-0 items-center gap-3">
           <ConfidenceControl
@@ -91,48 +197,50 @@ export function AreaRow({ area, now }: { area: AreaNode<MapArea>; now?: Date }) 
             {area.owner ? area.owner.name : "unowned"}
           </span>
 
-          {/* Always rendered, low contrast until hovered or focused: the row is
-              for reading first, and a hover-only control is unusable on touch. */}
-          <div className="flex items-center">
-            {canNest ? (
-              <button
-                type="button"
-                onClick={() => setAddingChild((open) => !open)}
-                aria-expanded={addingChild}
-                title="Add an area beneath this one"
-                className={cn(
-                  "flex size-11 items-center justify-center rounded-md",
-                  "text-muted-foreground/50 transition-colors",
-                  "hover:bg-accent/30 hover:text-foreground",
-                  "focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
-                )}
-              >
-                <Plus className="size-3.5" />
-                <span className="sr-only">Add an area beneath {area.title}</span>
-              </button>
-            ) : (
-              // Holds the column so rows at maximum depth do not shift their
-              // remove button leftward out of line.
-              <span className="size-11" aria-hidden="true" />
-            )}
-
-            <button
-              type="button"
-              onClick={() => setConfirmingRemoval(true)}
-              title="Remove this area"
-              className={cn(
-                "flex size-11 items-center justify-center rounded-md",
-                "text-muted-foreground/50 transition-colors",
-                "hover:bg-accent/30 hover:text-destructive",
-                "focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
-              )}
-            >
-              <Trash2 className="size-3.5" />
-              <span className="sr-only">Remove {area.title}</span>
-            </button>
-          </div>
+          <AreaRowMenu
+            areaTitle={area.title}
+            domains={domains}
+            currentDomain={area.domain}
+            canNest={canNest}
+            canMoveUp={!isFirst}
+            canMoveDown={!isLast}
+            onRename={startRename}
+            onAddChild={() => setAddingChild(true)}
+            onRemove={() => setConfirmingRemoval(true)}
+            onMove={(direction) => void run(() => moveArea(area.id, direction))}
+            onMoveToDomain={(domain) => void run(() => updateArea(area.id, { domain }))}
+            onNewDomain={() => setNamingDomain(true)}
+          />
         </div>
       </div>
+
+      {namingDomain && (
+        <div className="flex items-center gap-2 px-3" style={indent}>
+          <input
+            autoFocus
+            value={newDomain}
+            onChange={(e) => setNewDomain(e.target.value)}
+            onBlur={() => void commitNewDomain()}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                void commitNewDomain();
+              }
+              if (e.key === "Escape") {
+                setNamingDomain(false);
+                setNewDomain("");
+              }
+            }}
+            placeholder="New domain name"
+            aria-label={`Move ${area.title} to a new domain`}
+            className={cn(
+              "min-h-11 flex-1 rounded-md bg-transparent text-sm",
+              "placeholder:text-muted-foreground/70",
+              "focus:bg-accent/30 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
+            )}
+          />
+        </div>
+      )}
 
       {confirmingRemoval && (
         // Inline rather than a modal, and deliberately not window.confirm: a
@@ -189,8 +297,15 @@ export function AreaRow({ area, now }: { area: AreaNode<MapArea>; now?: Date }) 
 
       {/* Descendants are siblings in the DOM, not nested children, so every row
           in the group shares one set of metadata columns. */}
-      {area.children.map((child) => (
-        <AreaRow key={child.id} area={child} now={now} />
+      {area.children.map((child, i) => (
+        <AreaRow
+          key={child.id}
+          area={child}
+          now={now}
+          domains={domains}
+          isFirst={i === 0}
+          isLast={i === area.children.length - 1}
+        />
       ))}
     </>
   );

@@ -41,6 +41,7 @@ export function SurfaceAreaMapClient({
     persistCollapsedDomains(next);
   };
 
+  const domains = groups.map((group) => group.domain);
   const totalAreas = groups.reduce((sum, g) => sum + g.summary.total, 0);
   const totalAttention = groups.reduce((sum, g) => sum + g.summary.attention, 0);
 
@@ -80,6 +81,7 @@ export function SurfaceAreaMapClient({
               group={group}
               expanded={!collapsed.has(group.domain)}
               onToggle={() => toggle(group.domain)}
+              domains={domains}
             />
           ))}
         </div>

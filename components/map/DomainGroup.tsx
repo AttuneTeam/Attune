@@ -27,11 +27,14 @@ export function DomainGroup({
   expanded,
   onToggle,
   now,
+  domains,
 }: {
   group: DomainGroupData<MapArea>;
   expanded: boolean;
   onToggle: () => void;
   now?: Date;
+  /** Every domain on the map, so a row can offer to move an area elsewhere. */
+  domains: (string | null)[];
 }) {
   const key = group.domain ?? "ungrouped";
   const bodyId = `domain-${key}`;
@@ -95,8 +98,15 @@ export function DomainGroup({
           // Drift), the whitespace does the work instead.
           className="mt-3 space-y-1 rounded-lg bg-card p-6"
         >
-          {group.roots.map((area) => (
-            <AreaRow key={area.id} area={area} now={now} />
+          {group.roots.map((area, i) => (
+            <AreaRow
+              key={area.id}
+              area={area}
+              now={now}
+              domains={domains}
+              isFirst={i === 0}
+              isLast={i === group.roots.length - 1}
+            />
           ))}
 
           {/* Capture lives at the foot of the group it adds to, so the domain
