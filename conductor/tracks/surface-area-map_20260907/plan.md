@@ -343,13 +343,13 @@ area, so renaming rewrites every row and there is nowhere to record an order.
     - [x] Implement the routes, reusing the `move_area` swap approach for domain order
     - [x] Confirm green, both success and failure paths
 
-- [ ] Task: Domain dialog and controls **[V]**
-    - [ ] Create and rename a domain in one dialog, reached from the header and from the
+- [x] Task: Domain dialog and controls **[V]** `97d397d`
+    - [x] Create and rename a domain in one dialog, reached from the header and from the
           domain heading
-    - [ ] Move a domain up and down, disabled at the ends
-    - [ ] Delete a domain, stating plainly that its areas become ungrouped rather than
+    - [x] Move a domain up and down, disabled at the ends
+    - [x] Delete a domain, stating plainly that its areas become ungrouped rather than
           being removed
-    - [ ] Verify keyboard operation, both themes, all breakpoints
+    - [ ] **Open:** keyboard operation, both themes, all breakpoints
 
 - [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
