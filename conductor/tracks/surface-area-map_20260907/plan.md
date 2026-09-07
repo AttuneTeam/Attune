@@ -382,30 +382,30 @@ Attune's map rather than a generic outline.
           both being set at once
     - [x] Confirm green
 
-- [ ] Task: Area detail panel **[V]**
-    - [ ] Build `components/map/AreaDetailSheet.tsx` behind progressive disclosure
-    - [ ] Show title, domain, confidence, owner, last reviewed
-    - [ ] Wire the existing Tiptap editor to the existing `description` JSONB column,
+- [x] Task: Area detail panel **[V]** `a54186c`
+    - [x] Build `components/map/AreaDetailSheet.tsx` behind progressive disclosure
+    - [x] Show title, domain, confidence, owner, last reviewed
+    - [x] Wire the existing Tiptap editor to the existing `description` JSONB column,
           debounced auto-save, no Save button in the editing path
-    - [ ] Verify notes survive a reload and that a failed save never destroys typed text
-    - [ ] Verify floating surface uses the tinted diffused shadow, never black
-    - [ ] Verify both themes, all breakpoints, keyboard accessible, focus visible
+    - [x] Verify notes survive a reload and that a failed save never destroys typed text
+    - [x] Verify floating surface uses the tinted diffused shadow, never black
+    - [x] Verify both themes, all breakpoints, keyboard accessible, focus visible
 
-- [ ] Task: Owner picker **[V]**
-    - [ ] Build the picker over existing `team_members`, covering both direct reports
+- [x] Task: Owner picker **[V]** `a54186c`
+    - [x] Build the picker over existing `team_members`, covering both direct reports
           and stakeholders via `relationship`
-    - [ ] Offer "Me" as a first-class choice — many areas on a personal map are the
+    - [x] Offer "Me" as a first-class choice — many areas on a personal map are the
           manager's own
-    - [ ] Allow clearing the owner
-    - [ ] Confirm the unowned attention mark clears and reappears correctly
-    - [ ] Verify both themes and keyboard operation
+    - [x] Allow clearing the owner
+    - [x] Confirm the unowned attention mark clears and reappears correctly
+    - [x] Verify both themes and keyboard operation
 
-- [ ] Task: Linked conversations list **[V]**
-    - [ ] Render each linked interaction with its signal, note and date, linking through
+- [x] Task: Linked conversations list **[V]** `a54186c`
+    - [x] Render each linked interaction with its signal, note and date, linking through
           to `/interactions/[id]`
-    - [ ] Confirm signals are shown as context only and do not affect the attention mark
-    - [ ] Verify the empty case reads plainly
-    - [ ] Verify both themes and all breakpoints
+    - [x] Confirm signals are shown as context only and do not affect the attention mark
+    - [x] Verify the empty case reads plainly
+    - [x] Verify both themes and all breakpoints
 
 - [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
