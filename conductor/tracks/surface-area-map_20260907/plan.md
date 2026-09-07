@@ -63,17 +63,20 @@ closed before any new nesting is built on top of it.
     - [ ] Confirm `/initiatives` still loads — deferred to the Phase 1 manual
           verification plan
 
-- [ ] Task: Attention and staleness helpers **[T]**
-    - [ ] Write failing tests in `lib/map/attention.test.ts` covering: stale via
+- [x] Task: Attention and staleness helpers **[T]** `e94d277`
+    - [x] Write failing tests in `lib/map/attention.test.ts` covering: stale via
           `last_reviewed_at`; stale via `created_at` fallback when
           `last_reviewed_at` is null; not stale inside the threshold; unowned; both
           conditions at once; and the FR6 negative case — an area marked `unknown`
-          but recently reviewed and owned is **not** flagged
-    - [ ] Confirm red
-    - [ ] Implement `lib/map/attention.ts` — `STALENESS_THRESHOLD_DAYS = 21` as a single
-          named constant, `isStale()`, `attentionReasons()`
-    - [ ] Confirm green
-    - [ ] Refactor for clarity with tests as the safety net
+          but recently reviewed and owned is **not** flagged, plus a second negative
+          case for a `threatens` interaction signal
+    - [x] Confirm red
+    - [x] Implement `lib/map/attention.ts` — `STALENESS_THRESHOLD_DAYS = 21` as a single
+          named constant, `isStale()`, `attentionReasons()`, plus `daysSinceReview()`
+          and `needsAttention()` for the row display
+    - [x] Confirm green — 95/95 node, 116/116 full suite
+    - [x] Refactor for clarity with tests as the safety net — boundary made inclusive;
+          `spec.md` FR6 and AC 9 reworded from "more than" to "at least" to match
 
 - [ ] Task: Confidence ordering and coverage summary helpers **[T]**
     - [ ] Write failing tests in `lib/map/coverage.test.ts` — confidence rank ordering,
