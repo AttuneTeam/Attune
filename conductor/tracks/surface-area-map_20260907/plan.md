@@ -205,15 +205,16 @@ The map becomes usable. After this phase you can populate it by hand and keep it
           silently dropped field
     - [x] Confirm green, both success and failure paths — 229/229 full suite
 
-- [ ] Task: Inline quick-add **[V]**
-    - [ ] Build `components/map/InlineAreaAdd.tsx` — Enter commits, input stays focused
-          for the next entry, no page reload
-    - [ ] Support adding a child area from a parent row, respecting the depth limit
-    - [ ] Make the empty state's starter domains actionable — they ship as text in
-          Phase 2 (`STARTER_DOMAINS` in `components/map/MapEmptyState.tsx`) and become
-          the quick-add's starting point here
-    - [ ] Verify keyboard-only capture of several areas in a row
-    - [ ] Verify both themes, all breakpoints, 44x44px touch targets
+- [x] Task: Inline quick-add **[V]** `5ce28bb`
+    - [x] Build `components/map/InlineAreaAdd.tsx` — Enter commits, input stays focused
+          for the next entry, no page reload; typed text survives a failure
+    - [x] Support adding a child area from a parent row, respecting the depth limit
+    - [x] Make the empty state's starter domains actionable — now `aria-pressed`
+          buttons that select where the first area lands
+    - [x] Client calls extracted to a tested `lib/map/api.ts` — server error, HTML
+          error body, network rejection and empty-200 paths all covered
+    - [ ] **Open:** keyboard-only capture of several areas in a row, both themes, all
+          breakpoints — to be checked in the browser before the Phase 3 checkpoint
 
 - [ ] Task: Confidence control and review affordance **[V]**
     - [ ] Build `components/map/ConfidenceControl.tsx` — set inline from the row without
