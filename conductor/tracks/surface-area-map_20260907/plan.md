@@ -104,14 +104,18 @@ is verified against manually inserted rows.
     - [x] Implement `lib/map/grouping.ts` and `lib/map/types.ts`
     - [x] Confirm green — 121/121 node, 142/142 full suite
 
-- [ ] Task: `/map` route and data query **[T]**
-    - [ ] Write failing test for the query builder helper — filters `kind = 'area'`,
-          scopes by `manager_id`, selects owner in the same query (no N+1)
-    - [ ] Confirm red
-    - [ ] Implement `lib/map/queries.ts`
-    - [ ] Create `app/(dashboard)/map/page.tsx` as a server component; `await` any
-          `params`/`searchParams`; redirect unauthenticated users to `/login`
-    - [ ] Confirm green and confirm a single query in the Supabase logs
+- [x] Task: `/map` route and data query **[T]** `9dc7b98`
+    - [x] Write failing test for the query builder helper — filters `kind = 'area'`,
+          scopes by `manager_id`, selects owner in the same query (no N+1), plus the
+          failure branch and owner-embed normalisation
+    - [x] Confirm red
+    - [x] Implement `lib/map/queries.ts`
+    - [x] Create `app/(dashboard)/map/page.tsx` as a server component; no
+          `params`/`searchParams` on this route, so nothing to await; redirects
+          unauthenticated users to `/login`
+    - [x] Confirm green and confirm a single query — 133/133 node, 154/154 full suite;
+          the FK hint and embed cardinality were additionally probed against the real
+          database, and the route verified as 307 while an unknown route 404s
 
 - [ ] Task: Scope `/initiatives` to `kind = 'initiative'` **[T]**
     - [ ] Write failing test asserting the initiatives query excludes areas
