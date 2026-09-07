@@ -9,6 +9,7 @@
   "tasks": 34,
   "branch": "feature/surface-area-map",
   "checkpoints": {
-    "Phase 1 \u2014 Data Foundation": "5a413fd"
+    "Phase 1 \u2014 Data Foundation": "5a413fd",
+    "Phase 2 \u2014 Read Path: The Map View": "8398428"
   }
 }

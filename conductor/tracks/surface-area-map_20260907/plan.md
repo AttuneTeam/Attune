@@ -90,7 +90,7 @@ closed before any new nesting is built on top of it.
 
 ---
 
-## Phase 2 — Read Path: The Map View
+## Phase 2 — Read Path: The Map View [checkpoint: 8398428]
 
 The map becomes visible and navigable. Still read-only — no capture yet, so this phase
 is verified against manually inserted rows.
@@ -176,7 +176,7 @@ is verified against manually inserted rows.
     - [ ] **Open:** confirm the state survives a browser reload — carried into the
           Phase 2 manual verification plan
 
-- [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
+- [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`) `8398428`
 
 ---
 
