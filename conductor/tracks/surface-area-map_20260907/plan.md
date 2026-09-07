@@ -184,20 +184,26 @@ is verified against manually inserted rows.
 
 The map becomes usable. After this phase you can populate it by hand and keep it current.
 
-- [ ] Task: Area write API **[T]**
-    - [ ] Write failing tests in `app/api/map/areas/route.test.ts` — 401 when
+- [x] Task: Area write API **[T]** `cef64e6`
+    - [x] Write failing tests in `app/api/map/areas/route.test.ts` — 401 when
           unauthenticated; Zod rejection of malformed bodies; `kind` forced to `'area'`
           on create; depth limit enforced at 2; parent must belong to the caller;
-          `manager_id` taken from the session and never from the body
-    - [ ] Write failing tests for PATCH — confidence change sets `last_reviewed_at`;
-          review-only touch leaves confidence alone; cross-tenant PATCH is rejected
-    - [ ] Write failing tests for DELETE — children removed with the parent;
-          cross-tenant DELETE rejected
-    - [ ] Confirm red
-    - [ ] Implement `app/api/map/areas/route.ts` and
+          `manager_id` taken from the session and never from the body; plus a refusal
+          to nest an area under an initiative
+    - [x] Write failing tests for PATCH — confidence change sets `last_reviewed_at`;
+          review-only touch leaves confidence alone; a rename does **not** stamp a
+          review; cross-tenant PATCH returns 404
+    - [x] Write failing tests for DELETE — children removed with the parent (proven
+          against real Postgres in `tests/rls/surface-areas.test.ts`, including that
+          the cascade reaches neither an unrelated area nor another manager's);
+          cross-tenant DELETE returns 404
+    - [x] Confirm red
+    - [x] Implement `app/api/map/areas/route.ts` and
           `app/api/map/areas/[id]/route.ts`
-    - [ ] Validate every request body with Zod
-    - [ ] Confirm green, both success and failure paths
+    - [x] Validate every request body with Zod — strict schemas in
+          `lib/map/areaInput.ts`, so server-owned fields are a 400 rather than a
+          silently dropped field
+    - [x] Confirm green, both success and failure paths — 229/229 full suite
 
 - [ ] Task: Inline quick-add **[V]**
     - [ ] Build `components/map/InlineAreaAdd.tsx` — Enter commits, input stays focused
