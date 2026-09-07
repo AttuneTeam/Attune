@@ -254,8 +254,11 @@ Plain, calm, British spelling. "Not reviewed in 21 days", not "OVERDUE". No excl
 marks, no corporate filler.
 
 ### Performance
-The map renders from a single Supabase query. No N+1 per area, per domain, or per owner.
-Linked conversations load with the area detail, not with the list.
+The map renders from a constant number of queries — the areas, and the domains — never
+one per row. The domain list is fetched separately rather than derived from the areas,
+because FR10 makes an empty domain a real thing that must still appear. No N+1 per area,
+per domain, or per owner. Linked conversations load with the area detail, not with the
+list.
 
 ### Tenancy
 Every query is scoped by `manager_id`. The RLS suite is extended before the feature is

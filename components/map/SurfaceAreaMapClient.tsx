@@ -1,123 +1,119 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { summariseCoverage } from "@/lib/map/coverage";
-import { compareDomains } from "@/lib/map/grouping";
+import { toast } from "sonner";
 import {
   persistCollapsedDomains,
   type CollapsedDomains,
 } from "@/lib/map/collapse";
-import type { DomainGroup as DomainGroupData } from "@/lib/map/grouping";
+import { createDomain } from "@/lib/map/api";
+import type { DomainGroup as DomainGroupData, DomainRef } from "@/lib/map/grouping";
 import type { MapArea } from "@/lib/map/types";
+import { cn } from "@/lib/utils";
 import { DomainGroup } from "./DomainGroup";
 import { MapEmptyState } from "./MapEmptyState";
 
 /**
  * The Surface Area Map.
  *
- * Owns which domains are collapsed. Nothing else on this screen holds state
- * yet — capture, confidence and ownership arrive in Phase 3 — so the component
- * stays a thin shell over the tested transforms in lib/map/.
+ * Owns which domains are collapsed, and naming a new one. Everything else is a
+ * thin shell over the tested transforms in lib/map/.
+ *
+ * Domains are rows now (FR10), so a newly named one is created immediately
+ * rather than held in view state until something is filed under it. The
+ * pending-group device that stood in for this before has been retired.
  *
  * The collapsed set arrives from the server as an array (a Set does not
  * serialise across the boundary) so the first paint is already correct.
  */
 export function SurfaceAreaMapClient({
   groups,
+  domains,
   initialCollapsed = [],
 }: {
   groups: DomainGroupData<MapArea>[];
+  domains: DomainRef[];
   initialCollapsed?: (string | null)[];
 }) {
   const [collapsed, setCollapsed] = useState<CollapsedDomains>(
     () => new Set(initialCollapsed),
   );
+  const [namingDomain, setNamingDomain] = useState(false);
+  const [newDomain, setNewDomain] = useState("");
+  const [saving, setSaving] = useState(false);
+  const router = useRouter();
 
-  const toggle = (domain: string | null) => {
+  function toggle(domainId: string | null) {
     // Computed outside the updater: persisting inside it would fire twice
     // under StrictMode's double invocation.
     const next = new Set(collapsed);
-    if (next.has(domain)) next.delete(domain);
-    else next.add(domain);
+    if (next.has(domainId)) next.delete(domainId);
+    else next.add(domainId);
     setCollapsed(next);
     persistCollapsedDomains(next);
-  };
+  }
 
-  // Domains a manager has named but not yet filled. They are not rows: a
-  // domain is a text column on an area, so one only exists while something
-  // sits in it. Holding them here lets the group appear the moment it is
-  // named, and nothing is written until the first area lands — so abandoning
-  // the idea leaves no empty record behind.
-  const [pendingDomains, setPendingDomains] = useState<string[]>([]);
-  const [namingDomain, setNamingDomain] = useState(false);
-  const [newDomain, setNewDomain] = useState("");
-
-  const realDomains = new Set(groups.map((group) => group.domain));
-  // Drop a pending group as soon as the real one exists, or it would render twice.
-  const stillPending = pendingDomains.filter((domain) => !realDomains.has(domain));
-
-  const rendered = [
-    ...groups,
-    ...stillPending.map((domain) => ({
-      domain,
-      roots: [],
-      summary: summariseCoverage([]),
-    })),
-  ].sort((a, b) => compareDomains(a.domain, b.domain));
-
-  const domains = rendered.map((group) => group.domain);
-
-  function addDomain() {
+  async function addDomain() {
     const trimmed = newDomain.trim();
     setNamingDomain(false);
     setNewDomain("");
-    if (!trimmed || realDomains.has(trimmed) || pendingDomains.includes(trimmed)) return;
-    setPendingDomains((current) => [...current, trimmed]);
+    if (!trimmed || saving) return;
+
+    setSaving(true);
+    const result = await createDomain(trimmed);
+    setSaving(false);
+    if (!result.ok) {
+      toast.error(result.message);
+      return;
+    }
+    router.refresh();
   }
 
   const totalAreas = groups.reduce((sum, g) => sum + g.summary.total, 0);
   const totalAttention = groups.reduce((sum, g) => sum + g.summary.attention, 0);
+  const hasAnything = groups.length > 0;
 
   return (
     <div className="mx-auto max-w-4xl py-2 sm:py-4">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
-        <h1 className="font-heading text-3xl tracking-tight sm:text-4xl">Map</h1>
-        {/* Suppressed when empty: "0 areas across 0 domains" is noise, and the
-            empty state below already says everything worth saying. */}
-        {groups.length > 0 && (
-          <p className="mt-2 text-sm text-muted-foreground">
-            {totalAreas} {totalAreas === 1 ? "area" : "areas"} across {groups.length}{" "}
-            {groups.length === 1 ? "domain" : "domains"}
-            {totalAttention > 0 && (
-              <>
-                {" · "}
-                {/* The one coral element on this screen. Its force comes entirely
-                    from being the only one — the per-domain counts are emphasised
-                    by weight instead. */}
-                <span className="font-medium text-tertiary">
-                  {totalAttention} worth a look
-                </span>
-              </>
-            )}
-          </p>
-        )}
+          <h1 className="font-heading text-3xl tracking-tight sm:text-4xl">Map</h1>
+          {/* Suppressed when empty: "0 areas across 0 domains" is noise next to
+              an empty state that already says everything worth saying. */}
+          {hasAnything && (
+            <p className="mt-2 text-sm text-muted-foreground">
+              {totalAreas} {totalAreas === 1 ? "area" : "areas"} across{" "}
+              {groups.length} {groups.length === 1 ? "domain" : "domains"}
+              {totalAttention > 0 && (
+                <>
+                  {" · "}
+                  {/* The one coral element on this screen. Its force comes
+                      entirely from being the only one — the per-domain counts
+                      are emphasised by weight instead. */}
+                  <span className="font-medium text-tertiary">
+                    {totalAttention} worth a look
+                  </span>
+                </>
+              )}
+            </p>
+          )}
         </div>
 
-        {groups.length > 0 && (
+        {hasAnything && (
           <div className="flex items-center">
             {namingDomain ? (
               <input
                 autoFocus
                 value={newDomain}
+                disabled={saving}
                 onChange={(e) => setNewDomain(e.target.value)}
-                onBlur={addDomain}
+                onBlur={() => void addDomain()}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     e.preventDefault();
-                    addDomain();
+                    void addDomain();
                   }
                   if (e.key === "Escape") {
                     setNamingDomain(false);
@@ -150,18 +146,18 @@ export function SurfaceAreaMapClient({
         )}
       </header>
 
-      {rendered.length === 0 ? (
+      {!hasAnything ? (
         <MapEmptyState />
       ) : (
         // Domains are separated by whitespace alone — no rules, no dividers.
         <div className="mt-6 space-y-6">
-          {rendered.map((group) => (
+          {groups.map((group) => (
             <DomainGroup
-              key={group.domain ?? "\u0000ungrouped"}
+              key={group.domainId ?? "ungrouped"}
               group={group}
-              expanded={!collapsed.has(group.domain)}
-              onToggle={() => toggle(group.domain)}
               domains={domains}
+              expanded={!collapsed.has(group.domainId)}
+              onToggle={() => toggle(group.domainId)}
             />
           ))}
         </div>

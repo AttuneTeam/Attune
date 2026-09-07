@@ -67,7 +67,7 @@ describe("POST /api/map/areas", () => {
 
   it("forces kind to area and takes manager_id from the session", async () => {
     const fake = setup(created)
-    const res = await POST(post({ title: "Agency handover", domain: "Platform" }))
+    const res = await POST(post({ title: "Agency handover" }))
     expect(res.status).toBe(200)
 
     expect(fake.queries).toHaveLength(1)
@@ -78,16 +78,33 @@ describe("POST /api/map/areas", () => {
       manager_id: "manager-1",
       kind: "area",
       title: "Agency handover",
-      domain: "Platform",
+      domain_id: null,
+      domain: null,
       parent_id: null,
       depth: 0,
     })
   })
 
-  it("treats a blank domain as ungrouped", async () => {
-    const fake = setup(created)
-    await POST(post({ title: "a", domain: "  " }))
-    expect((fake.queries[0].payload as { domain: unknown }).domain).toBeNull()
+  it("resolves the domain name so the retiring text column stays in step", async () => {
+    // migration 044 keeps `domain` live for one release. A reference written
+    // without its name would make the area invisible to any code still reading
+    // the text column during the deploy window.
+    const domainLookup: QueryResult = { data: { name: "Platform" }, error: null }
+    const fake = setup([domainLookup, created])
+    const res = await POST(post({ title: "a", domain_id: VALID_UUID }))
+    expect(res.status).toBe(200)
+    expect(fake.queries[0].table).toBe("map_domains")
+    expect(fake.queries[0].filters).toContainEqual({ column: "manager_id", value: "manager-1" })
+    expect(fake.queries[1].payload).toMatchObject({
+      domain_id: VALID_UUID,
+      domain: "Platform",
+    })
+  })
+
+  it("404s for a domain that is not the caller's", async () => {
+    setup([{ data: null, error: null }])
+    const res = await POST(post({ title: "a", domain_id: VALID_UUID }))
+    expect(res.status).toBe(404)
   })
 
   it("derives depth from the parent", async () => {

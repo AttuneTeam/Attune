@@ -326,7 +326,7 @@ area, so renaming rewrites every row and there is nowhere to record an order.
     - [x] Update `lib/supabase/types.ts`
     - [x] Confirm green
 
-- [ ] Task: Read the map from domain rows **[T]**
+- [~] Task: Read the map from domain rows **[T]**
     - [ ] Write failing tests — the query joins domains, and grouping orders by the
           manager's `sort_order` rather than alphabetically
     - [ ] Confirm red
@@ -335,7 +335,7 @@ area, so renaming rewrites every row and there is nowhere to record an order.
           row now makes unnecessary
     - [ ] Confirm green
 
-- [ ] Task: Domain write API **[T]**
+- [~] Task: Domain write API **[T]**
     - [ ] Write failing tests — create, rename, reorder and delete; 401; Zod validation;
           a name unique per manager; cross-tenant rejection; delete ungroups rather than
           removes

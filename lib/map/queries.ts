@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import type { DomainRef } from "./grouping"
 import type { AreaOwner, MapArea } from "./types"
 
 /**
@@ -19,6 +20,7 @@ export const MAP_AREA_SELECT = [
   "id",
   "title",
   "domain",
+  "domain_id",
   "parent_id",
   "depth",
   "kind",
@@ -77,4 +79,26 @@ export async function fetchMapAreas(
     ok: true,
     areas: rows.map((row) => ({ ...row, owner: normaliseOwner(row.owner) })),
   }
+}
+
+/**
+ * The manager's domains, in their order.
+ *
+ * Fetched separately rather than derived from the areas: FR10 makes an empty
+ * domain a real thing, and a domain with nothing in it would be invisible if
+ * the list came from the rows filed under it. Two constant-size queries, never
+ * one per row.
+ */
+export async function fetchMapDomains(
+  supabase: SupabaseClient,
+  managerId: string,
+): Promise<DomainRef[]> {
+  const { data } = await supabase
+    .from("map_domains")
+    .select("id, name, sort_order")
+    .eq("manager_id", managerId)
+    .order("sort_order", { ascending: true })
+    .order("name", { ascending: true })
+
+  return (data ?? []) as unknown as DomainRef[]
 }

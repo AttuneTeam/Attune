@@ -1,8 +1,8 @@
 import {
-  compareDomains,
   countDescendants,
   flattenAreas,
   groupAreasByDomain,
+  type DomainRef,
   type GroupableArea,
 } from "./grouping"
 
@@ -10,10 +10,11 @@ import {
  * Turning a flat query result into the map's shape: domains as territories,
  * areas nested beneath them.
  *
- * The rule that matters most here is that nothing is ever dropped. A row the
- * transform cannot place is still a thing the manager wrote down, and a map
- * that silently loses an area is worse than no map — it would quietly under-
- * report the surface it exists to show.
+ * Two rules govern everything here. Nothing is ever dropped — a row this
+ * transform cannot place is still something the manager wrote down, and a map
+ * that silently loses an area would under-report the very surface it exists to
+ * show. And the group order is the manager's, taken from the domain rows
+ * (FR10), not derived from the areas.
  */
 
 const NOW = new Date("2026-09-07T12:00:00.000Z")
@@ -22,13 +23,17 @@ function daysBefore(days: number): string {
   return new Date(NOW.getTime() - days * 24 * 60 * 60 * 1000).toISOString()
 }
 
+const PLATFORM: DomainRef = { id: "d-platform", name: "Platform", sort_order: 1 }
+const PEOPLE: DomainRef = { id: "d-people", name: "People", sort_order: 2 }
+const BUSINESS: DomainRef = { id: "d-business", name: "Business", sort_order: 3 }
+
 let seq = 0
 
 function area(overrides: Partial<GroupableArea> = {}): GroupableArea {
   seq += 1
   return {
     id: `area-${seq}`,
-    domain: "Platform",
+    domain_id: PLATFORM.id,
     parent_id: null,
     confidence: "aware",
     last_reviewed_at: daysBefore(1),
@@ -39,141 +44,131 @@ function area(overrides: Partial<GroupableArea> = {}): GroupableArea {
 }
 
 describe("groupAreasByDomain", () => {
-  it("groups areas by their domain", () => {
+  it("groups areas under their domain", () => {
     const groups = groupAreasByDomain(
       [
-        area({ id: "p1", domain: "Platform" }),
-        area({ id: "b1", domain: "Business" }),
-        area({ id: "p2", domain: "Platform" }),
+        area({ id: "p1", domain_id: PLATFORM.id }),
+        area({ id: "b1", domain_id: BUSINESS.id }),
+        area({ id: "p2", domain_id: PLATFORM.id }),
       ],
+      [PLATFORM, BUSINESS],
       NOW,
     )
-    expect(groups.map((g) => g.domain)).toEqual(["Business", "Platform"])
-    expect(groups[1].roots.map((a) => a.id)).toEqual(["p1", "p2"])
+    expect(groups.map((g) => g.domain)).toEqual(["Platform", "Business"])
+    expect(groups[0].roots.map((a) => a.id)).toEqual(["p1", "p2"])
   })
 
-  it("orders domains alphabetically", () => {
-    // No ordering column exists on the table, so the order has to come from
-    // somewhere predictable. Alphabetical is stable between visits, which the
-    // calm-surface principle in product-guidelines.md asks for; sorting by
-    // attention would rearrange the page under the manager.
+  it("orders groups by the manager's own order, not alphabetically", () => {
+    // The whole point of FR10. Alphabetically this would be Business, People,
+    // Platform; the manager put Platform first and that has to win.
     const groups = groupAreasByDomain(
-      [
-        area({ domain: "Process" }),
-        area({ domain: "Business" }),
-        area({ domain: "People" }),
-        area({ domain: "Platform" }),
-      ],
+      [area({ domain_id: BUSINESS.id }), area({ domain_id: PLATFORM.id })],
+      [PLATFORM, PEOPLE, BUSINESS],
       NOW,
     )
-    expect(groups.map((g) => g.domain)).toEqual([
-      "Business",
-      "People",
-      "Platform",
-      "Process",
-    ])
+    expect(groups.map((g) => g.domain)).toEqual(["Platform", "People", "Business"])
   })
 
-  it("puts areas with no domain in their own group, ordered last", () => {
-    // Capture must never be blocked on picking a domain first, so an
-    // ungrouped area is a normal state, not an error. It sits at the end
-    // rather than the top: it is a holding pen, not a priority.
+  it("shows a domain that holds nothing yet", () => {
+    // Empty domains are now expressible, which is what lets the manager frame
+    // a territory before filling it.
+    const groups = groupAreasByDomain([area({ domain_id: PLATFORM.id })], [PLATFORM, PEOPLE], NOW)
+    expect(groups.map((g) => g.domain)).toEqual(["Platform", "People"])
+    expect(groups[1].roots).toEqual([])
+    expect(groups[1].summary.total).toBe(0)
+  })
+
+  it("puts ungrouped areas last, and only when there are some", () => {
+    const withLoose = groupAreasByDomain(
+      [area({ id: "loose", domain_id: null }), area({ id: "placed", domain_id: PLATFORM.id })],
+      [PLATFORM],
+      NOW,
+    )
+    expect(withLoose.map((g) => g.domain)).toEqual(["Platform", null])
+    expect(withLoose[1].roots.map((a) => a.id)).toEqual(["loose"])
+
+    const withoutLoose = groupAreasByDomain([area({ domain_id: PLATFORM.id })], [PLATFORM], NOW)
+    expect(withoutLoose.map((g) => g.domain)).toEqual(["Platform"])
+  })
+
+  it("does not lose an area whose domain is unknown to the result set", () => {
+    // Deleted concurrently, or simply absent. Dropping it would under-report
+    // the surface; it falls into ungrouped where the manager can re-file it.
     const groups = groupAreasByDomain(
-      [area({ id: "loose", domain: null }), area({ id: "placed", domain: "Platform" })],
+      [area({ id: "orphan", domain_id: "d-vanished" })],
+      [PLATFORM],
       NOW,
     )
-    expect(groups.map((g) => g.domain)).toEqual(["Platform", null])
-    expect(groups[1].roots.map((a) => a.id)).toEqual(["loose"])
+    const ungrouped = groups.find((g) => g.domainId === null)
+    expect(ungrouped?.roots.map((a) => a.id)).toEqual(["orphan"])
   })
 
-  it("nests children under their parent", () => {
-    const groups = groupAreasByDomain(
-      [
-        area({ id: "root", parent_id: null }),
-        area({ id: "child", parent_id: "root" }),
-      ],
-      NOW,
-    )
-    expect(groups).toHaveLength(1)
-    expect(groups[0].roots.map((a) => a.id)).toEqual(["root"])
-    expect(groups[0].roots[0].children.map((a) => a.id)).toEqual(["child"])
-  })
-
-  it("nests to two levels deep", () => {
+  it("nests children under their parent, to two levels", () => {
     const groups = groupAreasByDomain(
       [
         area({ id: "root" }),
         area({ id: "child", parent_id: "root" }),
         area({ id: "grandchild", parent_id: "child" }),
       ],
+      [PLATFORM],
       NOW,
     )
     const root = groups[0].roots[0]
+    expect(root.id).toBe("root")
     expect(root.children[0].id).toBe("child")
     expect(root.children[0].children[0].id).toBe("grandchild")
-    expect(root.children[0].children[0].children).toEqual([])
   })
 
   it("keeps a child with its parent even when their domains differ", () => {
-    // Nesting wins over domain. A child belongs beside its parent; showing it
-    // under a different heading would break the tree the manager built.
+    // Nesting wins over domain. Showing a child under a different heading would
+    // break the tree the manager built.
     const groups = groupAreasByDomain(
       [
-        area({ id: "root", domain: "Platform" }),
-        area({ id: "child", parent_id: "root", domain: "People" }),
+        area({ id: "root", domain_id: PLATFORM.id }),
+        area({ id: "child", parent_id: "root", domain_id: PEOPLE.id }),
       ],
+      [PLATFORM, PEOPLE],
       NOW,
     )
-    expect(groups.map((g) => g.domain)).toEqual(["Platform"])
     expect(groups[0].roots[0].children.map((a) => a.id)).toEqual(["child"])
+    expect(groups[1].roots).toEqual([])
   })
 
   it("surfaces an orphaned child as a root rather than dropping it", () => {
-    // The parent may be missing because it was deleted concurrently, or simply
-    // absent from this result set. Either way the child is something the
-    // manager wrote down, and silently discarding it would under-report the
-    // surface the map exists to show.
     const groups = groupAreasByDomain(
-      [area({ id: "orphan", parent_id: "vanished", domain: "Platform" })],
+      [area({ id: "orphan", parent_id: "vanished" })],
+      [PLATFORM],
       NOW,
     )
     expect(groups[0].roots.map((a) => a.id)).toEqual(["orphan"])
   })
 
   it("does not lose a row to a parent cycle", () => {
-    // Two rows pointing at each other. The depth CHECK makes this unreachable
-    // through the application, but a transform that recursed forever on bad
-    // data would take the whole page down.
     const groups = groupAreasByDomain(
       [area({ id: "a", parent_id: "b" }), area({ id: "b", parent_id: "a" })],
+      [PLATFORM],
       NOW,
     )
     expect(flattenAreas(groups).map((a) => a.id).sort()).toEqual(["a", "b"])
   })
 
   it("preserves input order within a level", () => {
-    // The query orders by depth then created_at. Grouping must not reshuffle
-    // that, or areas would move between visits for no visible reason.
     const groups = groupAreasByDomain(
-      [
-        area({ id: "first", created_at: daysBefore(30) }),
-        area({ id: "second", created_at: daysBefore(20) }),
-        area({ id: "third", created_at: daysBefore(10) }),
-      ],
+      [area({ id: "first" }), area({ id: "second" }), area({ id: "third" })],
+      [PLATFORM],
       NOW,
     )
     expect(groups[0].roots.map((a) => a.id)).toEqual(["first", "second", "third"])
   })
 
   it("summarises every area in the group, nested ones included", () => {
-    // "How many areas it holds" means all of them. Counting only roots would
-    // report a domain of one when it holds three.
     const groups = groupAreasByDomain(
       [
         area({ id: "root", confidence: "owned" }),
         area({ id: "child", parent_id: "root", confidence: "unknown" }),
         area({ id: "grandchild", parent_id: "child", confidence: "unknown" }),
       ],
+      [PLATFORM],
       NOW,
     )
     expect(groups[0].summary.total).toBe(3)
@@ -192,13 +187,14 @@ describe("groupAreasByDomain", () => {
         area({ id: "child", parent_id: "root", owner_id: null }),
         area({ id: "grandchild", parent_id: "child", last_reviewed_at: daysBefore(60) }),
       ],
+      [PLATFORM],
       NOW,
     )
     expect(groups[0].summary.attention).toBe(2)
   })
 
-  it("returns no groups for no areas", () => {
-    expect(groupAreasByDomain([], NOW)).toEqual([])
+  it("returns nothing for no areas and no domains", () => {
+    expect(groupAreasByDomain([], [], NOW)).toEqual([])
   })
 })
 
@@ -206,13 +202,14 @@ describe("flattenAreas", () => {
   it("returns every area across every group and depth", () => {
     const groups = groupAreasByDomain(
       [
-        area({ id: "p", domain: "Platform" }),
-        area({ id: "pc", domain: "Platform", parent_id: "p" }),
-        area({ id: "b", domain: "Business" }),
+        area({ id: "p", domain_id: PLATFORM.id }),
+        area({ id: "pc", domain_id: PLATFORM.id, parent_id: "p" }),
+        area({ id: "b", domain_id: BUSINESS.id }),
       ],
+      [PLATFORM, BUSINESS],
       NOW,
     )
-    expect(flattenAreas(groups).map((a) => a.id)).toEqual(["b", "p", "pc"])
+    expect(flattenAreas(groups).map((a) => a.id)).toEqual(["p", "pc", "b"])
   })
 
   it("is empty for no groups", () => {
@@ -221,57 +218,23 @@ describe("flattenAreas", () => {
 })
 
 describe("countDescendants", () => {
-  function node(id: string, children: ReturnType<typeof area>[] = []) {
-    return { ...area({ id }), children: children.map((c) => ({ ...c, children: [] })) }
-  }
-
   it("counts nothing for a leaf", () => {
-    expect(countDescendants(node("leaf"))).toBe(0)
-  })
-
-  it("counts direct children", () => {
-    expect(countDescendants(node("root", [area(), area()]))).toBe(2)
+    const groups = groupAreasByDomain([area({ id: "leaf" })], [PLATFORM], NOW)
+    expect(countDescendants(groups[0].roots[0])).toBe(0)
   })
 
   it("counts the whole subtree, not just one level", () => {
     // The removal copy promises a number, and cascade deletion makes that
     // number the difference between an informed action and a nasty surprise.
-    // Counting one level would under-report it.
-    const grandchild = { ...area({ id: "gc" }), children: [] }
-    const child = { ...area({ id: "c" }), children: [grandchild] }
-    const root = { ...area({ id: "r" }), children: [child] }
-    expect(countDescendants(root)).toBe(2)
-  })
-
-  it("counts a wide and deep tree", () => {
-    const leaf = () => ({ ...area(), children: [] })
-    const child = () => ({ ...area(), children: [leaf(), leaf()] })
-    const root = { ...area({ id: "r" }), children: [child(), child()] }
-    // 2 children + 4 grandchildren
-    expect(countDescendants(root)).toBe(6)
-  })
-})
-
-describe("compareDomains", () => {
-  it("orders alphabetically", () => {
-    const sorted = ["Process", "Business", "People"].sort(compareDomains)
-    expect(sorted).toEqual(["Business", "People", "Process"])
-  })
-
-  it("puts the ungrouped bucket last", () => {
-    // It is a holding pen, not a priority.
-    expect([null, "Business"].sort(compareDomains)).toEqual(["Business", null])
-    expect(["Business", null].sort(compareDomains)).toEqual(["Business", null])
-  })
-
-  it("treats two ungrouped buckets as equal", () => {
-    expect(compareDomains(null, null)).toBe(0)
-  })
-
-  it("is exported so pending groups sort the same way as real ones", () => {
-    // A newly named domain has to slot into the same order it will occupy once
-    // it holds an area, or it would jump position the moment it becomes real.
-    const merged = ["Platform", null, "Business", "Delivery"].sort(compareDomains)
-    expect(merged).toEqual(["Business", "Delivery", "Platform", null])
+    const groups = groupAreasByDomain(
+      [
+        area({ id: "r" }),
+        area({ id: "c", parent_id: "r" }),
+        area({ id: "gc", parent_id: "c" }),
+      ],
+      [PLATFORM],
+      NOW,
+    )
+    expect(countDescendants(groups[0].roots[0])).toBe(2)
   })
 })

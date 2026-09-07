@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  const { title, domain = null, parent_id = null } = parsed.data
+  const { title, domain_id = null, parent_id = null } = parsed.data
 
   let depth = 0
   if (parent_id) {
@@ -62,13 +62,31 @@ export async function POST(req: NextRequest) {
     depth = parent.depth + 1
   }
 
+  // Resolve the domain name so the retiring `domain` text column stays in step
+  // for the one release it remains live (migration 044). Scoped to the caller,
+  // so a reference to another manager's domain is simply not found.
+  let domainName: string | null = null
+  if (domain_id) {
+    const { data: domain } = await supabase
+      .from("map_domains")
+      .select("name")
+      .eq("id", domain_id)
+      .eq("manager_id", user.id)
+      .single()
+    if (!domain) {
+      return NextResponse.json({ error: "Domain not found." }, { status: 404 })
+    }
+    domainName = (domain as { name: string }).name
+  }
+
   const { data, error } = await supabase
     .from("strategic_initiatives")
     .insert({
       manager_id: user.id,
       kind: "area",
       title,
-      domain,
+      domain_id,
+      domain: domainName,
       parent_id,
       depth,
     })

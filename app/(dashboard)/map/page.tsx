@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { groupAreasByDomain } from "@/lib/map/grouping";
-import { fetchMapAreas } from "@/lib/map/queries";
+import { fetchMapAreas, fetchMapDomains } from "@/lib/map/queries";
 import { SurfaceAreaMapClient } from "@/components/map/SurfaceAreaMapClient";
 import {
   COLLAPSED_DOMAINS_COOKIE,
@@ -24,7 +24,13 @@ export default async function MapPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const result = await fetchMapAreas(supabase, user.id);
+  // Two constant-size queries in parallel: the areas, and the domains. The
+  // domains are not derived from the areas because an empty domain must still
+  // appear (FR10).
+  const [result, domains] = await Promise.all([
+    fetchMapAreas(supabase, user.id),
+    fetchMapDomains(supabase, user.id),
+  ]);
 
   // An empty map and a map that failed to load must not look the same.
   if (!result.ok) {
@@ -47,7 +53,8 @@ export default async function MapPage() {
 
   return (
     <SurfaceAreaMapClient
-      groups={groupAreasByDomain(result.areas)}
+      groups={groupAreasByDomain(result.areas, domains)}
+      domains={domains}
       initialCollapsed={[...collapsed]}
     />
   );

@@ -55,17 +55,22 @@ describe("createAreaInput", () => {
     expect(createAreaInput.safeParse({ title: "x".repeat(201) }).success).toBe(false)
   })
 
-  it("treats a blank domain as ungrouped rather than a domain named ''", () => {
-    // Otherwise the map grows a heading with no name, which no grouping rule
-    // can sensibly place.
-    expect(createAreaInput.parse({ title: "a", domain: "" }).domain).toBeNull()
-    expect(createAreaInput.parse({ title: "a", domain: "   " }).domain).toBeNull()
+  it("accepts a domain reference, or none", () => {
+    // Null is ungrouped, which is a real state: capture must never be blocked
+    // on choosing a heading first.
+    expect(
+      createAreaInput.parse({ title: "a", domain_id: "6f1c9b34-4a2e-4c8f-9d21-1b2c3d4e5f60" })
+        .domain_id,
+    ).toBe("6f1c9b34-4a2e-4c8f-9d21-1b2c3d4e5f60")
+    expect(createAreaInput.parse({ title: "a", domain_id: null }).domain_id).toBeNull()
+    expect(createAreaInput.parse({ title: "a" }).domain_id).toBeUndefined()
   })
 
-  it("trims the domain", () => {
-    expect(createAreaInput.parse({ title: "a", domain: " Platform " }).domain).toBe(
-      "Platform",
-    )
+  it("refuses a domain name where a reference is expected", () => {
+    // Domains are rows now. Accepting a string would silently create an area
+    // that no group can claim.
+    expect(createAreaInput.safeParse({ title: "a", domain: "Platform" }).success).toBe(false)
+    expect(createAreaInput.safeParse({ title: "a", domain_id: "Platform" }).success).toBe(false)
   })
 
   it("requires parent_id to be a uuid when given", () => {
@@ -91,6 +96,7 @@ describe("createAreaInput", () => {
       { depth: 0 },
       { last_reviewed_at: NOW.toISOString() },
       { confidence: "owned" },
+      { domain: "Platform" },
     ]) {
       expect(
         createAreaInput.safeParse({ title: "a", ...field }).success,
@@ -132,6 +138,7 @@ describe("updateAreaInput", () => {
       { depth: 2 },
       { last_reviewed_at: NOW.toISOString() },
       { parent_id: "6f1c9b34-4a2e-4c8f-9d21-1b2c3d4e5f60" },
+      { domain: "Platform" },
     ]) {
       expect(
         updateAreaInput.safeParse(field).success,
@@ -163,7 +170,7 @@ describe("toAreaUpdate", () => {
     // Renaming an area is not looking at it. Treating it as a review would let
     // tidying up silently reset the staleness clock across the whole map.
     expect(toAreaUpdate({ title: "Renamed" }, NOW)).toEqual({ title: "Renamed" })
-    expect(toAreaUpdate({ domain: "People" }, NOW)).toEqual({ domain: "People" })
+    expect(toAreaUpdate({ domain_id: null }, NOW)).toEqual({ domain_id: null })
   })
 
   it("does not stamp a review for an ownership change", () => {

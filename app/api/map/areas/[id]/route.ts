@@ -34,9 +34,31 @@ export async function PATCH(req: NextRequest, { params }: Context) {
     )
   }
 
+  const patch = toAreaUpdate(parsed.data)
+
+  // Keep the retiring `domain` text column in step with the reference for the
+  // one release it remains live (migration 044).
+  if ("domain_id" in patch) {
+    const domainId = patch.domain_id as string | null
+    if (domainId === null) {
+      patch.domain = null
+    } else {
+      const { data: domain } = await supabase
+        .from("map_domains")
+        .select("name")
+        .eq("id", domainId)
+        .eq("manager_id", user.id)
+        .single()
+      if (!domain) {
+        return NextResponse.json({ error: "Domain not found." }, { status: 404 })
+      }
+      patch.domain = (domain as { name: string }).name
+    }
+  }
+
   const { data, error } = await supabase
     .from("strategic_initiatives")
-    .update(toAreaUpdate(parsed.data))
+    .update(patch)
     .eq("id", id)
     .eq("manager_id", user.id)
     .eq("kind", "area")

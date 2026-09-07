@@ -19,6 +19,7 @@ export type MapArea = Pick<
   | "id"
   | "title"
   | "domain"
+  | "domain_id"
   | "parent_id"
   | "depth"
   | "kind"

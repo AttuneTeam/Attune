@@ -3,7 +3,7 @@
 import { ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { COVERAGE_DOTS, filledCoverageDots } from "@/lib/map/coverage";
-import type { DomainGroup as DomainGroupData } from "@/lib/map/grouping";
+import type { DomainGroup as DomainGroupData, DomainRef } from "@/lib/map/grouping";
 import type { MapArea } from "@/lib/map/types";
 import { AreaRow } from "./AreaRow";
 import { CoverageDots } from "./CoverageDots";
@@ -34,10 +34,11 @@ export function DomainGroup({
   onToggle: () => void;
   now?: Date;
   /** Every domain on the map, so a row can offer to move an area elsewhere. */
-  domains: (string | null)[];
+  domains: readonly DomainRef[];
 }) {
-  const key = group.domain ?? "ungrouped";
-  const bodyId = `domain-${key}`;
+  // Keyed by id so a domain literally named "ungrouped" cannot collide with
+  // the ungrouped bucket.
+  const bodyId = `domain-${group.domainId ?? "none"}`;
   const { summary } = group;
 
   return (
@@ -113,7 +114,11 @@ export function DomainGroup({
           {/* Capture lives at the foot of the group it adds to, so the domain
               is implied by where you are typing rather than chosen from a
               dropdown. */}
-          <InlineAreaAdd domain={group.domain} className="mt-1" />
+          <InlineAreaAdd
+            domainId={group.domainId}
+            domainName={group.domain}
+            className="mt-1"
+          />
         </div>
       )}
     </section>

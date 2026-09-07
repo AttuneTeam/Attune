@@ -20,13 +20,16 @@ import { cn } from "@/lib/utils";
  * principle 7 rules out.
  */
 export function InlineAreaAdd({
-  domain,
+  domainId,
+  domainName,
   parentId,
   placeholder = "Add an area",
   className,
 }: {
   /** Undefined leaves the domain unset; null explicitly means ungrouped. */
-  domain?: string | null;
+  domainId?: string | null;
+  /** Only for the accessible label — the write uses the id. */
+  domainName?: string | null;
   parentId?: string;
   placeholder?: string;
   className?: string;
@@ -43,7 +46,7 @@ export function InlineAreaAdd({
     setSaving(true);
     const result = await createArea({
       title: trimmed,
-      ...(domain !== undefined ? { domain } : {}),
+      ...(domainId !== undefined ? { domain_id: domainId } : {}),
       ...(parentId !== undefined ? { parent_id: parentId } : {}),
     });
     setSaving(false);
@@ -76,7 +79,9 @@ export function InlineAreaAdd({
       }}
       placeholder={placeholder}
       aria-label={
-        parentId ? "Add an area beneath this one" : `Add an area to ${domain ?? "the map"}`
+        parentId
+          ? "Add an area beneath this one"
+          : `Add an area to ${domainName ?? "the map"}`
       }
       className={cn(
         // No border: a boxed field here would cut the row list in two. The

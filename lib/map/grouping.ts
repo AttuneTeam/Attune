@@ -5,46 +5,35 @@ import type { MapArea } from "./types"
  * Turns a flat query result into the map's shape: domains as territories, areas
  * nested beneath them.
  *
- * One rule governs everything here: nothing is ever dropped. A row this
- * transform cannot place is still something the manager wrote down, and a map
- * that silently loses an area would quietly under-report the very surface it
- * exists to show. Orphans and cycles therefore surface as roots rather than
- * disappearing.
+ * Two rules govern this module. Nothing is ever dropped — a row it cannot place
+ * is still something the manager wrote down, and a map that silently loses an
+ * area would quietly under-report the very surface it exists to show. And the
+ * group order is the manager's, taken from the domain rows (FR10), never
+ * derived from the areas.
  */
+
+/** The minimum a domain row must carry to head a group. */
+export type DomainRef = {
+  id: string
+  name: string
+  sort_order: number
+}
 
 /** The minimum an area must carry to be grouped, nested and summarised. */
 export type GroupableArea = Pick<
   MapArea,
-  "id" | "domain" | "parent_id" | "confidence" | "last_reviewed_at" | "created_at" | "owner_id"
+  "id" | "domain_id" | "parent_id" | "confidence" | "last_reviewed_at" | "created_at" | "owner_id"
 >
 
 export type AreaNode<T extends GroupableArea> = T & { children: AreaNode<T>[] }
 
 export type DomainGroup<T extends GroupableArea = MapArea> = {
-  /** Null is a real group: capture is never blocked on choosing a domain first. */
+  /** Null for the ungrouped bucket. */
+  domainId: string | null
+  /** Display name. Null for the ungrouped bucket. */
   domain: string | null
   roots: AreaNode<T>[]
   summary: CoverageSummary
-}
-
-/**
- * The order domain groups appear in: alphabetical, with the ungrouped bucket
- * last.
- *
- * Exported because the map also renders domains that do not exist yet — a
- * newly named group holds no areas until the first one is added. It has to
- * slot into the position it will occupy once it is real, or it would jump the
- * moment it stops being pending.
- *
- * Alphabetical rather than by attention: the order has to be predictable
- * between visits, and a page that rearranges itself around what is wrong works
- * against the calm surface product-guidelines.md asks for.
- */
-export function compareDomains(a: string | null, b: string | null): number {
-  if (a === b) return 0
-  if (a === null) return 1
-  if (b === null) return -1
-  return a.localeCompare(b)
 }
 
 /**
@@ -72,20 +61,19 @@ function hasCycle(start: GroupableArea, byId: Map<string, GroupableArea>): boole
 }
 
 /**
- * Groups areas by domain, nesting children under their parents.
+ * Groups areas under their domains, nesting children beneath their parents.
+ *
+ * Every domain gets a group, including one holding nothing — that is what lets
+ * a manager frame a territory before filling it, and it is why the domain list
+ * is passed in rather than derived from the areas.
  *
  * Nesting wins over domain: a child follows its parent's group even when its
  * own domain differs, because showing it under a different heading would break
  * the tree the manager built. Only roots decide which group they land in.
- *
- * Domains are ordered alphabetically with the ungrouped bucket last. There is
- * no ordering column on the table, so the order must come from somewhere
- * predictable — and predictable matters: sorting by attention would rearrange
- * the page between visits, against the calm-surface principle in
- * product-guidelines.md.
  */
 export function groupAreasByDomain<T extends GroupableArea>(
   areas: readonly T[],
+  domains: readonly DomainRef[],
   now: Date = new Date(),
 ): DomainGroup<T>[] {
   const byId = new Map<string, T>(areas.map((a) => [a.id, a]))
@@ -96,36 +84,61 @@ export function groupAreasByDomain<T extends GroupableArea>(
   const roots: AreaNode<T>[] = []
 
   // Input order is preserved within every level: the query orders by depth then
-  // created_at, and reshuffling here would move areas between visits for no
-  // visible reason.
-  for (const area of areas) {
-    const node = nodes.get(area.id)!
-    const parent = area.parent_id ? nodes.get(area.parent_id) : undefined
+  // the manager's sort_order, and reshuffling here would move areas between
+  // visits for no visible reason.
+  for (const item of areas) {
+    const node = nodes.get(item.id)!
+    const parent = item.parent_id ? nodes.get(item.parent_id) : undefined
 
-    if (parent && !hasCycle(area, byId)) {
+    if (parent && !hasCycle(item, byId)) {
       parent.children.push(node)
     } else {
       roots.push(node)
     }
   }
 
+  const known = new Set(domains.map((d) => d.id))
   const byDomain = new Map<string | null, AreaNode<T>[]>()
+
   for (const root of roots) {
-    const existing = byDomain.get(root.domain)
+    // An unknown domain id — deleted concurrently, or absent from this result
+    // set — falls into ungrouped rather than being dropped.
+    const key = root.domain_id && known.has(root.domain_id) ? root.domain_id : null
+    const existing = byDomain.get(key)
     if (existing) existing.push(root)
-    else byDomain.set(root.domain, [root])
+    else byDomain.set(key, [root])
   }
 
-  return [...byDomain.entries()]
-    .sort(([a], [b]) => compareDomains(a, b))
-    .map(([domain, groupRoots]) => ({
-      domain,
+  const ordered = [...domains].sort(
+    (a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name),
+  )
+
+  const groups: DomainGroup<T>[] = ordered.map((domain) => {
+    const groupRoots = byDomain.get(domain.id) ?? []
+    return {
+      domainId: domain.id,
+      domain: domain.name,
       roots: groupRoots,
       // Summarised over the whole subtree: "how many areas it holds" means all
       // of them, and counting only roots would report a domain of one when it
       // holds three.
       summary: summariseCoverage(collect(groupRoots), now),
-    }))
+    }
+  })
+
+  // The ungrouped bucket is a holding pen, not a territory: it appears only
+  // when something is in it, and always last.
+  const loose = byDomain.get(null)
+  if (loose && loose.length > 0) {
+    groups.push({
+      domainId: null,
+      domain: null,
+      roots: loose,
+      summary: summariseCoverage(collect(loose), now),
+    })
+  }
+
+  return groups
 }
 
 /** Every area in the given groups, depth-first, groups in order. */

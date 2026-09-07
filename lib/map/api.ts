@@ -1,4 +1,5 @@
 import type { CreateAreaInput, UpdateAreaInput } from "./areaInput"
+import type { CreateDomainInput, RenameDomainInput } from "./domainInput"
 
 /**
  * The client side of the area endpoints.
@@ -102,4 +103,28 @@ function pruneUndefined<T extends object>(input: T): Partial<T> {
   return Object.fromEntries(
     Object.entries(input).filter(([, value]) => value !== undefined),
   ) as Partial<T>
+}
+
+// ── Domains ───────────────────────────────────────────────────────────────
+
+export function createDomain(name: string): Promise<MutationResult> {
+  const input: CreateDomainInput = { name }
+  return send("/api/map/domains", "POST", input)
+}
+
+export function renameDomain(id: string, name: string): Promise<MutationResult> {
+  const input: RenameDomainInput = { name }
+  return send(`/api/map/domains/${id}`, "PATCH", input)
+}
+
+/**
+ * Removes the heading. The areas filed under it survive, ungrouped — callers
+ * should say so before asking.
+ */
+export function deleteDomain(id: string): Promise<MutationResult> {
+  return send(`/api/map/domains/${id}`, "DELETE")
+}
+
+export function moveDomain(id: string, direction: "up" | "down"): Promise<MutationResult> {
+  return send(`/api/map/domains/${id}/move`, "POST", { direction })
 }

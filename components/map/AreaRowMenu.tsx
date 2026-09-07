@@ -11,6 +11,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import type { DomainRef } from "@/lib/map/grouping";
 import { cn } from "@/lib/utils";
 
 /**
@@ -26,7 +27,7 @@ import { cn } from "@/lib/utils";
 export function AreaRowMenu({
   areaTitle,
   domains,
-  currentDomain,
+  currentDomainId,
   canNest,
   canMoveUp,
   canMoveDown,
@@ -39,8 +40,8 @@ export function AreaRowMenu({
 }: {
   areaTitle: string;
   /** Every domain currently on the map, so an area can be sent to one. */
-  domains: (string | null)[];
-  currentDomain: string | null;
+  domains: readonly DomainRef[];
+  currentDomainId: string | null;
   canNest: boolean;
   canMoveUp: boolean;
   canMoveDown: boolean;
@@ -48,10 +49,10 @@ export function AreaRowMenu({
   onAddChild: () => void;
   onRemove: () => void;
   onMove: (direction: "up" | "down") => void;
-  onMoveToDomain: (domain: string | null) => void;
+  onMoveToDomain: (domainId: string | null) => void;
   onNewDomain: () => void;
 }) {
-  const elsewhere = domains.filter((d) => d !== currentDomain);
+  const elsewhere = domains.filter((d) => d.id !== currentDomainId);
 
   return (
     <DropdownMenu>
@@ -97,14 +98,16 @@ export function AreaRowMenu({
           <DropdownMenuSubTrigger>Move to</DropdownMenuSubTrigger>
           <DropdownMenuSubContent>
             {elsewhere.map((domain) => (
-              <DropdownMenuItem
-                key={domain ?? " ungrouped"}
-                onClick={() => onMoveToDomain(domain)}
-              >
-                {domain ?? "Ungrouped"}
+              <DropdownMenuItem key={domain.id} onClick={() => onMoveToDomain(domain.id)}>
+                {domain.name}
               </DropdownMenuItem>
             ))}
-            {elsewhere.length > 0 && <DropdownMenuSeparator />}
+            {currentDomainId !== null && (
+              <DropdownMenuItem onClick={() => onMoveToDomain(null)}>
+                Ungrouped
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuSeparator />
             <DropdownMenuItem onClick={onNewDomain}>New domain</DropdownMenuItem>
           </DropdownMenuSubContent>
         </DropdownMenuSub>

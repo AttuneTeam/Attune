@@ -5,9 +5,9 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { formatReviewAge, isStale } from "@/lib/map/attention";
-import { countDescendants, type AreaNode } from "@/lib/map/grouping";
+import { countDescendants, type AreaNode, type DomainRef } from "@/lib/map/grouping";
 import type { MapArea } from "@/lib/map/types";
-import { deleteArea, moveArea, updateArea } from "@/lib/map/api";
+import { createDomain, deleteArea, moveArea, updateArea } from "@/lib/map/api";
 import { AreaRowMenu } from "./AreaRowMenu";
 import { ConfidenceControl } from "./ConfidenceControl";
 import { InlineAreaAdd } from "./InlineAreaAdd";
@@ -44,7 +44,7 @@ export function AreaRow({
   area: AreaNode<MapArea>;
   now?: Date;
   /** Every domain on the map, so this area can be sent to one. */
-  domains: (string | null)[];
+  domains: readonly DomainRef[];
   isFirst: boolean;
   isLast: boolean;
 }) {
@@ -111,7 +111,24 @@ export function AreaRow({
     }
     setNamingDomain(false);
     setNewDomain("");
-    await run(() => updateArea(area.id, { domain: trimmed }));
+    // Create the domain, then move this area into it. Two calls rather than
+    // one because a domain is now a row in its own right, and the manager may
+    // well want it whether or not this move succeeds.
+    if (busy) return;
+    setBusy(true);
+    const created = await createDomain(trimmed);
+    if (!created.ok) {
+      setBusy(false);
+      toast.error(created.message);
+      return;
+    }
+    const moved = await updateArea(area.id, { domain_id: created.id ?? null });
+    setBusy(false);
+    if (!moved.ok) {
+      toast.error(moved.message);
+      return;
+    }
+    router.refresh();
   }
 
   async function remove() {
@@ -208,7 +225,7 @@ export function AreaRow({
           <AreaRowMenu
             areaTitle={area.title}
             domains={domains}
-            currentDomain={area.domain}
+            currentDomainId={area.domain_id}
             canNest={canNest}
             canMoveUp={!isFirst}
             canMoveDown={!isLast}
@@ -216,7 +233,9 @@ export function AreaRow({
             onAddChild={() => setAddingChild(true)}
             onRemove={() => setConfirmingRemoval(true)}
             onMove={(direction) => void run(() => moveArea(area.id, direction))}
-            onMoveToDomain={(domain) => void run(() => updateArea(area.id, { domain }))}
+            onMoveToDomain={(domainId) =>
+              void run(() => updateArea(area.id, { domain_id: domainId }))
+            }
             onNewDomain={() => setNamingDomain(true)}
           />
         </div>

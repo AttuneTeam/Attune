@@ -18,15 +18,11 @@ const title = z
   .max(200, "That title is too long.")
 
 /**
- * A blank domain means ungrouped, not a domain named "". Otherwise the map
- * grows a heading with no name that no grouping rule can sensibly place.
+ * Areas reference a domain row (migration 044) rather than repeating its name.
+ * Null is ungrouped, which is a real state: capture must never be blocked on
+ * choosing a heading first.
  */
-const domain = z
-  .string()
-  .trim()
-  .max(80, "That domain name is too long.")
-  .nullable()
-  .transform((value) => (value === null || value === "" ? null : value))
+const domainId = z.string().uuid().nullable()
 
 // Derived from CONFIDENCE_ORDER rather than restated, so the schema and the
 // ranking used by the coverage summary cannot drift apart. The tuple keeps its
@@ -36,7 +32,7 @@ const confidence = z.enum(CONFIDENCE_ORDER)
 export const createAreaInput = z
   .object({
     title,
-    domain: domain.optional(),
+    domain_id: domainId.optional(),
     parent_id: z.string().uuid().nullable().optional(),
   })
   .strict()
@@ -46,7 +42,7 @@ export type CreateAreaInput = z.infer<typeof createAreaInput>
 export const updateAreaInput = z
   .object({
     title: title.optional(),
-    domain: domain.optional(),
+    domain_id: domainId.optional(),
     confidence: confidence.optional(),
     owner_id: z.string().uuid().nullable().optional(),
     /**
@@ -71,6 +67,9 @@ export type UpdateAreaInput = z.infer<typeof updateAreaInput>
  * or reassigning its owner are not reviews: treating them as such would let a
  * tidy-up session silently reset the staleness clock across the whole map,
  * destroying the one signal this feature exists to provide.
+ *
+ * The retiring `domain` text column is not set here. The route resolves the
+ * domain name and writes it alongside, so this stays a pure function.
  */
 export function toAreaUpdate(
   input: UpdateAreaInput,
@@ -79,7 +78,7 @@ export function toAreaUpdate(
   const patch: Record<string, unknown> = {}
 
   if (input.title !== undefined) patch.title = input.title
-  if (input.domain !== undefined) patch.domain = input.domain
+  if (input.domain_id !== undefined) patch.domain_id = input.domain_id
   if (input.owner_id !== undefined) patch.owner_id = input.owner_id
   if (input.confidence !== undefined) patch.confidence = input.confidence
 

@@ -10,6 +10,8 @@ import { createArea, deleteArea, moveArea, updateArea } from "./api"
  * when it answers with nothing at all.
  */
 
+const DOMAIN_ID = "6f1c9b34-4a2e-4c8f-9d21-1b2c3d4e5f60"
+
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
@@ -26,7 +28,7 @@ describe("createArea", () => {
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ id: "area-9" }))
     vi.stubGlobal("fetch", fetchMock)
 
-    const result = await createArea({ title: "Agency handover", domain: "Platform" })
+    const result = await createArea({ title: "Agency handover", domain_id: DOMAIN_ID })
     expect(result).toEqual({ ok: true, id: "area-9" })
 
     const [url, init] = fetchMock.mock.calls[0]
@@ -34,12 +36,12 @@ describe("createArea", () => {
     expect(init.method).toBe("POST")
     expect(JSON.parse(init.body)).toEqual({
       title: "Agency handover",
-      domain: "Platform",
+      domain_id: DOMAIN_ID,
     })
   })
 
   it("omits keys that were not supplied", async () => {
-    // The schema is strict, so sending domain: undefined as an explicit null
+    // The schema is strict, so sending domain_id: undefined as an explicit null
     // would change the meaning of the request.
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ id: "a" }))
     vi.stubGlobal("fetch", fetchMock)
