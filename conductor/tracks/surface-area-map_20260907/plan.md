@@ -308,23 +308,23 @@ Raised by the manager after Phase 3: create a domain from a dialog, rename a dom
 reorder domains. All three are one problem — a domain is a text string repeated on every
 area, so renaming rewrites every row and there is nowhere to record an order.
 
-- [ ] Task: `map_domains` table and area reference **[T]**
-    - [ ] Write failing RLS tests for the new table — one manager cannot read, write or
+- [x] Task: `map_domains` table and area reference **[T]** `2e84d13`
+    - [x] Write failing RLS tests for the new table — one manager cannot read, write or
           delete another's domains, and cannot point an area at another's domain
-    - [ ] Write failing tests for the backfill shape and for deletion leaving areas
+    - [x] Write failing tests for the backfill shape and for deletion leaving areas
           in place, ungrouped
-    - [ ] Confirm red
-    - [ ] Create the migration — `map_domains` (manager, name, sort_order), a
+    - [x] Confirm red
+    - [x] Create the migration — `map_domains` (manager, name, sort_order), a
           `domain_id` reference on `strategic_initiatives`, RLS on the new table, and an
           ownership trigger mirroring 041/042 so an area cannot reference another
           manager's domain
-    - [ ] Backfill a row per distinct (manager, domain) and set `domain_id`
-    - [ ] Keep the `domain` text column written alongside for one release — `workflow.md`
+    - [x] Backfill a row per distinct (manager, domain) and set `domain_id`
+    - [x] Keep the `domain` text column written alongside for one release — `workflow.md`
           forbids dropping a column in the release that stops using it
-    - [ ] `ON DELETE SET NULL`, so removing a domain ungroups its areas rather than
+    - [x] `ON DELETE SET NULL`, so removing a domain ungroups its areas rather than
           deleting them
-    - [ ] Update `lib/supabase/types.ts`
-    - [ ] Confirm green
+    - [x] Update `lib/supabase/types.ts`
+    - [x] Confirm green
 
 - [ ] Task: Read the map from domain rows **[T]**
     - [ ] Write failing tests — the query joins domains, and grouping orders by the
