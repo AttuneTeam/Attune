@@ -1,4 +1,4 @@
-import type { SupabaseClient } from "@supabase/supabase-js"
+import { fakeSupabase as fakeClient } from "@/lib/test-utils/fakeSupabase"
 import { MAP_AREA_SELECT, fetchMapAreas } from "./queries"
 
 /**
@@ -11,54 +11,6 @@ import { MAP_AREA_SELECT, fetchMapAreas } from "./queries"
  * render as an empty map, because "you have no areas" and "we could not load
  * your areas" are different sentences and only one of them is true.
  */
-
-type QueryResult = { data: unknown; error: { message: string } | null }
-
-type RecordedQuery = {
-  table: string
-  select: string | null
-  filters: Array<{ column: string; value: unknown }>
-  orders: Array<{ column: string; ascending?: boolean }>
-}
-
-/** Records the builder chain and resolves to a canned result. */
-function fakeClient(result: QueryResult) {
-  const queries: RecordedQuery[] = []
-
-  function builder(record: RecordedQuery) {
-    const chain = {
-      select(columns: string) {
-        record.select = columns
-        return chain
-      },
-      eq(column: string, value: unknown) {
-        record.filters.push({ column, value })
-        return chain
-      },
-      order(column: string, options?: { ascending?: boolean }) {
-        record.orders.push({ column, ascending: options?.ascending })
-        return chain
-      },
-      then<TResult1, TResult2 = never>(
-        onfulfilled?: ((value: QueryResult) => TResult1 | PromiseLike<TResult1>) | null,
-        onrejected?: ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null,
-      ): PromiseLike<TResult1 | TResult2> {
-        return Promise.resolve(result).then(onfulfilled, onrejected)
-      },
-    }
-    return chain
-  }
-
-  const client = {
-    from(table: string) {
-      const record: RecordedQuery = { table, select: null, filters: [], orders: [] }
-      queries.push(record)
-      return builder(record)
-    },
-  }
-
-  return { client: client as unknown as SupabaseClient, queries }
-}
 
 const OWNER = { id: "member-1", name: "Sam Okafor" }
 
