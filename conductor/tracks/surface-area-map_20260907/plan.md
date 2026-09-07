@@ -10,7 +10,7 @@ Task classification follows `workflow.md` §3:
 
 ---
 
-## Phase 1 — Data Foundation
+## Phase 1 — Data Foundation [checkpoint: 5a413fd]
 
 Schema and pure logic first, so every later phase builds on a tested base. Nothing
 user-facing ships in this phase. The known `parent_id` cross-tenant cascade defect is
@@ -86,7 +86,7 @@ closed before any new nesting is built on top of it.
     - [x] Implement `lib/map/coverage.ts`
     - [x] Confirm green — 107/107 node, 128/128 full suite
 
-- [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
+- [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`) `5a413fd`
 
 ---
 
