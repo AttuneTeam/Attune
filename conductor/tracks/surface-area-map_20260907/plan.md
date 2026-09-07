@@ -236,6 +236,45 @@ The map becomes usable. After this phase you can populate it by hand and keep it
     - [ ] **Open:** both themes and keyboard operation (Escape to cancel, focus landing
           on Remove) — to be checked in the browser before the Phase 3 checkpoint
 
+- [ ] Task: Manual ordering — `sort_order` column and swap function **[T]**
+    - [ ] Write failing RLS tests: `sort_order` is isolated across tenants, and one
+          manager cannot reorder another's areas through the swap function
+    - [ ] Write failing tests asserting the list query orders by `sort_order` before
+          `created_at`, and that grouping preserves it
+    - [ ] Confirm red
+    - [ ] Create `supabase/migrations/043_area_sort_order.sql` — add `sort_order`,
+          backfill sequentially per (manager, parent, domain) by `created_at` so the
+          current order is preserved exactly, and add a `move_area` function that swaps
+          two siblings in one statement, running as the caller so RLS still applies
+    - [ ] Update `lib/map/queries.ts`, `lib/map/grouping.ts` and
+          `lib/supabase/types.ts`
+    - [ ] Confirm green, and confirm two areas cannot end up sharing a position
+
+- [ ] Task: Reorder API **[T]**
+    - [ ] Write failing tests — 401 unauthenticated; direction validated; 404 for an
+          area that is not the caller's; a no-op at the top and bottom of a group
+    - [ ] Confirm red
+    - [ ] Implement the route over the `move_area` function
+    - [ ] Confirm green, both success and failure paths
+
+- [ ] Task: Inline rename **[V]**
+    - [ ] Make the row title editable in place — Enter commits, Escape reverts, blur
+          commits
+    - [ ] Confirm a rename does **not** change `last_reviewed_at` (already enforced by
+          `toAreaUpdate`; assert it end to end)
+    - [ ] Keep the typed title on failure, as quick-add does
+    - [ ] Verify keyboard operation, both themes, all breakpoints
+
+- [ ] Task: Move to another domain **[V]**
+    - [ ] Add a row action listing existing domains, plus a new domain and "Ungrouped"
+    - [ ] Confirm descendants move with a root
+    - [ ] Verify keyboard operation and both themes
+
+- [ ] Task: Reorder controls **[V]**
+    - [ ] Add move up / move down to the row, disabled at the ends of a group
+    - [ ] Confirm the order survives a reload
+    - [ ] Verify keyboard operation, both themes, and usability at mobile width
+
 - [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
 ---

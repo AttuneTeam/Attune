@@ -80,6 +80,8 @@ added before any new nesting is built on top of it.
 A new route `/map`, added to the sidebar in `components/Sidebar.tsx`.
 
 - Lists every row where `kind = 'area'`, grouped by `domain`.
+- Areas appear in the manager's own order within a group (FR9); domain groups are
+  ordered alphabetically with the ungrouped bucket last.
 - Domains are free text. When the map is empty, four starters are offered — Platform,
   People, Business, Process — as suggestions the manager can accept, rename, or ignore.
   Nothing is written until they act.
@@ -175,6 +177,35 @@ indicator.
 
 ---
 
+### FR9 — Editing, moving and ordering
+
+Added after Phase 3 was demonstrated: capture and removal alone left the map
+read-mostly, and a second brain has to be malleable. Renaming and re-grouping
+were already accepted by the API and simply had no interface.
+
+**Inline rename.** An area's title is editable in place from the row. Enter commits,
+Escape reverts, and blurring commits. A rename explicitly does **not** stamp a review —
+tidying up titles must never reset the staleness clock across the map.
+
+**Move between domains.** A row action offers the manager's existing domains, plus a
+new one and "Ungrouped". Moving a root takes its descendants with it, since nesting
+already wins over domain (FR2).
+
+**Manual ordering.** Areas carry an explicit order within their group, set by the
+manager rather than derived. This replaces ordering by creation date, and reverses the
+earlier decision to rely on it.
+
+- Ordering is expressed as "move up" / "move down" on the row, not drag-and-drop.
+  Every screen in this product is verified at mobile width, and dragging inside a
+  scrolling list is poor on touch; up/down works identically on desktop and phone and
+  is reachable from the keyboard. Drag-and-drop may be added later as an enhancement,
+  never as the only mechanism.
+- The swap happens in one database function so two rows cannot end up sharing a
+  position, and it runs as the caller so Row-Level Security still applies.
+- **Domain groups remain alphabetical**, with the ungrouped bucket last. Domains are a
+  text column rather than rows, so giving them an order needs a model they do not have;
+  that stays out of scope.
+
 ## Non-Functional Requirements
 
 ### Design
@@ -233,7 +264,14 @@ built, not after.
     components.
 14. The full UI checklist from `workflow.md` passes in both themes and at all three
     breakpoints.
-15. `npm run lint`, `npx tsc --noEmit` and `CI=true npm test` all pass.
+15. An area's title can be renamed from the row, and the rename does **not** change
+    `last_reviewed_at`.
+16. An area can be moved to another domain, to a new domain, or to ungrouped, and its
+    descendants move with it.
+17. Areas can be reordered within their group by the manager, the order survives a
+    reload, and two areas can never occupy the same position.
+18. Reordering and moving are both operable by keyboard and usable at mobile width.
+19. `npm run lint`, `npx tsc --noEmit` and `CI=true npm test` all pass.
 
 ---
 
@@ -244,6 +282,14 @@ built, not after.
   exist. This boundary is what keeps the feature inside `product.md`'s non-goals.
 - **A freeform spatial canvas.** No x/y node positions, no connectors, no pan and zoom.
   The map is a structured outline, not a whiteboard.
+- **Drag-and-drop.** Considered for FR9 and deliberately not built: it is unusable on
+  touch inside a scrolling list, and this product verifies every screen at mobile width.
+  A candidate later enhancement alongside up/down, never replacing it.
+- **Re-parenting an area by moving it.** FR9 moves areas between domains, not under a
+  different parent. `parent_id` on update stays refused, since changing it requires
+  recalculating depth for a whole subtree and guarding against cycles.
+- **Ordering domain groups.** Domains are a text column, not rows, so they have nowhere
+  to carry an order. Alphabetical stands.
 - **Markdown import/export.** Considered and deferred; a candidate follow-up track once
   the map has been in real use.
 - **Interaction signals driving attention.** Explicitly excluded per FR6. Revisit only
