@@ -1,8 +1,13 @@
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { groupAreasByDomain } from "@/lib/map/grouping";
 import { fetchMapAreas } from "@/lib/map/queries";
 import { SurfaceAreaMapClient } from "@/components/map/SurfaceAreaMapClient";
+import {
+  COLLAPSED_DOMAINS_COOKIE,
+  parseCollapsedDomains,
+} from "@/lib/map/collapse";
 
 /**
  * The Surface Area Map.
@@ -33,5 +38,17 @@ export default async function MapPage() {
     );
   }
 
-  return <SurfaceAreaMapClient groups={groupAreasByDomain(result.areas)} />;
+  // Read server-side so collapsed domains are correct on first paint. Reading
+  // it after hydration would show everything expanded and then snap it shut.
+  const cookieStore = await cookies();
+  const collapsed = parseCollapsedDomains(
+    cookieStore.get(COLLAPSED_DOMAINS_COOKIE)?.value,
+  );
+
+  return (
+    <SurfaceAreaMapClient
+      groups={groupAreasByDomain(result.areas)}
+      initialCollapsed={[...collapsed]}
+    />
+  );
 }

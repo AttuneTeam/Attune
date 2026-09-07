@@ -1,6 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import {
+  persistCollapsedDomains,
+  type CollapsedDomains,
+} from "@/lib/map/collapse";
 import type { DomainGroup as DomainGroupData } from "@/lib/map/grouping";
 import type { MapArea } from "@/lib/map/types";
 import { DomainGroup } from "./DomainGroup";
@@ -12,23 +16,29 @@ import { MapEmptyState } from "./MapEmptyState";
  * Owns which domains are collapsed. Nothing else on this screen holds state
  * yet — capture, confidence and ownership arrive in Phase 3 — so the component
  * stays a thin shell over the tested transforms in lib/map/.
+ *
+ * The collapsed set arrives from the server as an array (a Set does not
+ * serialise across the boundary) so the first paint is already correct.
  */
 export function SurfaceAreaMapClient({
   groups,
+  initialCollapsed = [],
 }: {
   groups: DomainGroupData<MapArea>[];
+  initialCollapsed?: (string | null)[];
 }) {
-  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const [collapsed, setCollapsed] = useState<CollapsedDomains>(
+    () => new Set(initialCollapsed),
+  );
 
-  const keyOf = (group: DomainGroupData<MapArea>) => group.domain ?? "ungrouped";
-
-  const toggle = (key: string) => {
-    setCollapsed((current) => {
-      const next = new Set(current);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      return next;
-    });
+  const toggle = (domain: string | null) => {
+    // Computed outside the updater: persisting inside it would fire twice
+    // under StrictMode's double invocation.
+    const next = new Set(collapsed);
+    if (next.has(domain)) next.delete(domain);
+    else next.add(domain);
+    setCollapsed(next);
+    persistCollapsedDomains(next);
   };
 
   const totalAreas = groups.reduce((sum, g) => sum + g.summary.total, 0);
@@ -64,17 +74,14 @@ export function SurfaceAreaMapClient({
       ) : (
         // Domains are separated by whitespace alone — no rules, no dividers.
         <div className="mt-10 space-y-10">
-          {groups.map((group) => {
-            const key = keyOf(group);
-            return (
-              <DomainGroup
-                key={key}
-                group={group}
-                expanded={!collapsed.has(key)}
-                onToggle={() => toggle(key)}
-              />
-            );
-          })}
+          {groups.map((group) => (
+            <DomainGroup
+              key={group.domain ?? "\u0000ungrouped"}
+              group={group}
+              expanded={!collapsed.has(group.domain)}
+              onToggle={() => toggle(group.domain)}
+            />
+          ))}
         </div>
       )}
     </div>
