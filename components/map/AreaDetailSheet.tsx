@@ -130,7 +130,11 @@ export function AreaDetailSheet({
                 // the no-1px-border rule governs sectioning the UI, not form
                 // controls. Padding is a fraction of the full-page editor's:
                 // in a drawer, 32px of gutter leaves almost no line length.
-                <div className="rounded-md border border-input focus-within:border-ring">
+                //
+                // dark:border-border because the sheet is bg-popover (#36402a)
+                // and --input is #344023 in dark: near-identical, so the border
+                // vanished. --border (#45502e) is a real step against it.
+                <div className="rounded-md border border-input focus-within:border-ring dark:border-border">
                   <StrategyTiptapEditor
                     initiativeId={area.id}
                     initialContent={detail.description}
