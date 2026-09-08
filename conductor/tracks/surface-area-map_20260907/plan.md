@@ -491,11 +491,4 @@ against a working map means the accept path has somewhere real to land.
     - [ ] Confirm the product boundary holds: no due dates, no statuses, no board
           semantics crept in during implementation
 
-- [ ] Task: Drop the retiring `domain` text column **[T]**
-    - [ ] Confirm nothing reads `strategic_initiatives.domain` for areas any more
-    - [ ] Remove the name-resolution writes from the area and domain routes
-    - [ ] Migration dropping the column, in a release after 044 shipped — the
-          two-release rule in `workflow.md`
-    - [ ] Update `lib/supabase/types.ts` and confirm green
-
 - [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)

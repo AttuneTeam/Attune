@@ -61,6 +61,14 @@ Identified during implementation, to be planned separately:
     Deliberately not fixed inside this track — it affects every card in the product, so
     it would change screens far outside the map's scope and make this branch much harder
     to review.
+-   **Drop the retiring `strategic_initiatives.domain` text column.** Migration 044
+    added `domain_id` and kept the text column written alongside, because
+    `workflow.md` forbids dropping a column in the release that stops using it —
+    migrations run before the application deploys, so the old code is still reading it
+    during that window. This track *is* the release that stops using it, so the drop
+    belongs to the next one. It needs: confirming nothing reads it for areas, removing
+    the name-resolution writes from the area and domain routes, the migration, and a
+    `lib/supabase/types.ts` update.
 -   **Anchor `sr-only` labels app-wide.** Tailwind's `sr-only` is
     `position: absolute`; without a positioned ancestor it resolves against the
     document rather than the scroll container, silently extending page height. This
