@@ -10,13 +10,31 @@ import { useCallback, useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import type { Json } from "@/lib/supabase/types";
+import { cn } from "@/lib/utils";
+
+/** Full-page defaults. The drawer on /map overrides both — see AreaDetailSheet. */
+const DEFAULT_CONTENT_CLASS = "min-h-[400px] px-8 py-6";
+const DEFAULT_FOOTER_CLASS = "px-8 py-2 border-t";
 
 interface Props {
   initiativeId: string;
   initialContent: Json | null;
+  /**
+   * Padding and minimum height for the editable area. Defaulted so the
+   * full-page initiative editor is unchanged; the map's drawer passes something
+   * far tighter, where 32px of gutter would leave almost no line length.
+   */
+  contentClassName?: string;
+  /** The word-count footer, for the same reason. */
+  footerClassName?: string;
 }
 
-export function StrategyTiptapEditor({ initiativeId, initialContent }: Props) {
+export function StrategyTiptapEditor({
+  initiativeId,
+  initialContent,
+  contentClassName = DEFAULT_CONTENT_CLASS,
+  footerClassName = DEFAULT_FOOTER_CLASS,
+}: Props) {
   const saveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isSaving = useRef(false);
 
@@ -64,8 +82,10 @@ export function StrategyTiptapEditor({ initiativeId, initialContent }: Props) {
     },
     editorProps: {
       attributes: {
-        class:
-          "prose prose-neutral dark:prose-invert max-w-none focus:outline-none min-h-[400px] px-8 py-6",
+        class: cn(
+          "prose prose-neutral dark:prose-invert max-w-none focus:outline-none",
+          contentClassName,
+        ),
       },
     },
   });
@@ -82,7 +102,7 @@ export function StrategyTiptapEditor({ initiativeId, initialContent }: Props) {
     <div className="flex flex-col flex-1">
       <FormattingBubbleMenu editor={editor} />
       <EditorContent editor={editor} className="flex-1" />
-      <div className="px-8 py-2 border-t text-xs text-muted-foreground flex gap-4">
+      <div className={cn("text-xs text-muted-foreground flex gap-4", footerClassName)}>
         <span>{wordCount} words</span>
         <span className="ml-auto opacity-50">Auto-saved</span>
       </div>

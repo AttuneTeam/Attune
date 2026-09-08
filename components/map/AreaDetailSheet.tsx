@@ -125,10 +125,19 @@ export function AreaDetailSheet({
               ) : (
                 // Auto-saves with debounce. No Save button in the editing path
                 // — zero-friction capture applies here as much as to quick-add.
-                <StrategyTiptapEditor
-                  initiativeId={area.id}
-                  initialContent={detail.description}
-                />
+                // Bordered like every other editable field here
+                // (components/ui/input and textarea both use border-input) —
+                // the no-1px-border rule governs sectioning the UI, not form
+                // controls. Padding is a fraction of the full-page editor's:
+                // in a drawer, 32px of gutter leaves almost no line length.
+                <div className="rounded-md border border-input focus-within:border-ring">
+                  <StrategyTiptapEditor
+                    initiativeId={area.id}
+                    initialContent={detail.description}
+                    contentClassName="min-h-40 px-3 py-2"
+                    footerClassName="px-3 py-1.5"
+                  />
+                </div>
               )}
             </div>
           </section>
