@@ -43,5 +43,5 @@ Identified during implementation, to be planned separately:
 
 -   **Constrain `strategic_initiatives.parent_id` to the caller's own rows.** Closed by
     migration `041_initiative_parent_ownership.sql` in track
-    [`surface-area-map_20260907`](../../tracks/surface-area-map_20260907/index.md), which
+    [`surface-area-map_20260907`](../surface-area-map_20260907/index.md), which
     builds on that nesting and so made the cascade path routine rather than rare.
