@@ -411,7 +411,7 @@ Attune's map rather than a generic outline.
 
 ---
 
-## Phase 6 — AI Brain Dump
+## Phase 6 — AI Brain Dump [checkpoint: 576d2f6]
 
 Bulk capture. Deliberately last: the map is fully usable without it, and building it
 against a working map means the accept path has somewhere real to land.
@@ -454,7 +454,7 @@ against a working map means the accept path has somewhere real to land.
     - [x] Confirm existing areas and any typed text are left untouched
     - [x] Verify by forcing a failure response
 
-- [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
+- [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`) `576d2f6`
 
 ---
 
