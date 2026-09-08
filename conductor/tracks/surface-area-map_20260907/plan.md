@@ -353,7 +353,7 @@ area, so renaming rewrites every row and there is nowhere to record an order.
 
 - [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`) `97d397d`
 
-## Phase 5 — Area Detail: Notes, Owner, Linked Conversations
+## Phase 5 — Area Detail: Notes, Owner, Linked Conversations [checkpoint: a54186c]
 
 Depth behind progressive disclosure, and the connection to interactions that makes this
 Attune's map rather than a generic outline.
@@ -407,7 +407,7 @@ Attune's map rather than a generic outline.
     - [x] Verify the empty case reads plainly
     - [x] Verify both themes and all breakpoints
 
-- [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
+- [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`) `a54186c`
 
 ---
 
