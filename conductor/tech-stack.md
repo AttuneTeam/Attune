@@ -165,6 +165,11 @@ These are Next.js 16 / `@base-ui` behaviours that break code written from memory
 - **No `Database` generic on the Supabase client** — row types are hand-written in
   `lib/supabase/types.ts`.
 
+-   **Tailwind `sr-only` is `position: absolute`.** Without a positioned ancestor it
+    resolves against the document, not the scroll container, and silently extends page
+    height — a screenful of per-row labels produced a second scrollbar on `/map` straight
+    through the shell's `h-screen overflow-hidden`. Give the label's parent `relative`.
+
 ## Excluded from the build
 
 `mcp/` is excluded in `tsconfig.json` and is not part of the application build.
