@@ -458,7 +458,7 @@ against a working map means the accept path has somewhere real to land.
 
 ---
 
-## Phase 7 — Hardening and Documentation
+## Phase 7 — Hardening and Documentation [checkpoint: 60955ec]
 
 - [x] Task: Accessibility and responsive pass **[V]**
     - [ ] **Open:** complete the whole map flow keyboard-only — the browser automation
@@ -513,4 +513,4 @@ against a working map means the accept path has somewhere real to land.
     - [x] Confirm the product boundary holds — no due dates, statuses, swimlanes or
           drag semantics anywhere in the map's code
 
-- [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
+- [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`) `60955ec`

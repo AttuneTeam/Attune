@@ -6,7 +6,7 @@ Central registry of all tracks. Each entry links to that track's workspace.
 
 ## Active
 
-- [~] **Track: Surface Area Map** — a compact map of the manager's whole accountable
+- [x] **Track: Surface Area Map** — a compact map of the manager's whole accountable
   surface, with confidence and coverage axes on the existing initiative tree
   *Link: [`tracks/surface-area-map_20260907/`](./tracks/surface-area-map_20260907/index.md)*
 
