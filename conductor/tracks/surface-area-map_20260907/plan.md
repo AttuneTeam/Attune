@@ -514,3 +514,9 @@ against a working map means the accept path has somewhere real to land.
           drag semantics anywhere in the map's code
 
 - [x] Task: Phase Verification & Checkpoint (Refer to `workflow.md`) `60955ec`
+
+---
+
+## Phase: Review Fixes
+
+- [x] Task: Apply review suggestions `c1111e4`
