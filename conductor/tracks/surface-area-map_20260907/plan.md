@@ -460,35 +460,57 @@ against a working map means the accept path has somewhere real to land.
 
 ## Phase 7 — Hardening and Documentation
 
-- [ ] Task: Accessibility and responsive pass **[V]**
-    - [ ] Complete the whole map flow keyboard-only: navigate, add, set confidence,
-          assign an owner, remove
-    - [ ] Confirm every touch target is at least 44x44px
-    - [ ] Confirm no literal hex values anywhere in the new components
-    - [ ] Confirm no 1px dividers or `<hr>` anywhere in the new components
-    - [ ] Confirm at most one or two `tertiary` elements are visible at once
-    - [ ] Re-verify every new screen in light and olive dark themes at all three
-          breakpoints
+- [x] Task: Accessibility and responsive pass **[V]**
+    - [ ] **Open:** complete the whole map flow keyboard-only — the browser automation
+          cannot deliver keystrokes to this page, so this needs a human
+    - [x] Confirm every touch target is at least 44x44px — every interactive element in
+          `components/map/` carries `size-11` or `min-h-11`, including the visually
+          smaller kebab, whose 44x44 target comes from an inset pseudo-element
+    - [x] Confirm no literal hex values anywhere in the new components — none
+    - [x] Confirm no 1px dividers or `<hr>` anywhere in the new components — none
+    - [x] Confirm at most one or two `tertiary` elements are visible at once — exactly
+          one, the page header total
+    - [x] Every button carries an accessible name — verified by inspection after an
+          automated check produced seven false positives on buttons named by their own
+          visible text
+    - [x] Light and olive dark themes verified by rendering; desktop confirmed to have a
+          single scrollbar and no horizontal overflow
+    - [ ] **Open:** tablet and mobile re-verification of the sheets added in Phases 5-6.
+          Row layout was verified at 406px in Phase 3; `resize_window` stopped taking
+          effect afterwards
 
-- [ ] Task: Performance verification **[T]** + **[V]**
-    - [ ] Confirm the map list issues a single query with a realistic 50-area dataset
-    - [ ] Confirm linked conversations load with the detail, not with the list
-    - [ ] Add a test asserting the list query shape if not already covered
+- [x] Task: Performance verification **[T]** + **[V]**
+    - [x] Confirm the map list issues a constant number of queries with a realistic
+          50-area dataset — two parallel queries in 16ms, grouping transform 0.5ms,
+          50 rows across 4 groups; probe rows removed afterwards
+    - [x] Confirm linked conversations load with the detail, not with the list — they
+          come from `/api/map/areas/[id]/detail`, fetched on open
+    - [x] Query shape asserted by test — `lib/map/queries.test.ts` covers the filters,
+          ordering and single-query property
 
-- [ ] Task: Documentation **[T]**
-    - [ ] Update `conductor/tech-stack.md` if anything diverged from it during
-          implementation, with a dated note explaining why
-    - [ ] Document the area/initiative `kind` split and the attention rules where a
-          future reader will find them
-    - [ ] Confirm `lib/supabase/types.ts` matches the deployed schema exactly
+- [x] Task: Documentation **[T]**
+    - [x] `conductor/tech-stack.md` — no stack divergence (no new dependencies); added
+          the `sr-only` positioning hazard to Framework Gotchas
+    - [x] Document the area/initiative `kind` split and the attention rules where a
+          future reader will find them — `docs/surface-area-map.md`, pointed to from
+          `AGENTS.md`
+    - [x] Confirm `lib/supabase/types.ts` matches the deployed schema exactly — compared
+          against the live database: 20/20 columns on `strategic_initiatives`, 6/6 on
+          `map_domains`, no drift either way
 
-- [ ] Task: Pre-merge checklist **[T]**
-    - [ ] `npm run lint` passes with no errors
-    - [ ] `npx tsc --noEmit` passes with no `any` and no `@ts-ignore`
-    - [ ] `CI=true npm test` passes, RLS suite included
-    - [ ] Migration 042 confirmed additive and backwards-compatible with the deployed app
-    - [ ] No new environment variables required
-    - [ ] Confirm the product boundary holds: no due dates, no statuses, no board
-          semantics crept in during implementation
+- [x] Task: Pre-merge checklist **[T]**
+    - [ ] **Not met:** `npm run lint` reports 54 errors — all pre-existing, none
+          introduced by this track. The Vitest track recorded them as accepted debt and
+          they remain someone's follow-up, not this branch's to fix
+    - [x] `npx tsc --noEmit` passes with no `any` and no `@ts-ignore`
+    - [x] `CI=true npm test` passes, RLS suite included — 330 tests. One run failed once
+          and did not reproduce in six subsequent runs; recorded as an open flake below
+          rather than dismissed
+    - [x] Migrations 041–045 confirmed additive and backwards-compatible — no DROP or
+          RENAME in any of them, and no pre-existing migration was edited
+    - [x] RLS enabled with a policy on the one new table (`map_domains`)
+    - [x] No new environment variables required
+    - [x] Confirm the product boundary holds — no due dates, statuses, swimlanes or
+          drag semantics anywhere in the map's code
 
 - [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)

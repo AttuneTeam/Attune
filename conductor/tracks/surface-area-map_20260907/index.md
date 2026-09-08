@@ -61,6 +61,13 @@ Identified during implementation, to be planned separately:
     Deliberately not fixed inside this track — it affects every card in the product, so
     it would change screens far outside the map's scope and make this branch much harder
     to review.
+-   **Chase an unidentified intermittent test failure.** One full-suite run reported
+    1 failed / 329 passed during Phase 7. It did not reproduce in six subsequent runs
+    (three RLS-only, three full), and the failing test's name was lost to output
+    filtering, so it could not be identified. The RLS suite shares one local database
+    and this session was also driving the app and running probe scripts against it, so
+    interference is the most likely explanation — but that is a hypothesis, not a
+    diagnosis. Worth watching for in CI before trusting the suite as flake-free.
 -   **Drop the retiring `strategic_initiatives.domain` text column.** Migration 044
     added `domain_id` and kept the text column written alongside, because
     `workflow.md` forbids dropping a column in the release that stops using it —
