@@ -84,20 +84,21 @@ export function groupAreasByDomain<T extends GroupableArea>(
   now: Date = new Date(),
 ): DomainGroup<T>[] {
   const byId = new Map<string, T>(areas.map((a) => [a.id, a]))
-  const nodes = new Map<string, AreaNode<T>>(
-    areas.map((a) => [a.id, { ...a, children: [] } as AreaNode<T>]),
-  )
+  // Built as a list first, then indexed. Iterating the list rather than
+  // looking each node back up removes a `!` assertion that was only safe
+  // because the map came from the same array.
+  const nodeList = areas.map((a) => ({ ...a, children: [] }) as AreaNode<T>)
+  const nodes = new Map<string, AreaNode<T>>(nodeList.map((n) => [n.id, n]))
 
   const roots: AreaNode<T>[] = []
 
   // Input order is preserved within every level: the query orders by depth then
   // the manager's sort_order, and reshuffling here would move areas between
   // visits for no visible reason.
-  for (const item of areas) {
-    const node = nodes.get(item.id)!
-    const parent = item.parent_id ? nodes.get(item.parent_id) : undefined
+  for (const node of nodeList) {
+    const parent = node.parent_id ? nodes.get(node.parent_id) : undefined
 
-    if (parent && !hasCycle(item, byId)) {
+    if (parent && !hasCycle(node, byId)) {
       parent.children.push(node)
     } else {
       roots.push(node)

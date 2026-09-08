@@ -52,6 +52,8 @@ export function AreaDetailSheet({
   members,
   detail,
   loading,
+  failed,
+  onRetry,
   open,
   onOpenChange,
 }: {
@@ -60,6 +62,9 @@ export function AreaDetailSheet({
   /** Loaded by whoever opened the sheet; null until it arrives. */
   detail: AreaDetail | null;
   loading: boolean;
+  /** The load failed. Distinct from "still loading" and from "loaded, empty". */
+  failed: boolean;
+  onRetry: () => void;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
@@ -98,7 +103,24 @@ export function AreaDetailSheet({
               Notes
             </p>
             <div className="mt-2">
-              {loading || !detail ? (
+              {failed ? (
+                <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">
+                    These notes could not be loaded. Nothing has been changed.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={onRetry}
+                    className={cn(
+                      "min-h-11 rounded-md px-3 text-[11px] font-medium text-primary",
+                      "hover:bg-accent/30",
+                      "focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
+                    )}
+                  >
+                    Try again
+                  </button>
+                </div>
+              ) : loading || !detail ? (
                 <p className="text-sm text-muted-foreground">Loading</p>
               ) : (
                 // Auto-saves with debounce. No Save button in the editing path
@@ -115,7 +137,11 @@ export function AreaDetailSheet({
             <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
               Linked conversations
             </p>
-            {detail && linked.length === 0 ? (
+            {failed ? (
+              <p className="mt-2 text-sm text-muted-foreground">
+                Linked conversations could not be loaded.
+              </p>
+            ) : detail && linked.length === 0 ? (
               <p className="mt-2 text-sm text-muted-foreground">
                 No 1-on-1 has been linked to this area yet.
               </p>

@@ -62,6 +62,7 @@ export function AreaRow({
   const [detailOpen, setDetailOpen] = useState(false);
   const [detail, setDetail] = useState<AreaDetail | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
+  const [detailFailed, setDetailFailed] = useState(false);
   const [namingDomain, setNamingDomain] = useState(false);
   const [newDomain, setNewDomain] = useState("");
   const [busy, setBusy] = useState(false);
@@ -149,11 +150,15 @@ export function AreaRow({
     setDetailOpen(true);
     if (detail || loadingDetail) return;
     setLoadingDetail(true);
+    setDetailFailed(false);
     try {
       const res = await fetch(`/api/map/areas/${area.id}/detail`);
       if (!res.ok) throw new Error(String(res.status));
       setDetail((await res.json()) as AreaDetail);
     } catch {
+      // Recorded in state, not just a toast. A toast disappears and would
+      // leave the panel sitting on "Loading" with nothing to explain it.
+      setDetailFailed(true);
       toast.error("Could not load this area.");
     } finally {
       setLoadingDetail(false);
@@ -281,6 +286,8 @@ export function AreaRow({
         members={members}
         detail={detail}
         loading={loadingDetail}
+        failed={detailFailed}
+        onRetry={() => void openDetail()}
         open={detailOpen}
         onOpenChange={setDetailOpen}
       />

@@ -13,6 +13,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
+import { summariseAcceptOutcome } from "@/lib/map/acceptOutcome";
 import { createArea, createDomain } from "@/lib/map/api";
 import type { AreaSuggestion } from "@/lib/map/suggestSchema";
 import type { DomainRef } from "@/lib/map/grouping";
@@ -94,9 +95,14 @@ export function BrainDumpSheet({
 
     setProgress({ done: 0, total: kept.length });
 
+    // A domain that fails to create would otherwise leave its areas filed as
+    // ungrouped with no mention of it — the manager accepted a grouped
+    // proposal and would silently receive a flat one.
+    const failedDomains: string[] = [];
     for (const name of missing) {
       const created = await createDomain(name);
       if (created.ok && created.id) byName.set(name, created.id);
+      else failedDomains.push(name);
     }
 
     let added = 0;
@@ -116,12 +122,10 @@ export function BrainDumpSheet({
     reset();
     router.refresh();
 
-    // Reports what actually happened, including the part that did not.
-    toast.success(
-      failed === 0
-        ? `Added ${added} ${added === 1 ? "area" : "areas"}.`
-        : `Added ${added}, but ${failed} could not be saved.`,
-    );
+    // Reports what actually happened, including the parts that did not.
+    const outcome = summariseAcceptOutcome({ added, failed, failedDomains });
+    if (outcome.ok) toast.success(outcome.message);
+    else toast.error(outcome.message);
   }
 
   function update(index: number, patch: Partial<Draft>) {
@@ -195,7 +199,11 @@ export function BrainDumpSheet({
                       }
                       aria-label={`Domain for suggestion ${i + 1}`}
                       className={cn(
-                        "min-h-11 rounded-md bg-transparent px-2 text-[11px]",
+                        // bg-background/text-foreground rather than transparent:
+                        // the other native selects in this codebase set both, and
+                        // a transparent control inherits whatever the platform
+                        // picks in the olive dark theme.
+                        "min-h-11 rounded-md bg-background px-2 text-[11px] text-foreground",
                         "focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
                       )}
                     >

@@ -75,6 +75,10 @@ export function DomainGroup({
   // Keyed by id so a domain literally named "ungrouped" cannot collide with
   // the ungrouped bucket.
   const bodyId = `domain-${group.domainId ?? "none"}`;
+  // Narrowed once into a local so TypeScript carries the non-null through the
+  // callbacks below. Reading group.domainId inside them would need a
+  // non-null assertion at every call site.
+  const domainId = group.domainId;
   const { summary } = group;
 
   return (
@@ -111,7 +115,7 @@ export function DomainGroup({
           Coverage {filledCoverageDots(summary.score)} of {COVERAGE_DOTS}
         </span>
 
-        {group.domainId !== null && (
+        {domainId !== null && (
           <DropdownMenu>
             <DropdownMenuTrigger
               render={
@@ -140,14 +144,14 @@ export function DomainGroup({
                   vanishes makes the manager wonder what they did wrong. */}
               <DropdownMenuItem
                 disabled={isFirst}
-                onClick={() => void run(() => moveDomain(group.domainId!, "up"))}
+                onClick={() => void run(() => moveDomain(domainId, "up"))}
               >
                 <ArrowUp className="size-3.5" />
                 Move up
               </DropdownMenuItem>
               <DropdownMenuItem
                 disabled={isLast}
-                onClick={() => void run(() => moveDomain(group.domainId!, "down"))}
+                onClick={() => void run(() => moveDomain(domainId, "down"))}
               >
                 <ArrowDown className="size-3.5" />
                 Move down
@@ -180,15 +184,18 @@ export function DomainGroup({
         </span>
       </div>
 
-      {group.domainId !== null && (
+      {domainId !== null && (
         <DomainDialog
           open={renaming}
           onOpenChange={setRenaming}
-          domain={{ id: group.domainId, name: group.domain ?? "" }}
+          domain={{ id: domainId, name: group.domain ?? "" }}
         />
       )}
 
-      {confirmingRemoval && (
+      {/* Also gated on domainId: it can only be armed from the menu, which
+          the ungrouped bucket never renders, but stating it lets TypeScript
+          carry the narrowing instead of needing an assertion. */}
+      {confirmingRemoval && domainId !== null && (
         <div
           className="mt-2 flex flex-wrap items-center gap-3 rounded-md bg-surface-dim px-3 py-2"
           onKeyDown={(e) => {
@@ -209,7 +216,7 @@ export function DomainGroup({
               type="button"
               autoFocus
               disabled={busy}
-              onClick={() => void run(() => deleteDomain(group.domainId!))}
+              onClick={() => void run(() => deleteDomain(domainId))}
               className={cn(
                 "min-h-11 rounded-md px-3 text-[11px] font-medium text-destructive",
                 "hover:bg-accent/30 disabled:opacity-50",
