@@ -416,43 +416,43 @@ Attune's map rather than a generic outline.
 Bulk capture. Deliberately last: the map is fully usable without it, and building it
 against a working map means the accept path has somewhere real to land.
 
-- [ ] Task: Prompt and structured output schema **[T]**
-    - [ ] Write failing tests for the Zod schema — valid proposal parses; missing
+- [x] Task: Prompt and structured output schema **[T]** `576d2f6`
+    - [x] Write failing tests for the Zod schema — valid proposal parses; missing
           fields, wrong types and extra fields are rejected
-    - [ ] Write failing tests for prompt construction, including existing domains passed
+    - [x] Write failing tests for prompt construction, including existing domains passed
           as context
-    - [ ] Confirm red
-    - [ ] Add the prompt to `lib/ai/prompts.ts` — propose areas only; never set
+    - [x] Confirm red
+    - [x] Add the prompt to `lib/ai/prompts.ts` — propose areas only; never set
           confidence; never assign an owner; never invent an area not traceable to the
           input; when in doubt return less
-    - [ ] Implement the schema in `lib/map/suggestSchema.ts`
-    - [ ] Confirm green
+    - [x] Implement the schema in `lib/map/suggestSchema.ts`
+    - [x] Confirm green
 
-- [ ] Task: Suggestion API route **[T]**
-    - [ ] Write failing tests in `app/api/map/suggest/route.test.ts` — 401 when
+- [x] Task: Suggestion API route **[T]** `576d2f6`
+    - [x] Write failing tests in `app/api/map/suggest/route.test.ts` — 401 when
           unauthenticated; input validated with Zod; OpenAI mocked, never called for
           real; malformed AI output rejected with a clear error; **the route writes
           nothing to the database**
-    - [ ] Confirm red
-    - [ ] Implement `app/api/map/suggest/route.ts` with the OpenAI client constructed
+    - [x] Confirm red
+    - [x] Implement `app/api/map/suggest/route.ts` with the OpenAI client constructed
           inside the handler, not at module level
-    - [ ] Confirm green, both success and failure paths
+    - [x] Confirm green, both success and failure paths
 
-- [ ] Task: Brain dump UI **[V]**
-    - [ ] Build `components/map/BrainDumpSheet.tsx` — paste box and Suggest action
-    - [ ] Build the editable review list — retitle, reassign domain, remove a suggestion
-    - [ ] Accept writes exactly the accepted set; Discard writes nothing and leaves no
+- [x] Task: Brain dump UI **[V]** `576d2f6`
+    - [x] Build `components/map/BrainDumpSheet.tsx` — paste box and Suggest action
+    - [x] Build the editable review list — retitle, reassign domain, remove a suggestion
+    - [x] Accept writes exactly the accepted set; Discard writes nothing and leaves no
           trace
-    - [ ] Verify with 30-50 items pasted at once that the list stays readable and the
+    - [x] Verify with 30-50 items pasted at once that the list stays readable and the
           layout holds
-    - [ ] Verify both themes, all breakpoints, keyboard accessible, loading state during
+    - [x] Verify both themes, all breakpoints, keyboard accessible, loading state during
           the AI call
 
-- [ ] Task: AI failure handling **[V]**
-    - [ ] Show a plain `sonner` toast on failure or malformed output — calm wording, no
+- [x] Task: AI failure handling **[V]** `576d2f6`
+    - [x] Show a plain `sonner` toast on failure or malformed output — calm wording, no
           alarm language
-    - [ ] Confirm existing areas and any typed text are left untouched
-    - [ ] Verify by forcing a failure response
+    - [x] Confirm existing areas and any typed text are left untouched
+    - [x] Verify by forcing a failure response
 
 - [ ] Task: Phase Verification & Checkpoint (Refer to `workflow.md`)
 
