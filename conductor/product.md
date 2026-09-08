@@ -100,6 +100,7 @@ to people.
 | Semantic search | pgvector similarity search across the full history of conversations |
 | Team pulse | Sentiment trends, coverage gaps, and themes rolled up across the team |
 | Strategies & initiatives | Nested strategic initiatives, with signals extracted from interactions |
+| Surface area map | The manager's whole accountable territory as domains and nested areas, each carrying a confidence level and a coverage signal. Surfaces what has gone unreviewed or unowned, and links areas to the 1-on-1s that touched them |
 | Roles & goals | Role definitions, role areas, and per-member goals |
 | Daily briefing | Assembled context for the day ahead |
 | Workshop | Persona-based analysis and synthesis space |
@@ -111,6 +112,13 @@ to people.
 The product is a working application, deployed to Vercel with Supabase migrations
 applied via GitHub Actions on push to `main`. It is beyond prototype and in active
 feature development.
+
+The `strategic_initiatives` table now serves two lenses, separated by a `kind`
+discriminator: strategic initiatives at `/initiatives`, and the surface area map's areas
+at `/map`. They share nesting, Row-Level Security and the interaction-signal join, which
+is why the map can show which 1-on-1s touched an area without anything being entered
+twice. Domains became rows of their own in the same work. See
+`docs/surface-area-map.md` for the invariants that span those migrations.
 
 **Known documentation drift:** `ARCHITECTURE.md` describes an earlier shape of the
 product ("meetings", four migrations, an internal single-user tool). The codebase has
