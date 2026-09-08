@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus } from "lucide-react";
+import { Plus, Sparkles } from "lucide-react";
 import {
   persistCollapsedDomains,
   type CollapsedDomains,
@@ -10,6 +10,7 @@ import type { DomainGroup as DomainGroupData, DomainRef } from "@/lib/map/groupi
 import type { MapArea } from "@/lib/map/types";
 import { cn } from "@/lib/utils";
 import type { OwnerOption } from "./AreaOwnerPicker";
+import { BrainDumpSheet } from "./BrainDumpSheet";
 import { DomainDialog } from "./DomainDialog";
 import { DomainGroup } from "./DomainGroup";
 import { MapEmptyState } from "./MapEmptyState";
@@ -43,6 +44,7 @@ export function SurfaceAreaMapClient({
     () => new Set(initialCollapsed),
   );
   const [creatingDomain, setCreatingDomain] = useState(false);
+  const [brainDumping, setBrainDumping] = useState(false);
 
   function toggle(domainId: string | null) {
     // Computed outside the updater: persisting inside it would fire twice
@@ -84,7 +86,21 @@ export function SurfaceAreaMapClient({
           )}
         </div>
 
-        {hasAnything && (
+        <div className="flex flex-wrap items-center gap-1">
+          <button
+            type="button"
+            onClick={() => setBrainDumping(true)}
+            className={cn(
+              "flex min-h-11 items-center gap-2 rounded-md px-3 text-[11px] font-medium",
+              "text-muted-foreground transition-colors hover:bg-accent/30 hover:text-foreground",
+              "focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
+            )}
+          >
+            <Sparkles className="size-3.5" />
+            Brain dump
+          </button>
+
+          {hasAnything && (
           <button
             type="button"
             onClick={() => setCreatingDomain(true)}
@@ -97,10 +113,16 @@ export function SurfaceAreaMapClient({
             <Plus className="size-3.5" />
             New domain
           </button>
-        )}
+          )}
+        </div>
       </header>
 
       <DomainDialog open={creatingDomain} onOpenChange={setCreatingDomain} />
+      <BrainDumpSheet
+        domains={domains}
+        open={brainDumping}
+        onOpenChange={setBrainDumping}
+      />
 
       {!hasAnything ? (
         <MapEmptyState />
