@@ -36,6 +36,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useMobileNav } from "@/components/layout/MobileNavContext";
+import { OrganizationSwitcher, type Organization } from "@/components/organizations/OrganizationSwitcher";
 
 const navItems = [
   { href: "/dashboard", label: "Home", icon: LayoutDashboard },
@@ -57,10 +58,14 @@ type Member = { id: string; name: string; relationship?: string | null };
 export function Sidebar({
   profile,
   members,
+  organizations = [],
+  activeOrganizationId = null,
   defaultCollapsed = false,
 }: {
   profile: Profile | null;
   members: Member[];
+  organizations?: Organization[];
+  activeOrganizationId?: string | null;
   defaultCollapsed?: boolean;
 }) {
   const pathname = usePathname();
@@ -165,6 +170,10 @@ export function Sidebar({
             </button>
           )}
         </div>
+
+        {!collapsed && organizations.length > 0 && (
+          <OrganizationSwitcher organizations={organizations} activeId={activeOrganizationId} />
+        )}
 
         {/* Nav */}
         <nav

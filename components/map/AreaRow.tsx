@@ -1,12 +1,13 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { formatReviewAge, isStale } from "@/lib/map/attention";
 import { countDescendants, type AreaNode, type DomainRef } from "@/lib/map/grouping";
 import type { MapArea } from "@/lib/map/types";
+import type { Json } from "@/lib/supabase/types";
 import { createDomain, deleteArea, moveArea, updateArea } from "@/lib/map/api";
 import { AreaDetailSheet, type AreaDetail } from "./AreaDetailSheet";
 import type { OwnerOption } from "./AreaOwnerPicker";
@@ -73,6 +74,10 @@ export function AreaRow({
   const descendants = countDescendants(area);
   const router = useRouter();
   const indent = { paddingLeft: area.depth * INDENT };
+
+  const updateCachedDescription = useCallback((description: Json) => {
+    setDetail((current) => (current ? { ...current, description } : current));
+  }, []);
 
   async function run(action: () => Promise<{ ok: boolean; message?: string }>) {
     if (busy) return;
@@ -288,6 +293,7 @@ export function AreaRow({
         loading={loadingDetail}
         failed={detailFailed}
         onRetry={() => void openDetail()}
+        onDescriptionSaved={updateCachedDescription}
         open={detailOpen}
         onOpenChange={setDetailOpen}
       />

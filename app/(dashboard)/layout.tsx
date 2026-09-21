@@ -24,6 +24,26 @@ export default async function DashboardLayout({
     role: 'manager',
   }, { onConflict: 'id', ignoreDuplicates: true })
 
+  // A new account receives a private organisation. Existing accounts were
+  // backfilled by migration 046, so this is only an onboarding safeguard.
+  let { data: memberships } = await supabase
+    .from('organization_memberships')
+    .select('organization_id')
+    .eq('user_id', user.id)
+  if (!memberships?.length) {
+    await supabase.rpc('create_organization', {
+      organization_name: `${user.user_metadata?.full_name ?? user.email?.split('@')[0] ?? 'My'} organisation`,
+    })
+    ;({ data: memberships } = await supabase
+      .from('organization_memberships')
+      .select('organization_id')
+      .eq('user_id', user.id))
+  }
+  const organizationIds = (memberships ?? []).map((membership: { organization_id: string }) => membership.organization_id)
+  const { data: organizations } = organizationIds.length
+    ? await supabase.from('organizations').select('id, name').in('id', organizationIds).order('created_at')
+    : { data: [] }
+
   const [{ data: profile }, { data: members }] = await Promise.all([
     supabase.from('profiles').select('*').eq('id', user.id).single(),
     supabase.from('team_members').select('id, name, relationship').order('name'),
@@ -34,7 +54,7 @@ export default async function DashboardLayout({
 
   return (
     <>
-      <DashboardShell sidebar={<Sidebar profile={profile} members={members ?? []} defaultCollapsed={sidebarCollapsed} />}>
+      <DashboardShell sidebar={<Sidebar profile={profile} members={members ?? []} organizations={organizations ?? []} activeOrganizationId={cookieStore.get('active-organization-id')?.value ?? null} defaultCollapsed={sidebarCollapsed} />}>
         {children}
       </DashboardShell>
       <Toaster />

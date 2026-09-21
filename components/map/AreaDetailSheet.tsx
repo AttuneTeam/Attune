@@ -54,6 +54,7 @@ export function AreaDetailSheet({
   loading,
   failed,
   onRetry,
+  onDescriptionSaved,
   open,
   onOpenChange,
 }: {
@@ -65,6 +66,8 @@ export function AreaDetailSheet({
   /** The load failed. Distinct from "still loading" and from "loaded, empty". */
   failed: boolean;
   onRetry: () => void;
+  /** Keeps the caller's fetched drawer detail current after an auto-save. */
+  onDescriptionSaved: (description: Json) => void;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
@@ -136,8 +139,10 @@ export function AreaDetailSheet({
                 // vanished. --border (#45502e) is a real step against it.
                 <div className="rounded-md border border-input focus-within:border-ring dark:border-border">
                   <StrategyTiptapEditor
+                    key={area.id}
                     initiativeId={area.id}
                     initialContent={detail.description}
+                    onSaved={onDescriptionSaved}
                     contentClassName="min-h-40 px-3 py-2"
                     footerClassName="px-3 py-1.5"
                   />
