@@ -33,6 +33,7 @@ import {
 import { format } from "date-fns";
 import type { StrategicInitiative } from "@/lib/supabase/types";
 import { createClient } from "@/lib/supabase/client";
+import { fetchInitiativeChildren } from "@/lib/initiatives/queries";
 import { toast } from "sonner";
 import { InitiativeSignalsSummary } from "./InitiativeSignalsSummary";
 
@@ -95,17 +96,12 @@ function SubInitiativeList({
 
   useEffect(() => {
     const supabase = createClient();
-    supabase
-      .from("strategic_initiatives")
-      .select(
-        "id, title, status, updated_at, depth, parent_id, manager_id, description, tags, domain, horizon, source_chat_id, created_at",
-      )
-      .eq("parent_id", parentId)
-      .order("created_at", { ascending: true })
-      .then(({ data }) => {
-        setChildren((data ?? []) as StrategicInitiative[]);
-        setLoading(false);
-      });
+    // Excludes areas: nothing in the schema stops an area being parented under
+    // an initiative, and such a row would otherwise render in this editor.
+    fetchInitiativeChildren(supabase, parentId).then((rows) => {
+      setChildren(rows);
+      setLoading(false);
+    });
   }, [parentId]);
 
   const handleCreate = async () => {

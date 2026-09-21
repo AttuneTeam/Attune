@@ -28,11 +28,6 @@ Identified during implementation, to be planned separately:
     `spec.md`).
 -   **Component testing.** The `jsdom` project is configured but empty. Adding it
     requires resolving the `@vitejs/plugin-react` / `@babel/core@^8` peer conflict.
--   **Constrain `strategic_initiatives.parent_id` to the caller's own rows.** The policy
-    checks only `manager_id`, so manager A can parent a row they own into manager B's
-    tree. Not a data leak (verified), but `parent_id` is `ON DELETE CASCADE`, so B
-    deleting their initiative silently deletes A's row — one tenant destroying another's
-    data. Needs a `WITH CHECK` on `parent_id` ownership or a trigger.
 -   **Re-embed historical interactions.** Vectors in the `embeddings` table were
     generated before the `extractPlainText` fix (`59c0bdb`) and encode split
     sentences with no paragraph boundaries. Newly embedded content is correct;
@@ -43,3 +38,10 @@ Identified during implementation, to be planned separately:
     timeout, offline) propagate to the caller. `project-rules.md` requires graceful
     degradation. Needs a product decision — silently returning `[]` also hides genuine
     misconfiguration — and the same review applies to the other six adapters.
+
+## Resolved Follow-ups
+
+-   **Constrain `strategic_initiatives.parent_id` to the caller's own rows.** Closed by
+    migration `041_initiative_parent_ownership.sql` in track
+    [`surface-area-map_20260907`](../surface-area-map_20260907/index.md), which
+    builds on that nesting and so made the cascade path routine rather than rare.

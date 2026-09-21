@@ -1,0 +1,21 @@
+{
+  "id": "surface-area-map_20260907",
+  "title": "Surface Area Map",
+  "type": "feature",
+  "status": "complete",
+  "created_at": "2026-09-07",
+  "updated_at": "2026-09-08",
+  "phases": 7,
+  "tasks": 46,
+  "branch": "feature/surface-area-map",
+  "checkpoints": {
+    "Phase 1 \u2014 Data Foundation": "5a413fd",
+    "Phase 2 \u2014 Read Path: The Map View": "8398428",
+    "Phase 3 \u2014 Write Path: Capture, Confidence, Removal": "13e5a60",
+    "Phase 4 \u2014 Domains as First-Class Entities": "97d397d",
+    "Phase 5 \u2014 Area Detail: Notes, Owner, Linked Conversations": "a54186c",
+    "Phase 6 \u2014 AI Brain Dump": "576d2f6",
+    "Phase 7 \u2014 Hardening and Documentation": "60955ec"
+  },
+  "completed_at": "2026-09-08"
+}

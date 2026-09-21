@@ -610,6 +610,38 @@ export type WorkshopSession = {
   created_at: string
 }
 
+/**
+ * A domain on the Surface Area Map — a territory heading.
+ *
+ * A row rather than a string repeated on every area, so it can be renamed once
+ * and ordered by the manager. Areas reference it by `domain_id`; the older
+ * `domain` text column is still written for one release, since migrations run
+ * before the application deploys.
+ */
+export type MapDomain = {
+  id: string
+  manager_id: string
+  name: string
+  /** The manager's own order. Assigned by trigger on insert; 1 or greater. */
+  sort_order: number
+  created_at: string
+  updated_at: string
+}
+
+/**
+ * Separates the Surface Area Map's areas from strategic initiatives. Both share
+ * one tree, one RLS policy and one set of interaction signals; `kind` is what
+ * decides which lens a row belongs to. Defaults to 'initiative' in the database
+ * so rows written without it keep their existing meaning.
+ */
+export type InitiativeKind = 'area' | 'initiative'
+
+/**
+ * How well the manager holds an area — not progress on a task. Ordered from
+ * least to most held; `lib/map/coverage.ts` owns the ranking.
+ */
+export type AreaConfidence = 'unknown' | 'aware' | 'understood' | 'owned'
+
 export type StrategicInitiative = {
   id: string
   manager_id: string
@@ -622,6 +654,30 @@ export type StrategicInitiative = {
   source_chat_id: string | null
   parent_id: string | null
   depth: number
+  kind: InitiativeKind
+  confidence: AreaConfidence
+  /** Null means never reviewed — the staleness signal falls back to created_at. */
+  last_reviewed_at: string | null
+  /** A team_members id. Null is meaningful: an unowned area surfaces on the map. */
+  owner_id: string | null
+  /**
+   * The manager holds this area themselves. Mutually exclusive with `owner_id`
+   * at the database level — an area has one owner or none, and "mine" and
+   * "nobody's" must stay distinguishable (FR8).
+   */
+  owned_by_manager: boolean
+  /**
+   * Position within the sibling group — same manager, same parent, and for
+   * roots the same domain. Assigned by a trigger on insert; 0 is the
+   * "not set" sentinel, so a real position is always 1 or greater.
+   */
+  sort_order: number
+  /**
+   * The domain this area belongs to (migration 044). Null means ungrouped,
+   * which is a real state rather than an error. Supersedes `domain`, which is
+   * kept in step for one release and then removed.
+   */
+  domain_id: string | null
   created_at: string
   updated_at: string
 }

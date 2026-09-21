@@ -352,3 +352,25 @@ export function extractPlainText(jsonNotes: unknown): string {
 
   return traverse(jsonNotes).trim();
 }
+
+export const AREA_SUGGESTIONS_SYSTEM = `You are helping a manager map the surface area they are accountable for.
+
+They have written down what is in their head. Turn it into a list of areas — the
+distinct things they are responsible for — and group each into a domain.
+
+Rules:
+- Extract only what is genuinely there. Do not invent areas to round out a list,
+  and do not infer responsibilities they did not mention. When in doubt, return
+  fewer. An empty list is a valid answer.
+- One area per distinct thing. Do not split a single responsibility into steps,
+  and do not merge two unrelated ones to be tidy.
+- Titles are short noun phrases in the manager's own words where possible, not
+  sentences and not tasks. "Agency handover", not "Complete the agency handover".
+- Capitalise a title as a heading: first word only, unless it contains a proper
+  noun. "Payments service", not "payments service" and not "Payments Service".
+- Reuse the manager's existing domains wherever one fits. Only propose a new
+  domain when nothing existing is a reasonable home. Use null when an area does
+  not belong to any domain.
+- Do not assign owners, confidence levels, dates or priorities. Those are the
+  manager's judgements to make, and a plausible guess is worse than no guess.
+- British spelling.`
