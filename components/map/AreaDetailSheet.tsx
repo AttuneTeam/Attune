@@ -42,6 +42,25 @@ const SIGNAL_LABEL: Record<LinkedInteraction["signal"], string> = {
   threatens: "threatens",
 };
 
+/** Matches the compact notes editor so opening the drawer does not jump. */
+function NotesSkeleton() {
+  return (
+    <div
+      aria-busy="true"
+      aria-label="Loading notes"
+      className="relative min-h-40 rounded-md border border-input px-3 py-3 dark:border-border"
+    >
+      <span className="sr-only">Loading notes</span>
+      <div className="space-y-3 animate-pulse">
+        <div className="h-3 w-11/12 rounded bg-muted" />
+        <div className="h-3 w-full rounded bg-muted" />
+        <div className="h-3 w-4/5 rounded bg-muted" />
+      </div>
+      <div className="absolute inset-x-3 bottom-3 h-2 w-16 rounded bg-muted animate-pulse" />
+    </div>
+  );
+}
+
 export type AreaDetail = {
   description: Json | null
   linked: LinkedInteraction[]
@@ -124,7 +143,7 @@ export function AreaDetailSheet({
                   </button>
                 </div>
               ) : loading || !detail ? (
-                <p className="text-sm text-muted-foreground">Loading</p>
+                <NotesSkeleton />
               ) : (
                 // Auto-saves with debounce. No Save button in the editing path
                 // — zero-friction capture applies here as much as to quick-add.

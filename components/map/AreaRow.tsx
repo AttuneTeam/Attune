@@ -192,7 +192,12 @@ export function AreaRow({
           underneath. Kept on one line at desktop widths, where the fixed
           columns are what make confidence, review age and owner scannable
           down the group. */}
-      <div className="flex min-h-11 flex-wrap items-center gap-x-4 gap-y-1 rounded-md px-3 py-1 transition-colors hover:bg-accent/30 sm:flex-nowrap sm:py-0">
+      <div
+        onClick={() => {
+          if (!renaming) void openDetail();
+        }}
+        className="flex min-h-11 flex-wrap items-center gap-x-4 gap-y-1 rounded-md px-3 py-1 transition-colors hover:bg-accent/30 cursor-pointer sm:flex-nowrap sm:py-0"
+      >
         {renaming ? (
           <input
             autoFocus
@@ -219,6 +224,7 @@ export function AreaRow({
               "disabled:opacity-50",
             )}
             style={indent}
+            onClick={(event) => event.stopPropagation()}
           />
         ) : (
           /* The title opens the detail panel — the primary thing you want from
@@ -227,7 +233,10 @@ export function AreaRow({
              you meant to open. */
           <button
             type="button"
-            onClick={() => void openDetail()}
+            onClick={(event) => {
+              event.stopPropagation();
+              void openDetail();
+            }}
             title={`Open ${area.title}`}
             className={cn(
               "min-w-0 flex-1 basis-full truncate rounded-md text-left text-sm sm:basis-auto",
@@ -240,7 +249,10 @@ export function AreaRow({
           </button>
         )}
 
-        <div className="flex min-w-0 shrink-0 items-center gap-2 sm:gap-3">
+        <div
+          className="flex min-w-0 shrink-0 items-center gap-2 sm:gap-3"
+          onClick={(event) => event.stopPropagation()}
+        >
           <ConfidenceControl
             areaId={area.id}
             areaTitle={area.title}
