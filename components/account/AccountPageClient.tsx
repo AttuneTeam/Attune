@@ -1,13 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
-import { CheckCircle2, XCircle, GitBranch, Link2, Mail, KeyRound, Check, Loader2 } from "lucide-react";
+import { CheckCircle2, GitBranch, Link2, Mail, KeyRound, Check, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Profile } from "@/lib/supabase/types";
 
@@ -209,9 +210,9 @@ export function AccountPageClient({
           {availableRoles.length === 0 && (
             <p className="text-xs text-muted-foreground">
               No roles defined yet.{" "}
-              <a href="/roles" className="underline underline-offset-2 hover:text-foreground">
+              <Link href="/roles" className="underline underline-offset-2 hover:text-foreground">
                 Add roles
-              </a>{" "}
+              </Link>{" "}
               to link them here.
             </p>
           )}

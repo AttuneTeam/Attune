@@ -19,6 +19,14 @@ export async function POST(request: Request) {
     .maybeSingle()
   if (!membership) return NextResponse.json({ error: 'Organisation not found.' }, { status: 404 })
 
+  const { data: organization } = await supabase
+    .from('organizations')
+    .select('id')
+    .eq('id', organizationId)
+    .is('archived_at', null)
+    .maybeSingle()
+  if (!organization) return NextResponse.json({ error: 'Organisation is archived or unavailable.' }, { status: 404 })
+
   const response = NextResponse.json({ ok: true })
   response.cookies.set('active-organization-id', organizationId, {
     httpOnly: false,
