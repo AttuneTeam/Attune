@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useEffect, useState, useTransition } from 'react'
 import { Plus } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -8,14 +8,29 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { toast } from 'sonner'
 
-export type Organization = { id: string; name: string }
+export type Organization = { id: string; name: string; archived_at?: string | null }
 
 export function OrganizationSwitcher({ organizations, activeId }: { organizations: Organization[]; activeId: string | null }) {
   const [creating, setCreating] = useState(false)
   const [name, setName] = useState('')
   const [pending, startTransition] = useTransition()
   const router = useRouter()
-  const active = organizations.find((organization) => organization.id === activeId) ?? organizations[0]
+  // Keep this boundary defensive so an archived row cannot appear if a caller
+  // passes a stale or cached organisation list.
+  const activeOrganizations = organizations.filter((organization) => !organization.archived_at)
+  const active = activeOrganizations.find((organization) => organization.id === activeId) ?? activeOrganizations[0]
+  const activeOrganizationId = active?.id
+
+  useEffect(() => {
+    if (!activeOrganizationId || activeOrganizationId === activeId) return
+    void fetch('/api/organizations/active', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ organizationId: activeOrganizationId }),
+    }).then((response) => {
+      if (response.ok) router.refresh()
+    }).catch(() => undefined)
+  }, [activeOrganizationId, activeId, router])
 
   async function select(organizationId: string) {
     const response = await fetch('/api/organizations/active', {
@@ -43,7 +58,7 @@ export function OrganizationSwitcher({ organizations, activeId }: { organization
   return (
     <div className="px-3 pb-3 border-b border-sidebar-border">
       <select aria-label="Active organisation" value={active?.id ?? ''} onChange={(event) => select(event.target.value)} className="w-full h-8 bg-transparent text-sm font-medium truncate outline-none">
-        {organizations.map((organization) => <option key={organization.id} value={organization.id}>{organization.name}</option>)}
+        {activeOrganizations.map((organization) => <option key={organization.id} value={organization.id}>{organization.name}</option>)}
       </select>
       {creating ? (
         <div className="flex gap-1 mt-2"><Input autoFocus value={name} onChange={(event) => setName(event.target.value)} onKeyDown={(event) => event.key === 'Enter' && create()} placeholder="Organisation name" className="h-8 text-xs" /><Button size="sm" className="h-8" disabled={pending} onClick={create}>Add</Button></div>

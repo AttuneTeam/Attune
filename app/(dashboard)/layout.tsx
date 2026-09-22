@@ -41,7 +41,7 @@ export default async function DashboardLayout({
   }
   const organizationIds = (memberships ?? []).map((membership: { organization_id: string }) => membership.organization_id)
   const { data: organizations } = organizationIds.length
-    ? await supabase.from('organizations').select('id, name').in('id', organizationIds).order('created_at')
+    ? await supabase.from('organizations').select('id, name, archived_at').in('id', organizationIds).is('archived_at', null).order('created_at')
     : { data: [] }
 
   const [{ data: profile }, { data: members }] = await Promise.all([
