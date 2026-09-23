@@ -19,7 +19,7 @@ function applyTheme(theme: Theme) {
   root.classList.toggle("dark", theme === "dark");
   root.style.colorScheme = theme;
   // Keep the inline canvas color (set by the pre-paint script) in sync.
-  root.style.backgroundColor = theme === "dark" ? "#232b1b" : "#fcf9f2";
+  root.style.backgroundColor = theme === "dark" ? "#25272a" : "#fcf9f2";
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
