@@ -24,21 +24,10 @@ export default async function DashboardLayout({
     role: 'manager',
   }, { onConflict: 'id', ignoreDuplicates: true })
 
-  // A new account receives a private organisation. Existing accounts were
-  // backfilled by migration 046, so this is only an onboarding safeguard.
-  let { data: memberships } = await supabase
+  const { data: memberships } = await supabase
     .from('organization_memberships')
     .select('organization_id')
     .eq('user_id', user.id)
-  if (!memberships?.length) {
-    await supabase.rpc('create_organization', {
-      organization_name: `${user.user_metadata?.full_name ?? user.email?.split('@')[0] ?? 'My'} organisation`,
-    })
-    ;({ data: memberships } = await supabase
-      .from('organization_memberships')
-      .select('organization_id')
-      .eq('user_id', user.id))
-  }
   const organizationIds = (memberships ?? []).map((membership: { organization_id: string }) => membership.organization_id)
   const { data: organizations } = organizationIds.length
     ? await supabase.from('organizations').select('id, name, archived_at').in('id', organizationIds).is('archived_at', null).order('created_at')
