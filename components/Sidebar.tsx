@@ -152,7 +152,7 @@ export function Sidebar({
           )}
         </div>
 
-        {!collapsed && organizations.length > 0 && (
+        {!collapsed && (
           <OrganizationSwitcher organizations={organizations} activeId={activeOrganizationId} />
         )}
 

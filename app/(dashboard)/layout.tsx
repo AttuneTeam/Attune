@@ -24,14 +24,16 @@ export default async function DashboardLayout({
     role: 'manager',
   }, { onConflict: 'id', ignoreDuplicates: true })
 
-  const { data: memberships } = await supabase
+  const { data: memberships, error: membershipsError } = await supabase
     .from('organization_memberships')
     .select('organization_id')
     .eq('user_id', user.id)
+  if (membershipsError) console.error('Failed to load organisation memberships', membershipsError)
   const organizationIds = (memberships ?? []).map((membership: { organization_id: string }) => membership.organization_id)
-  const { data: organizations } = organizationIds.length
+  const { data: organizations, error: organizationsError } = organizationIds.length
     ? await supabase.from('organizations').select('id, name, archived_at').in('id', organizationIds).is('archived_at', null).order('created_at')
-    : { data: [] }
+    : { data: [], error: null }
+  if (organizationsError) console.error('Failed to load organisations', organizationsError)
 
   const [{ data: profile }, { data: members }] = await Promise.all([
     supabase.from('profiles').select('*').eq('id', user.id).single(),
