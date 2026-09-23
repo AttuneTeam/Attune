@@ -8,10 +8,7 @@ import {
   Users,
   LogOut,
   Settings,
-  Network,
-  Briefcase,
   ChevronDown,
-  BookOpen,
   Target,
   Activity,
   UserPlus,
@@ -20,6 +17,7 @@ import {
   PanelLeftOpen,
   Sun,
   Moon,
+  Network
 } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
 import { useState, useEffect } from "react";
@@ -44,13 +42,6 @@ const navItems = [
   // { href: "/team-pulse", label: "Team", icon: Activity },
   // { href: "/initiatives", label: "Initiatives", icon: Target },
   // { href: "/workshop", label: "Workshop", icon: FlaskConical },
-];
-
-const settingsItems = [
-  { href: "/settings/org", label: "Organisation", icon: Network },
-  { href: "/team", label: "Team", icon: Users },
-  { href: "/roles", label: "Roles", icon: Briefcase },
-  { href: "/settings/knowledge", label: "Knowledge", icon: BookOpen },
 ];
 
 type Member = { id: string; name: string; relationship?: string | null };
@@ -93,13 +84,8 @@ export function Sidebar({
 
   const [peopleOpen, setPeopleOpen] = useState(true);
   const [stakeholdersOpen, setStakeholdersOpen] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(
-    pathname.startsWith("/roles") ||
-      pathname.startsWith("/settings") ||
-      pathname.startsWith("/team"),
-  );
   const [openFlyout, setOpenFlyout] = useState<
-    "people" | "stakeholders" | "settings" | null
+    "people" | "stakeholders" | null
   >(null);
 
   useEffect(() => {
@@ -119,11 +105,6 @@ export function Sidebar({
       .join("")
       .toUpperCase()
       .slice(0, 2) ?? "U";
-
-  const isSettingsActive =
-    pathname.startsWith("/roles") ||
-    pathname.startsWith("/settings") ||
-    pathname.startsWith("/team");
 
   const directReports = members.filter((m) => m.relationship !== "stakeholder");
   const stakeholders = members.filter((m) => m.relationship === "stakeholder");
@@ -404,97 +385,23 @@ export function Sidebar({
             </div>
           )}
 
-          {/* Settings section */}
-          <div className={cn("pt-2", collapsed && "relative group/settings")}>
-            <button
-              type="button"
-              onClick={() =>
-                collapsed
-                  ? setOpenFlyout((o) => (o === "settings" ? null : "settings"))
-                  : setSettingsOpen((o) => !o)
-              }
+          {/* Settings link */}
+          <div className="pt-2">
+            <Link
+              href="/settings"
+              onClick={closeMobileNav}
               className={cn(
                 "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all",
                 collapsed && "justify-center px-0",
-                isSettingsActive
+                pathname === "/account" || pathname === "/settings"
                   ? "text-foreground"
                   : "text-muted-foreground hover:bg-accent hover:text-foreground",
               )}
               title={collapsed ? "Settings" : undefined}
             >
               <Settings className="h-4 w-4 shrink-0" />
-              {!collapsed && (
-                <>
-                  <span className="flex-1 text-left">Settings</span>
-                  <ChevronDown
-                    className={cn(
-                      "h-3.5 w-3.5 shrink-0 transition-transform duration-200",
-                      settingsOpen && "rotate-180",
-                    )}
-                  />
-                </>
-              )}
-            </button>
-
-            {/* Expanded sub-items */}
-            {!collapsed && settingsOpen && (
-              <div className="mt-0.5 ml-3 pl-3 border-l border-border/50 space-y-0.5">
-                {settingsItems.map(({ href, label, icon: Icon }) => {
-                  const active = pathname.startsWith(href);
-                  return (
-                    <Link
-                      key={href}
-                      href={href}
-                      className={cn(
-                        "flex items-center gap-2 px-2 py-1.5 rounded-md text-xs transition-colors",
-                        active
-                          ? "font-medium text-primary"
-                          : "text-muted-foreground hover:text-foreground hover:bg-accent",
-                      )}
-                    >
-                      <Icon className="h-3.5 w-3.5 shrink-0" />
-                      {label}
-                    </Link>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* Collapsed flyout */}
-            {collapsed && (
-              <div
-                className={cn(
-                  "absolute left-full top-0 pl-2 z-50 transition-opacity duration-150",
-                  openFlyout === "settings"
-                    ? "visible opacity-100 pointer-events-auto"
-                    : "invisible group-hover/settings:visible opacity-0 group-hover/settings:opacity-100 pointer-events-none group-hover/settings:pointer-events-auto",
-                )}
-              >
-                <div className="bg-sidebar border border-border rounded-lg shadow-lg p-2 min-w-[160px] space-y-0.5">
-                  <p className="px-2 py-1 text-xs font-medium text-muted-foreground">
-                    Settings
-                  </p>
-                  {settingsItems.map(({ href, label, icon: Icon }) => {
-                    const active = pathname.startsWith(href);
-                    return (
-                      <Link
-                        key={href}
-                        href={href}
-                        className={cn(
-                          "flex items-center gap-2 px-2 py-1.5 rounded-md text-xs transition-colors",
-                          active
-                            ? "font-medium text-primary"
-                            : "text-muted-foreground hover:text-foreground hover:bg-accent",
-                        )}
-                      >
-                        <Icon className="h-3.5 w-3.5 shrink-0" />
-                        {label}
-                      </Link>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
+              {!collapsed && <span className="flex-1 text-left">Settings</span>}
+            </Link>
           </div>
         </nav>
 

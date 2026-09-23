@@ -202,7 +202,7 @@ export function BrainDumpSheet({
                         // bg-background/text-foreground rather than transparent:
                         // the other native selects in this codebase set both, and
                         // a transparent control inherits whatever the platform
-                        // picks in the olive dark theme.
+                        // remains legible across the dark theme surfaces.
                         "min-h-11 rounded-md bg-background px-2 text-[11px] text-foreground",
                         "focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
                       )}

@@ -16,7 +16,7 @@ const themeInitScript = `
       : window.matchMedia("(prefers-color-scheme: dark)").matches
         ? "dark"
         : "light";
-    var bg = theme === "dark" ? "#232b1b" : "#fcf9f2";
+    var bg = theme === "dark" ? "#25272a" : "#fcf9f2";
     var root = document.documentElement;
     if (theme === "dark") root.classList.add("dark");
     root.style.colorScheme = theme;

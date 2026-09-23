@@ -243,7 +243,7 @@ export function DomainGroup({
       {expanded && (
         <div
           id={bodyId}
-          // Level-2 surface nested inside the page ground. In the olive dark
+          // Level-2 surface nested inside the page ground. In the charcoal dark
           // theme this reads as a soft inset; in light, where the surface
           // levels currently share a value (see product-guidelines.md, Known
           // Drift), the whitespace does the work instead.

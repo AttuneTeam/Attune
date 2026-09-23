@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { AccountPageClient } from "@/components/account/AccountPageClient";
 import { OrganizationSettings, type ManagedOrganization } from "@/components/account/OrganizationSettings";
+import Link from "next/link";
 
 export default async function AccountPage() {
   const supabase = await createClient();
@@ -51,6 +52,31 @@ export default async function AccountPage() {
   return (
     <div className="p-8 max-w-3xl space-y-6">
       <h1 className="text-xl font-semibold">Your Profile</h1>
+      <section className="space-y-3">
+        <div>
+          <h2 className="text-sm font-semibold">Settings</h2>
+          <p className="text-xs text-muted-foreground mt-1">
+            Manage your organisation, team, roles, and knowledge base.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {[
+            ["/settings/org", "Organisation", "Manage your organisation and company context."],
+            ["/team", "Team", "Manage team members and structure."],
+            ["/roles", "Roles", "Define the roles used by your team."],
+            ["/settings/knowledge", "Knowledge", "Manage documents used by the AI assistant."],
+          ].map(([href, label, description]) => (
+            <Link
+              key={href}
+              href={href}
+              className="rounded-lg border border-border bg-card px-4 py-3 transition-colors hover:bg-accent"
+            >
+              <p className="text-sm font-medium">{label}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{description}</p>
+            </Link>
+          ))}
+        </div>
+      </section>
       <OrganizationSettings
         organizations={managedOrganizations}
         activeOrganizationId={activeOrganizationId}
