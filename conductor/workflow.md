@@ -186,6 +186,7 @@ Before marking any task complete:
 ### For database changes
 -   [ ] New migration file added; **no existing migration edited**
 -   [ ] RLS enabled and policies written for every new table
+-   [ ] `GRANT ALL ON TABLE <name> TO anon, authenticated, service_role` for every new table (production does not grant new tables by default; `lib/supabase/migrations.test.ts` checks this)
 -   [ ] Backwards-compatible with the currently deployed app (migrations run *before* deploy)
 -   [ ] `lib/supabase/types.ts` updated to match
 
